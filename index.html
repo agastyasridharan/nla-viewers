@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>NLA Research Viewers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#1a1a1a; --muted:#6b6b6b; --line:#e3e0d8; --bg:#faf8f3; --accent:#7a2e2e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:'EB Garamond',Georgia,serif; font-size:19px; line-height:1.55;
+         -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:760px; margin:0 auto; padding:72px 28px 96px; }
+  h1 { font-size:2.5rem; font-weight:600; margin:0 0 .2em; letter-spacing:-.01em; }
+  .lede { color:var(--muted); font-size:1.15rem; margin:0 0 2.6em; }
+  a.card { display:block; text-decoration:none; color:inherit;
+           border:1px solid var(--line); border-radius:10px; padding:24px 26px;
+           margin:0 0 18px; background:#fff; transition:border-color .15s, transform .15s, box-shadow .15s; }
+  a.card:hover { border-color:var(--accent); transform:translateY(-2px);
+                 box-shadow:0 6px 22px rgba(0,0,0,.06); }
+  .card h2 { margin:0 0 .25em; font-size:1.5rem; font-weight:600; }
+  .card p { margin:0; color:var(--muted); font-size:1.02rem; }
+  .card .go { color:var(--accent); font-weight:600; }
+  footer { margin-top:3em; padding-top:1.4em; border-top:1px solid var(--line);
+           color:var(--muted); font-size:.92rem; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>NLA Research Viewers</h1>
+    <p class="lede">Interactive browsers for two strands of natural-language-autoencoder analysis.</p>
+
+    <a class="card" href="nla-mimics/">
+      <h2>NLA Corpus Viewer &rarr;</h2>
+      <p>Mimic-audit corpus: activation-reconstruction comparisons (real vs. mimic) and calibration views across Qwen-7B, Gemma-12B/27B, and Llama-70B.</p>
+    </a>
+
+    <a class="card" href="nla-counterfactuals/">
+      <h2>Counterfactual-Pair Catalog &rarr;</h2>
+      <p>Browsable catalog of the counterfactual-pair suite used to probe grounded vs. prior-substituted decoding.</p>
+    </a>
+
+    <footer>
+      Static viewers &middot; rendered client-side &middot; no tracking.
+    </footer>
+  </div>
+</body>
+</html>

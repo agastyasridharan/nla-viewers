@@ -1,0 +1,1050 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NLA Corpus Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf6f1; --panel:#fffdf9; --panel2:#f5f0e8; --ink:#2c2416; --ink2:#1a1408;
+    --mut:#6b5d4d; --line:#e8e0d4; --line2:#ddd5c8;
+    --green:#4a7c59; --green-d:#3d6648; --amber:#b45309; --red:#a65d57; --red-d:#8b4d48;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); padding:20px 26px;
+    font-family:'EB Garamond',Georgia,'Times New Roman',serif; font-size:15px; line-height:1.5;}
+  .container{max-width:1340px; margin:0 auto;}
+  header{margin-bottom:12px;}
+  header h1{font-size:1.7rem; font-weight:500; letter-spacing:-0.02em; color:var(--ink2); margin:0 0 2px;}
+  header .sub{color:var(--mut); font-style:italic; font-size:0.95rem;}
+
+  .tabs{display:flex; gap:6px; border-bottom:2px solid var(--line); margin-bottom:16px;}
+  .tabbtn{cursor:pointer; padding:8px 16px; border:1px solid var(--line); border-bottom:none;
+    border-radius:6px 6px 0 0; background:var(--panel2); color:var(--mut); font-family:inherit;
+    font-size:0.98rem; font-weight:500; margin-bottom:-2px;}
+  .tabbtn.active{background:var(--panel); color:var(--ink2); border-color:var(--line);
+    border-bottom:2px solid var(--panel);}
+  .tabpane{display:none;} .tabpane.active{display:block;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px 16px;
+    box-shadow:0 2px 6px rgba(44,36,22,.05); margin-bottom:14px;}
+  .panel h2{font-size:1.05rem; font-weight:600; color:var(--ink); margin:0 0 10px;
+    display:flex; align-items:baseline; gap:8px;}
+  .panel h2 .sub2{color:var(--mut); font-weight:400; font-style:italic; font-size:0.82rem;}
+
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  label.fld{color:var(--mut); font-size:0.85rem;}
+  select,input[type=text]{background:#fffefb; color:var(--ink); border:1px solid var(--line2);
+    border-radius:4px; padding:6px 9px; font-family:inherit; font-size:0.92rem;}
+  select:focus,input:focus{outline:none; border-color:var(--green);}
+  input[type=text]{min-width:230px;}
+
+  .stats{display:flex; gap:26px; align-items:flex-end; flex-wrap:wrap;}
+  .metric{font-size:1.7rem; font-weight:600; color:var(--ink2); line-height:1; font-variant-numeric:tabular-nums;}
+  .metric small{display:block; font-size:0.66rem; color:var(--mut); font-weight:400; font-style:italic;
+    font-variant-numeric:normal; margin-top:4px;}
+
+  .main-grid{display:grid; grid-template-columns:380px 1fr; gap:14px; align-items:start;}
+  @media (max-width:980px){ .main-grid{grid-template-columns:1fr;} }
+
+  .list{max-height:74vh; overflow:auto; display:flex; flex-direction:column; gap:6px;}
+  .docitem{border:1px solid var(--line2); border-radius:5px; padding:8px 10px; cursor:pointer;
+    background:var(--panel); transition:all .12s;}
+  .docitem:hover{border-color:#a89880; background:var(--panel2);}
+  .docitem.sel{outline:2px solid var(--green); background:#eef3ec;}
+  .docitem .docid{font-weight:600; color:var(--ink2); font-size:0.95rem; word-break:break-all;}
+  .docitem .meta{font-size:0.74rem; color:var(--mut); margin-top:3px; display:flex; gap:6px; flex-wrap:wrap;
+    align-items:center;}
+
+  .badge{display:inline-block; padding:1px 7px; border-radius:999px; font-size:0.7rem;
+    border:1px solid var(--line2); color:var(--mut); background:var(--panel2);}
+  .badge.train{color:#fff; background:var(--green); border-color:var(--green-d);}
+  .badge.eval{color:#fff; background:var(--amber); border-color:var(--amber);}
+  .badge.genre{color:var(--ink); background:#efe7d8;}
+
+  pre.src{white-space:pre-wrap; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.8rem;
+    line-height:1.55; background:var(--bg); border:1px solid var(--line); border-radius:6px;
+    padding:11px 13px; margin:0; max-height:340px; overflow:auto;}
+  .turn{border:1px solid var(--line); border-radius:6px; padding:9px 11px; margin-bottom:7px; background:var(--bg);}
+  .turn .role{font-size:0.7rem; text-transform:uppercase; letter-spacing:.06em; font-weight:600; margin-bottom:4px;}
+  .turn.user .role{color:var(--green-d);} .turn.assistant .role{color:var(--amber);} .turn.system .role{color:var(--red-d);}
+  .turn .content{white-space:pre-wrap; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.8rem; line-height:1.55;}
+
+  .tokens{display:flex; flex-wrap:wrap; gap:5px; margin-top:4px;}
+  .tok{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.72rem; background:var(--panel);
+    border:1px solid var(--line2); border-radius:5px; padding:3px 6px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; min-width:34px; transition:all .12s;}
+  .tok:hover{border-color:var(--green);}
+  .tok .t{white-space:pre; color:var(--ink);}
+  .tok .n{font-size:0.62rem; margin-top:1px; font-variant-numeric:tabular-nums;}
+  .tok.high{border-color:var(--green);} .tok.high .n{color:var(--green-d);}
+  .tok.med .n{color:var(--amber);}
+  .tok.low{border-color:var(--red);} .tok.low .n{color:var(--red);}
+  .tok.sel{outline:2px solid var(--green); background:#eef3ec;}
+
+  .out{white-space:pre-wrap; font-family:inherit; font-size:1.0rem; line-height:1.6;
+    background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:13px 15px;
+    margin-top:10px; min-height:22px;}
+  .out.muted{color:var(--mut); font-style:italic;}
+  .ctx{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.78rem; line-height:1.55;
+    background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:9px 11px; margin-top:8px; color:var(--mut);}
+  mark{background:#dbe7d6; color:var(--ink2); padding:0 2px; border-radius:2px;}
+
+  .kv{display:flex; gap:16px; flex-wrap:wrap; font-size:0.84rem; color:var(--mut); margin:4px 0 0;}
+  .kv b{color:var(--ink); font-weight:600;}
+  .scoregrid{display:flex; gap:26px; align-items:flex-end; margin-top:8px; flex-wrap:wrap;}
+  .pill{display:inline-block; padding:3px 11px; border-radius:999px; font-size:0.8rem;
+    border:1px solid var(--line2); color:var(--mut); background:var(--panel2);}
+  .pill.high{color:#fff; background:var(--green); border-color:var(--green-d);}
+  .pill.med{color:#fff; background:var(--amber); border-color:var(--amber);}
+  .pill.low{color:#fff; background:var(--red); border-color:var(--red-d);}
+  .muted{color:var(--mut);} .sep{height:1px; background:var(--line); margin:13px 0;}
+
+  /* refinement tab */
+  .traj{display:flex; gap:8px; align-items:flex-end; margin-top:6px; flex-wrap:wrap;}
+  .bar{display:flex; flex-direction:column; align-items:center; gap:4px; font-size:0.72rem; color:var(--mut);}
+  .barfill{width:46px; background:var(--panel2); border:1px solid var(--line2); border-radius:4px;
+    display:flex; align-items:flex-end; height:120px; overflow:hidden; position:relative;}
+  .barfill > .fill{width:100%;}
+  .barfill .ideal{position:absolute; left:0; right:0; bottom:50%; border-top:1px dashed var(--ink2); z-index:2;}
+  .verdict{border-left:4px solid var(--amber); background:var(--panel2); padding:9px 13px; border-radius:4px;
+    margin-top:10px; font-size:0.92rem;}
+  .verdict.good{border-color:var(--green);} .verdict.bad{border-color:var(--red);}
+  .iter{border:1px solid var(--line2); border-radius:6px; padding:11px 13px; margin-bottom:9px; background:var(--bg);}
+  .iter .top{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .iter .rnd{font-weight:600; color:var(--ink2);}
+  details{margin-top:8px;} summary{cursor:pointer; color:var(--green-d); font-size:0.86rem;}
+  pre.prompt{white-space:pre-wrap; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.74rem;
+    line-height:1.5; background:var(--panel); border:1px solid var(--line); border-radius:6px;
+    padding:10px 12px; margin:6px 0 0; max-height:360px; overflow:auto;}
+  .cmp{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;}
+  @media (max-width:760px){ .cmp{grid-template-columns:1fr;} }
+  .cmpcol h4{margin:0 0 4px; font-size:0.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--mut);}
+  .cmpcol.nla h4{color:var(--green-d);} .cmpcol.mimic h4{color:var(--amber);}
+  .cmpbox{white-space:pre-wrap; font-family:inherit; font-size:0.92rem; line-height:1.5;
+    border:1px solid var(--line); border-radius:6px; padding:10px 12px; background:var(--panel2);}
+  table.claims{border-collapse:collapse; width:100%; margin-top:8px; font-size:0.82rem;}
+  table.claims th,table.claims td{border:1px solid var(--line); padding:4px 7px; text-align:left; vertical-align:top;}
+  table.claims th{background:var(--panel2); color:var(--mut); font-weight:600;}
+  .yes{color:var(--green-d); font-weight:600;} .no{color:var(--red); font-weight:600;}
+  .tag{display:inline-block; padding:0 6px; border-radius:4px; background:#efe7d8; font-size:0.72rem;}
+  .gtable{border-collapse:collapse; font-size:0.82rem;} .gtable td,.gtable th{border:1px solid var(--line); padding:3px 8px;}
+
+  /* activation audit (Δcos) tab */
+  .aa-head{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-top:4px;}
+  .aa-card{background:var(--panel2); border:1px solid var(--line2); border-radius:7px; padding:11px 13px;}
+  .aa-card .v{font-size:1.85rem; font-weight:600; color:var(--ink2); line-height:1; font-variant-numeric:tabular-nums;}
+  .aa-card .l{font-size:0.72rem; color:var(--mut); font-style:italic; margin-top:5px;}
+  .aa-card.real{border-left:4px solid var(--green);} .aa-card.mimic{border-left:4px solid var(--amber);}
+  .aa-card.ctl{border-left:4px solid var(--red);} .aa-card.delta{border-left:4px solid var(--ink2);}
+  .aa-sub{grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px; opacity:0.72;}
+  .aa-sub .aa-card{padding:6px 9px;} .aa-sub .aa-card .v{font-size:1.15rem;} .aa-sub .aa-card .l{font-size:0.66rem;margin-top:2px;}
+  .cbar{position:relative; height:11px; background:var(--panel2); border:1px solid var(--line2); border-radius:3px; overflow:hidden; min-width:90px;}
+  .cbar > i{position:absolute; left:0; top:0; bottom:0; display:block;}
+  .dcell{display:flex; align-items:center; gap:7px; white-space:nowrap;}
+  .dbar{position:relative; width:96px; height:11px; background:var(--panel2); border:1px solid var(--line2); border-radius:3px; overflow:hidden; flex:none;}
+  .dbar > .pos{position:absolute; left:50%; top:0; bottom:0; background:var(--green);}
+  .dbar > .neg{position:absolute; right:50%; top:0; bottom:0; background:var(--red);}
+  .dbar > .mid{position:absolute; left:50%; top:0; bottom:0; width:1px; background:var(--ink2); z-index:2;}
+  .dnum{font-variant-numeric:tabular-nums; font-weight:600; min-width:48px; text-align:right;}
+  table.gtable.full{width:100%;} table.gtable.full td,table.gtable.full th{padding:4px 9px;}
+  table.gtable tr.me td{background:#eef3ec;}
+  .aa-pair .top{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .pill.delta{color:#fff;} .pill.delta.pos{background:var(--green); border-color:var(--green-d);}
+  .pill.delta.neg{background:var(--red); border-color:var(--red-d);}
+  /* comprehensive-audit prose + dossier */
+  .prose{font-size:0.92rem; line-height:1.58; color:var(--ink2); max-width:62rem;}
+  .prose p{margin:0 0 9px;} .prose p:last-child{margin-bottom:0;}
+  .prose b{color:var(--ink);} .prose .term{color:var(--green-d); font-weight:600;}
+  .prose ul{margin:6px 0 9px; padding-left:20px;} .prose li{margin:3px 0;}
+  .secnum{display:inline-block; min-width:1.7em; color:var(--mut); font-weight:600; font-variant-numeric:tabular-nums;}
+  .panel h2 .tag{display:inline-block; font-size:0.62rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+    padding:1px 7px; border-radius:9px; vertical-align:middle; margin-left:8px;}
+  .tag.ok{background:#e7efe7; color:var(--green-d); border:1px solid var(--green);}
+  .tag.warn{background:#f6ecdb; color:var(--amber); border:1px solid var(--amber);}
+  .tag.ext{background:#e9eef5; color:#3a5685; border:1px solid #7088ad;}
+  .dossier{border-collapse:collapse; font-size:0.82rem; width:100%; margin-top:6px;}
+  .dossier td,.dossier th{border:1px solid var(--line); padding:4px 9px; text-align:left;}
+  .dossier th{background:var(--panel2); color:var(--mut); font-weight:600;}
+  .dossier td.k{color:var(--mut); white-space:nowrap; width:1%;}
+  .dossier tr.me td{background:#eef3ec; font-weight:600;}
+  .dossier .num{font-variant-numeric:tabular-nums; text-align:right;}
+  .callout{background:var(--panel2); border:1px solid var(--line2); border-left:4px solid var(--ink2);
+    border-radius:5px; padding:10px 13px; margin:9px 0 0; font-size:0.88rem; line-height:1.5; color:var(--ink2);}
+  .callout.ext{border-left-color:#7088ad;} .callout.warn{border-left-color:var(--amber);}
+  .callout.ok{border-left-color:var(--green);}
+  .callout .ch{font-weight:600; display:block; margin-bottom:3px; color:var(--ink);}
+  .clist{list-style:none; padding:0; margin:4px 0 0;} .clist li{padding:6px 0 6px 22px; position:relative;
+    border-top:1px solid var(--line); font-size:0.86rem; line-height:1.5; color:var(--ink2);}
+  .clist li:first-child{border-top:none;} .clist li::before{content:"▸"; position:absolute; left:4px; color:var(--mut);}
+  .citelist{font-size:0.82rem; color:var(--mut); line-height:1.5; padding-left:20px; margin:4px 0 0;}
+  .citelist li{margin:5px 0;}
+  .formula{font-family:"Iowan Old Style",Georgia,serif; font-size:1.18rem; text-align:center; color:var(--ink);
+    background:var(--panel2); border:1px solid var(--line2); border-radius:6px; padding:12px 14px; margin:8px 0;
+    font-variant-numeric:tabular-nums;}
+  .formula sub{font-size:0.72em;}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>NLA Corpus Viewer</h1>
+    <div class="sub">Stored conversations and the model's reads for each token, plus the studies that test those reads. Hosted Llama-3.3-70B, layer 53.</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tabbtn active" data-tab="browser">Corpus browser</button>
+    <button class="tabbtn" data-tab="actaudit">Activation audit (&Delta;cos)</button>
+    <button class="tabbtn" data-tab="calib-v23">Calibration &amp; audit (v2.3)</button>
+    <button class="tabbtn" data-tab="calib-v2">Calibration &amp; audit (v2)</button>
+    <button class="tabbtn" data-tab="calib-v11">[v1.1] Calibration &amp; audit</button>
+    <button class="tabbtn" data-tab="refine">[OLD] Prompt refinement</button>
+  </div>
+
+  <!-- ============ BROWSER TAB ============ -->
+  <div class="tabpane active" id="tab-browser">
+    <section class="panel"><div class="stats" id="stats"></div></section>
+    <section class="panel">
+      <div class="row">
+        <label class="fld">split</label>
+        <select id="fSplit"><option value="">all</option><option value="train">train</option><option value="eval">eval</option></select>
+        <label class="fld">genre</label><select id="fGenre"></select>
+        <label class="fld">kind</label>
+        <select id="fKind"><option value="">all</option><option value="raw">raw</option><option value="chat">chat</option></select>
+        <label class="fld">length</label>
+        <select id="fLen"><option value="">all</option><option value="short">short</option><option value="medium">medium</option><option value="long">long</option></select>
+        <label class="fld">search</label><input id="fSearch" type="text" placeholder="id, source text, or AV text">
+        <span class="muted" id="count"></span>
+      </div>
+    </section>
+    <div class="main-grid">
+      <section class="panel">
+        <h2>Documents <span class="sub2" id="listSub"></span></h2>
+        <div class="list" id="list"></div>
+      </section>
+      <section class="panel">
+        <h2 id="detTitle">Select a document</h2>
+        <div id="detail"></div>
+      </section>
+    </div>
+    <p class="muted" style="font-size:0.82rem; margin-top:6px">
+      Token chips are the sampled positions that have an NLA read (not every token). Colour = AR reconstruction fidelity:
+      <span style="color:var(--green-d)">&#9632; high &ge;0.90</span> &middot;
+      <span style="color:var(--amber)">&#9632; med 0.75 to 0.90</span> &middot;
+      <span style="color:var(--red)">&#9632; low &lt;0.75</span>. Click a chip to read its AV explanation.
+    </p>
+  </div>
+
+  <!-- ============ ACTIVATION AUDIT (Δcos) TAB ============ -->
+  <div class="tabpane" id="tab-actaudit">
+    <div id="actBody"><p class="muted">Loading…</p></div>
+  </div>
+
+  <!-- ============ CALIBRATION + AUDIT (v2.3, current) TAB ============ -->
+  <div class="tabpane" id="tab-calib-v23">
+    <div id="calibBody_v23"><p class="muted">Loading…</p></div>
+  </div>
+
+  <!-- ============ CALIBRATION + AUDIT (v2) TAB ============ -->
+  <div class="tabpane" id="tab-calib-v2">
+    <div id="calibBody_v2"><p class="muted">Loading…</p></div>
+  </div>
+
+  <!-- ============ CALIBRATION + AUDIT (v1.1, OLD) TAB ============ -->
+  <div class="tabpane" id="tab-calib-v11">
+    <div id="calibBody_v11"><p class="muted">Loading…</p></div>
+  </div>
+
+  <!-- ============ REFINEMENT TAB ============ -->
+  <div class="tabpane" id="tab-refine">
+    <div id="refineBody"><p class="muted">Loading…</p></div>
+  </div>
+</div>
+
+<script src="viewer_data.js"></script>
+<script src="act_audit_llama70b.js" onerror="window.__noAA_llama70b=true"></script>
+<script src="act_audit_qwen7b.js" onerror="window.__noAA_qwen7b=true"></script>
+<script src="act_audit_gemma12b.js" onerror="window.__noAA_gemma12b=true"></script>
+<script src="act_audit_gemma27b.js" onerror="window.__noAA_gemma27b=true"></script>
+<script src="calib_view_v2_3.js" onerror="window.__noCalibV2_3=true"></script>
+<script src="calib_view_v2.js" onerror="window.__noCalibV2=true"></script>
+<script src="calib_view_v1_1.js" onerror="window.__noCalibV11=true"></script>
+<script src="refine_data.js" onerror="window.__noRefine=true"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function showTok(s){ return s==="" ? "∅" : esc(s).replace(/ /g,"␣").replace(/\n/g,"↵").replace(/\t/g,"⇥"); }
+function pct(x){ return x==null?"n/a":Math.round(x*100)+"%"; }
+
+// ---- tabs ----
+document.querySelectorAll(".tabbtn").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabbtn").forEach(x=>x.classList.toggle("active", x===b));
+  document.querySelectorAll(".tabpane").forEach(p=>p.classList.toggle("active", p.id==="tab-"+b.dataset.tab));
+});
+
+/* ===================== BROWSER ===================== */
+let DOCS = [], curDoc = null;
+function bootBrowser(){
+  if (!window.CORPUS){ $("detail").innerHTML = "<p class='out muted'>viewer_data.js not found. Run build_view.py, then serve via <code>python -m http.server</code>.</p>"; return; }
+  DOCS = CORPUS.docs; const m = CORPUS.meta;
+  $("stats").innerHTML = [
+    [m.docs,"documents"],[m.explanations,"explanations"],[m.themes,"genres"],
+    [m.train_docs,"train docs"],[m.eval_docs,"eval docs"],[m.cos_mean,"cosine mean"],
+    [m.bands.high,"high-fidelity"],[m.bands.med,"med"],[m.bands.low,"low"],
+  ].map(([v,l]) => `<div class="metric">${v}<small>${l}</small></div>`).join("");
+  const genres = [...new Set(DOCS.map(d=>d.theme))].sort();
+  $("fGenre").innerHTML = `<option value="">all</option>` + genres.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join("");
+  ["fSplit","fGenre","fKind","fLen"].forEach(id => $(id).onchange = renderList);
+  $("fSearch").oninput = renderList;
+  renderList();
+}
+function filtered(){
+  const sp=$("fSplit").value, ge=$("fGenre").value, ki=$("fKind").value, le=$("fLen").value;
+  const q=$("fSearch").value.trim().toLowerCase();
+  return DOCS.filter(d=>{
+    if(sp && d.split!==sp) return false;
+    if(ge && d.theme!==ge) return false;
+    if(ki && d.kind!==ki) return false;
+    if(le && d.length_class!==le) return false;
+    if(q){ const hay=(d.id+" "+d.source+" "+d.positions.map(p=>p.av).join(" ")).toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+}
+function renderList(){
+  const ds = filtered();
+  $("count").textContent = `${ds.length} of ${DOCS.length} documents`;
+  $("listSub").textContent = `${ds.reduce((a,d)=>a+d.positions.length,0)} explanations shown`;
+  $("list").innerHTML = ds.map(d=>`
+    <div class="docitem ${curDoc===d.id?"sel":""}" data-id="${esc(d.id)}">
+      <div class="docid">${esc(d.id)}</div>
+      <div class="meta"><span class="badge genre">${esc(d.theme)}</span>
+        <span class="badge ${d.split}">${d.split}</span><span class="badge">${d.kind}</span>
+        <span class="badge">${d.length_class}</span><span>${d.n_tokens} tok</span>
+        <span>cos ${d.cos_min.toFixed(2)}-${d.cos_max.toFixed(2)}</span><span>${d.positions.length} pos</span></div>
+    </div>`).join("") || "<p class='muted'>No documents match.</p>";
+  [...$("list").children].forEach(el => { if(el.dataset && el.dataset.id) el.onclick = () => selectDoc(el.dataset.id); });
+  if(ds.length && !ds.find(d=>d.id===curDoc)) selectDoc(ds[0].id);
+}
+function selectDoc(id){
+  curDoc = id; const d = DOCS.find(x=>x.id===id);
+  [...$("list").children].forEach(el => el.classList && el.classList.toggle("sel", el.dataset.id===id));
+  $("detTitle").innerHTML = `${esc(d.id)} <span class="sub2">${esc(d.format)}</span>`;
+  let convo;
+  if(d.turns){ convo = d.turns.map(t=>`<div class="turn ${t.role}"><div class="role">${t.role}</div><div class="content">${esc(t.content)}</div></div>`).join(""); }
+  else { convo = `<pre class="src">${esc(d.source)}</pre>`; }
+  const chips = d.positions.map((p,i)=>`<div class="tok ${p.band}" data-i="${i}" title="pos ${p.position} · cos ${p.cosine} · mse ${p.mse}"><span class="t">${showTok(p.token)}</span><span class="n">${p.cosine.toFixed(2)}</span></div>`).join("");
+  $("detail").innerHTML = `
+    <div class="kv"><div><b>split</b> ${d.split}</div><div><b>genre</b> ${esc(d.theme)}</div>
+      <div><b>kind</b> ${d.kind}</div><div><b>length</b> ${d.length_class}</div>
+      <div><b>tokens</b> ${d.n_tokens}</div><div><b>positions read</b> ${d.positions.length}</div>
+      <div><b>cosine</b> ${d.cos_min.toFixed(2)} to ${d.cos_max.toFixed(2)}</div></div>
+    <div class="sep"></div><h2 style="font-size:0.95rem">Conversation / source</h2>${convo}
+    <div class="sep"></div><h2 style="font-size:0.95rem">Read positions <span class="sub2">click a token</span></h2>
+    <div class="tokens" id="chips">${chips}</div><div id="posDetail"></div>`;
+  [...$("chips").children].forEach(el => el.onclick = () => selectPos(parseInt(el.dataset.i,10)));
+  selectPos(d.positions.length-1);
+}
+function selectPos(i){
+  const d = DOCS.find(x=>x.id===curDoc); const p = d.positions[i];
+  [...$("chips").children].forEach(el => el.classList.toggle("sel", parseInt(el.dataset.i,10)===i));
+  const tail=p.prefix_tail, tok=p.token;
+  let ctx = (tok && tail.endsWith(tok)) ? esc(tail.slice(0, tail.length-tok.length))+"<mark>"+showTok(tok)+"</mark>" : esc(tail)+` <mark>${showTok(tok)}</mark>`;
+  $("posDetail").innerHTML = `
+    <div class="kv" style="margin-top:10px"><div><b>position</b> ${p.position}</div><div><b>token</b> <code>${showTok(p.token)}</code></div></div>
+    <div class="ctx">…${ctx}</div>
+    <div class="scoregrid"><div class="metric">${p.cosine}<small>cosine</small></div><div class="metric">${p.mse}<small>MSE</small></div><div class="pill ${p.band}">${p.band} fidelity</div></div>
+    <h2 style="font-size:0.95rem; margin:12px 0 0">AV explanation <span class="sub2">activation &rarr; text</span></h2>
+    <div class="out">${esc(p.av)}</div>`;
+}
+
+/* ===================== REFINEMENT ===================== */
+function accBand(x){ if(x==null) return ""; const d=Math.abs(x-0.5); return d<0.1?"high":(d<0.25?"med":"low"); }
+function cmpPair(ex){
+  return `<div class="cmp">
+    <div class="cmpcol nla"><h4>Real NLA (with activation)</h4><div class="cmpbox">${esc(ex.nla)}</div></div>
+    <div class="cmpcol mimic"><h4>Mimic (text only)</h4><div class="cmpbox">${esc(ex.mimic)}</div></div></div>`;
+}
+function claimTable(claims){
+  if(!claims||!claims.length) return "";
+  return `<table class="claims"><tr><th>claim</th><th>type</th><th>derivable by mimic?</th><th>confabulated?</th></tr>` +
+    claims.map(c=>`<tr><td>${esc(c.claim)}</td><td><span class="tag">${esc(c.claim_type)}</span></td>
+      <td class="${c.derivable_by_mimic?'yes':'no'}">${c.derivable_by_mimic?'yes':'no'}</td>
+      <td class="${c.confabulated?'no':'yes'}">${c.confabulated?'yes':'no'}</td></tr>`).join("") + `</table>`;
+}
+function bootRefine(){
+  const body = $("refineBody");
+  if (!window.REFINE){ body.innerHTML = "<p class='out muted'>Refinement results not generated yet. After the refine workflow finishes, run <code>build_refine_view.py &lt;output&gt;</code> to produce <code>refine_data.js</code>, then reload.</p>"; return; }
+  const R = REFINE, m = R.meta;
+  const traj = (m.train_acc_trajectory||[]);
+  const trajHtml = traj.map((a,i)=>{
+    const h = a==null?0:Math.round(a*100); const cl = accBand(a);
+    const col = cl==="high"?"var(--green)":(cl==="med"?"var(--amber)":"var(--red)");
+    return `<div class="bar"><div class="barfill"><div class="ideal" title="50% = ideal"></div><div class="fill" style="height:${h}%;background:${col}"></div></div><div>R${i+1}</div><div>${pct(a)}</div></div>`;
+  }).join("");
+  function verdictText(a){
+    if(a==null) return ["", ""];
+    if(Math.abs(a-0.5)<0.1) return ["good","Mimic is ~indistinguishable from the real NLA on held-out genres: the discriminator is near chance. Success."];
+    if(a>0.5) return ["bad",`Mimic is still distinguishable (discriminator beats chance at ${pct(a)}): it does not yet match the real NLA style closely enough.`];
+    return ["bad",`Discriminator is BELOW chance (${pct(a)}): it systematically labels the MIMIC as the real NLA. The mimic has overshot into caricature. It looks more exaggeratedly NLA-like (repetition, mid-word cuts, confabulation) than the genuine, comparatively coherent Llama reads. The goal is to land as close to 50% as possible, from either side.`];
+  }
+  const [vCls, vMsg] = verdictText(m.eval_overall_acc);
+  const evalBand = accBand(m.eval_overall_acc);
+  const epg = R.eval_per_genre||{};
+  const genreRows = Object.keys(epg).sort().map(g=>{
+    const v=epg[g]; const cl=accBand(v.acc);
+    const col = cl==="high"?"var(--green-d)":(cl==="med"?"var(--amber)":"var(--red)");
+    return `<tr><td>${esc(g)}</td><td style="color:${col};font-weight:600">${pct(v.acc)}</td><td class="muted">${v.correct}/${v.n}</td></tr>`;
+  }).join("");
+
+  const iters = (R.iterations||[]).map(it=>`
+    <div class="iter"><div class="top"><span class="rnd">Round ${it.round}</span>
+      <span class="pill ${accBand(it.disc_acc)}">discriminator ${pct(it.disc_acc)}</span>
+      <span class="muted" style="font-size:0.8rem">(50% = indistinguishable = ideal)</span></div>
+      <div style="margin-top:7px"><b>Change made this round:</b> ${esc(it.changelog)}</div>
+      <details><summary>prompt at the start of this round (${it.prompt_before.length} chars)</summary><pre class="prompt">${esc(it.prompt_before)}</pre></details>
+    </div>`).join("");
+
+  const contrast = (R.contrast_examples||[]).map(ex=>`
+    <div class="iter"><div class="top"><span class="rnd">${esc(ex.genre)}</span><span class="badge">${esc(ex.id||'')}</span></div>
+      <div class="ctx" style="margin-top:6px">…${esc(ex.prefix_tail)}</div>
+      ${cmpPair(ex)}
+      ${claimTable(ex.claims)}
+      <div style="margin-top:8px"><b>What only the vector carried:</b> ${esc(ex.nla_only_grounded)}</div>
+      <div style="margin-top:4px"><b>Verdict:</b> ${esc(ex.verdict)}</div>
+    </div>`).join("");
+
+  // extra example browser (all eval pairs, genre-filterable)
+  const evGenres = [...new Set((R.eval_examples||[]).map(e=>e.genre))].sort();
+
+  body.innerHTML = `
+    <section class="panel"><h2>Goal &amp; method</h2>
+      <p style="margin:0 0 8px">${esc(m.goal)}</p>
+      <div class="stats">
+        <div class="metric">${m.rounds}<small>refine rounds</small></div>
+        <div class="metric">${pct(traj[0])}<small>start (train)</small></div>
+        <div class="metric">${pct(traj[traj.length-1])}<small>end (train)</small></div>
+        <div class="metric" style="color:${evalBand==='high'?'var(--green-d)':(evalBand==='med'?'var(--amber)':'var(--red)')}">${pct(m.eval_overall_acc)}<small>held-out eval</small></div>
+        <div class="metric">${m.n_eval}<small>eval items</small></div>
+      </div>
+      <p class="hint muted" style="font-size:0.82rem; margin-top:8px">The number is how often a style judge can tell the mimic apart from a real NLA read. <b>50% means it cannot tell them apart, which is the goal.</b> Above 50% means the mimic is too weak and is still caught as fake. Below 50% means the judge systematically picks the mimic as the real one, so the mimic has overshot into caricature. What matters is how close the number is to 50%, from either side.</p>
+      ${vMsg?`<div class="verdict ${vCls}">${esc(vMsg)}</div>`:""}
+    </section>
+
+    <section class="panel"><h2>Discriminator accuracy by round <span class="sub2">train; dashed line = 50% ideal</span></h2>
+      <div class="traj">${trajHtml||"<span class='muted'>n/a</span>"}</div></section>
+
+    <section class="panel"><h2>Generalization to held-out genres <span class="sub2">eval, per genre</span></h2>
+      <p class="muted" style="font-size:0.84rem;margin:0 0 8px">Overall held-out: <b style="color:${evalBand==='high'?'var(--green-d)':(evalBand==='med'?'var(--amber)':'var(--red)')}">${pct(m.eval_overall_acc)}</b>. Per-genre (closer to 50% = mimic generalizes there; near 100% = that genre still gives the mimic away).</p>
+      <table class="gtable"><tr><th>genre</th><th>disc. acc</th><th>correct/n</th></tr>${genreRows}</table></section>
+
+    <section class="panel"><h2>How the prompt was refined <span class="sub2">v0 &rarr; v${m.rounds}, with changelogs</span></h2>
+      <details><summary>seed prompt v0 (${R.v0.length} chars)</summary><pre class="prompt">${esc(R.v0)}</pre></details>
+      ${iters}
+      <div class="iter"><div class="top"><span class="rnd">Final prompt (v${m.rounds})</span></div>
+        <details open><summary>final prompt (${R.final_prompt.length} chars)</summary><pre class="prompt">${esc(R.final_prompt)}</pre></details></div>
+    </section>
+
+    <section class="panel"><h2>Style specification (rubric)</h2>
+      <div class="kv" style="display:block">
+        <div><b>structure:</b> ${esc(R.rubric.structure||'')}</div>
+        <div style="margin-top:6px"><b>moves:</b> ${(R.rubric.moves||[]).map(esc).join(' · ')}</div>
+        <div style="margin-top:6px"><b>register markers:</b> ${(R.rubric.register_markers||[]).map(esc).join(' · ')}</div>
+        <div style="margin-top:6px"><b>cross-genre:</b> ${esc(R.rubric.cross_genre_notes||'')}</div>
+        <div style="margin-top:6px"><b>length:</b> ${esc(R.rubric.length_words||'')}</div>
+      </div></section>
+
+    <section class="panel"><h2>NLA versus mimic: content contrast <span class="sub2">held-out eval, per-claim</span></h2>
+      <p class="muted" style="font-size:0.84rem;margin:0 0 10px">For each claim in the real NLA read: can the text-only mimic derive it, and is it confabulated? Claims that the mimic cannot derive and that are grounded are the content unique to the vector.</p>
+      ${contrast||"<p class='muted'>No contrast examples.</p>"}
+    </section>
+
+    <section class="panel"><h2>More NLA vs mimic examples <span class="sub2">${(R.eval_examples||[]).length} held-out pairs</span></h2>
+      <div class="row" style="margin-bottom:8px"><label class="fld">genre</label>
+        <select id="exGenre"><option value="">all</option>${evGenres.map(g=>`<option>${esc(g)}</option>`).join("")}</select></div>
+      <div id="exList"></div></section>`;
+
+  const exSel = $("exGenre");
+  function renderEx(){
+    const g = exSel.value;
+    const items = (R.eval_examples||[]).filter(e=>!g||e.genre===g).slice(0,60);
+    $("exList").innerHTML = items.map(ex=>`
+      <div class="iter"><div class="top"><span class="rnd">${esc(ex.genre)}</span><span class="badge">${esc(ex.id||'')}</span></div>
+        <div class="ctx" style="margin-top:6px">…${esc(ex.prefix_tail)}</div>${cmpPair(ex)}</div>`).join("") || "<p class='muted'>none</p>";
+  }
+  if(exSel){ exSel.onchange = renderEx; renderEx(); }
+}
+
+/* ============ SINGLE-PROMPT CALIBRATION & AUDIT ============ */
+function lab(v){ const c = v==="yes"?"yes":(v==="no"?"no":"tag"); return `<span class="${c}">${esc(v)}</span>`; }
+function calibClaimTable(claims){
+  return `<table class="claims"><tr><th>claim (from the real NLA read)</th><th>type</th><th>in text?</th><th>in mimic?</th></tr>` +
+    claims.map(c=>`<tr><td>${esc(c.claim)}</td><td><span class="tag">${esc(c.category)}</span></td>
+      <td>${lab(c.supported)}</td><td>${lab(c.in_mimic)}</td></tr>`).join("") + `</table>`;
+}
+// highlight the token the AV read (the final token of the prefix) in the context
+function ctxHL(prefix, token){
+  if(!prefix) return "";
+  if(token){
+    let t = token, i = prefix.lastIndexOf(t);
+    if(i<0 && token.trim()){ t = token.trim(); i = prefix.lastIndexOf(t); }  // whitespace trimmed in reconstruction
+    if(i>=0) return esc(prefix.slice(0,i)) + `<mark>${esc(t)}</mark>` + esc(prefix.slice(i+t.length));
+    return esc(prefix) + `\n<mark>[read token: ${showTok(token)}]</mark>`;  // special token, replaced in reconstruction
+  }
+  return esc(prefix);
+}
+function bootCalib(C, bodyId, pfx){
+  const body = $(bodyId);
+  if (!C){ body.innerHTML = `<p class='out muted'>Calibration/audit data for <b>${pfx}</b> not generated yet. Once the ${pfx} calibration and Axis-1 workflows finish, run <code>build_calib_view.py ${pfx==='v11'?'v1_1':pfx}</code> and reload.</p>`; return; }
+  const fp = C.fingerprint, cal = C.calib, ax = C.axis1, g = ax.grid;
+  const col = (b)=> b==="high"?"var(--green-d)":(b==="med"?"var(--amber)":"var(--red)");
+  const verdictOf = (a)=> a==null?"":(Math.abs(a-0.5)<0.1?"indistinguishable":(a<0.5?"caricature (overshoot)":"too clean / distinguishable"));
+  const ID = (s)=> `${pfx}_${s}`;
+
+  const numRows = fp.numeric.map(r=>`<tr><td>${esc(r.sig)}</td><td>${r.p10}</td><td><b>${r.p50}</b></td><td>${r.p90}</td><td>${r.mimic}</td></tr>`).join("");
+  const fracRows = fp.frac.map(r=>{const off=Math.abs((r.mimic||0)-(r.real||0))>0.2; return `<tr><td>${esc(r.sig)}</td><td>${pct(r.real)}</td><td style="${off?'color:var(--amber)':''}">${pct(r.mimic)}</td></tr>`;}).join("");
+
+  const runRows = cal.runs.map(rn=>`<tr><td>${rn.is_this?`<b>${esc(rn.name)} (this tab)</b>`:esc(rn.name)}</td>
+      <td style="color:${col(accBand(rn.acc))};font-weight:600">${pct(rn.acc)}</td><td>${rn.two_sided.toFixed(3)}</td><td>${verdictOf(rn.acc)}</td></tr>`).join("")
+    + `<tr><td class="muted">[OLD] refine loop</td><td class="muted" style="color:var(--red)">6%</td><td class="muted">0.44</td><td class="muted">caricature (overshoot)</td></tr>`;
+
+  const vbThis = accBand(cal.acc);
+  const recov = g.pos_pos/((g.pos_pos+g.pos_neg)||1);
+  const pGenres = [...new Set(C.pairs.map(p=>p.genre))].sort();
+  const catRows = Object.keys(ax.by_category).filter(k=>ax.by_category[k].n).map(k=>{
+    const v=ax.by_category[k]; return `<tr><td>${esc(k)}</td><td>${v.n}</td><td>${pct(v.derivable)}</td></tr>`; }).join("");
+  const genreRows = Object.keys(ax.by_genre).sort().map(gn=>{
+    const v=ax.by_genre[gn]; return `<tr><td>${esc(gn)}</td><td>${v.n}</td><td>${pct(v.derivable)}</td></tr>`; }).join("");
+  const substHtml = ax.substantive.map(s=>`
+    <div class="iter"><div class="top"><span class="rnd">${esc(s.genre)}</span><span class="tag">${esc(s.category)}</span></div>
+      <div style="margin-top:5px">&ldquo;${esc(s.claim)}&rdquo;</div>
+      <div class="muted" style="font-size:0.84rem;margin-top:4px">${esc(s.reason)}</div></div>`).join("");
+
+  body.innerHTML = `
+    <section class="panel"><h2>Goal &amp; method <span class="sub2">prompt ${esc(cal.runs.find(r=>r.is_this)?cal.runs.find(r=>r.is_this).name:pfx)}</span></h2>
+      <p style="margin:0 0 8px">${esc(C.meta.goal)}</p>
+      <div class="stats">
+        <div class="metric" style="color:${col(vbThis)}">${pct(cal.acc)}<small>discriminator (target 50%)</small></div>
+        <div class="metric">${ax.total_claims}<small>claims audited</small></div>
+        <div class="metric" style="color:${col('high')}">${pct(recov)}<small>of text-grounded claims recovered</small></div>
+        <div class="metric">${pct(ax.derivable)}<small>derivable overall (incl. confab)</small></div>
+        <div class="metric">${ax.confirmed_kinds.substantive||0}<small>substantive vector-only suspects</small></div>
+      </div>
+      <div class="verdict ${vbThis==='high'?'good':'bad'}" style="margin-top:10px">Single fixed prompt, anchored to the data and calibrated two-sided (discriminator ${pct(cal.acc)}). The text-only mimic recovers ${pct(recov)} of text-grounded claims; the activation's apparent extra content is dominated by confabulation.</div>
+      <details style="margin-top:8px"><summary>the prompt (${C.meta.locked_chars} chars)</summary><pre class="prompt">${esc(C.meta.locked_prompt)}</pre></details>
+    </section>
+
+    <section class="panel"><h2>Style fingerprint target <span class="sub2">from ${fp.n_reads} real reads, ${fp.n_genres} genres</span></h2>
+      <p class="muted" style="font-size:0.84rem;margin:0 0 8px">The realistic window each signature must fall inside (the 10th to 90th percentile). The mimic is calibrated to this window, not to a judge that could be gamed.</p>
+      <div class="cmp">
+        <div><h4 style="margin:0 0 4px;font-size:0.8rem;color:var(--mut)">numeric (p10 / median / p90 / mimic)</h4>
+          <table class="gtable"><tr><th>signature</th><th>p10</th><th>med</th><th>p90</th><th>mimic</th></tr>${numRows}</table></div>
+        <div><h4 style="margin:0 0 4px;font-size:0.8rem;color:var(--mut)">categorical (real vs this mimic)</h4>
+          <table class="gtable"><tr><th>signature</th><th>real</th><th>mimic</th></tr>${fracRows}</table></div>
+      </div></section>
+
+    <section class="panel"><h2>Calibration result <span class="sub2">cross-model style discriminator, Sonnet 4.6, no prefix</span></h2>
+      <p class="muted" style="font-size:0.84rem;margin:0 0 8px"><b>50% = indistinguishable = the goal</b> (two-sided: below 50% = caricature, above = too clean). 128 held-out tasks.</p>
+      <table class="gtable"><tr><th>prompt</th><th>discriminator acc</th><th>|acc&minus;0.5|</th><th>verdict</th></tr>${runRows}</table></section>
+
+    <section class="panel"><h2>Real AV vs mimic <span class="sub2">${C.pairs.length} held-out pairs; the discriminator saw these (no prefix)</span></h2>
+      <div class="row" style="margin-bottom:8px"><label class="fld">genre</label>
+        <select id="${ID('calGenre')}"><option value="">all</option>${pGenres.map(gn=>`<option>${esc(gn)}</option>`).join("")}</select>
+        <span class="muted" style="font-size:0.82rem">green = discriminator fooled (mimic convincing) &middot; red = caught. Expand each for the conversation context.</span></div>
+      <div id="${ID('calPairs')}"></div></section>
+
+    <section class="panel"><h2>Axis 1: what is recoverable from text alone <span class="sub2">${ax.total_claims} atomic claims</span></h2>
+      <p class="muted" style="font-size:0.84rem;margin:0 0 10px">Each real NLA read is broken into atomic claims. Each claim is labelled for whether the text supports it and whether the text-only mimic also makes it. Only claims that are <b>neither in the text nor in the mimic</b> can be content that came genuinely from the vector.</p>
+      <table class="gtable" style="margin-bottom:10px"><tr><th></th><th>in mimic</th><th>NOT in mimic</th></tr>
+        <tr><th>in text</th><td>${g.pos_pos} <span class="muted">trivially recoverable</span></td><td>${g.pos_neg} <span class="muted">mimic recall gap</span></td></tr>
+        <tr><th>NOT in text</th><td>${g.neg_pos} <span class="muted">shared guess or confabulation</span></td><td style="background:#f3ece0"><b>${g.neg_neg}</b> <span class="muted">vector-only candidates</span></td></tr></table>
+      <div class="cmp">
+        <div><h4 style="margin:0 0 4px;font-size:0.8rem;color:var(--mut)">derivable by category</h4>
+          <table class="gtable"><tr><th>category</th><th>n</th><th>derivable</th></tr>${catRows}</table></div>
+        <div><h4 style="margin:0 0 4px;font-size:0.8rem;color:var(--mut)">derivable by genre</h4>
+          <table class="gtable"><tr><th>genre</th><th>n</th><th>deriv.</th></tr>${genreRows}</table></div>
+      </div></section>
+
+    <section class="panel"><h2>Candidate vector-only content: confabulation versus substantive <span class="sub2">cross-model verified</span></h2>
+      <div class="stats" style="margin-bottom:8px">
+        <div class="metric">${ax.n_payload}<small>raw candidates (not in text, not in mimic)</small></div>
+        <div class="metric">${ax.n_confirmed}<small>verifier-confirmed</small></div>
+        <div class="metric" style="color:var(--red)">${ax.confirmed_kinds.confab_specific||0}<small>fabricated specifics</small></div>
+        <div class="metric" style="color:var(--amber)">${ax.confirmed_kinds.substantive||0}<small>substantive (vector-only suspects)</small></div>
+      </div>
+      <p class="muted" style="font-size:0.84rem;margin:0 0 8px">On inspection, most "substantive" suspects turn out to be meaningful claims that <b>contradict the text</b> (confabulation), not grounded content that came from the vector. Axis 2 (reconstruction with the vector removed, and with it scrambled) is the decisive grounding test. The full list, with the verifier's reasons, follows:</p>
+      <div id="${ID('calSubst')}">${substHtml||"<p class='muted'>none</p>"}</div></section>
+
+    <section class="panel"><h2>Sample claim decompositions <span class="sub2">items with vector-only candidates, one per genre</span></h2>
+      <div class="row" style="margin-bottom:8px"><label class="fld">genre</label>
+        <select id="${ID('calSampGenre')}"><option value="">all</option>${[...new Set(C.samples.map(s=>s.genre))].sort().map(gn=>`<option>${esc(gn)}</option>`).join("")}</select></div>
+      <div id="${ID('calSamples')}"></div></section>`;
+
+  function pairBadge(p){
+    if(p.correct===0) return `<span class="pill high">discriminator fooled</span>`;
+    if(p.correct===1) return `<span class="pill low">caught</span>`;
+    return `<span class="pill">n/a</span>`;
+  }
+  const calSel = $(ID('calGenre'));
+  function renderCalPairs(){
+    const gg = calSel.value;
+    const items = C.pairs.filter(p=>!gg||p.genre===gg).slice(0,80);
+    $(ID('calPairs')).innerHTML = items.map(p=>`
+      <div class="iter"><div class="top"><span class="rnd">${esc(p.genre)}</span>
+        <span class="badge">cos ${p.cosine.toFixed(2)}</span>${pairBadge(p)}
+        ${p.tell?`<span class="muted" style="font-size:0.8rem">${esc(p.tell)}</span>`:""}</div>
+        ${p.prefix?`<details style="margin-top:6px"><summary>show the surrounding text (the highlighted token is the one the read was written about)</summary><pre class="src">${ctxHL(p.prefix, p.token)}</pre></details>`:""}
+        <div class="cmp">
+          <div class="cmpcol nla"><h4>Real AV (with activation)</h4><div class="cmpbox">${esc(p.nla)}</div></div>
+          <div class="cmpcol mimic"><h4>Mimic (text only)</h4><div class="cmpbox">${esc(p.mimic)}</div></div></div>
+      </div>`).join("") || "<p class='muted'>none</p>";
+  }
+  if(calSel){ calSel.onchange = renderCalPairs; renderCalPairs(); }
+
+  const sampSel = $(ID('calSampGenre'));
+  function renderSamples(){
+    const gg = sampSel.value;
+    const items = C.samples.filter(s=>!gg||s.genre===gg);
+    $(ID('calSamples')).innerHTML = items.map(s=>`
+      <div class="iter"><div class="top"><span class="rnd">${esc(s.genre)}</span><span class="badge">cos ${s.cosine.toFixed(2)}</span></div>
+        ${calibClaimTable(s.claims)}</div>`).join("") || "<p class='muted'>none</p>";
+  }
+  if(sampSel){ sampSel.onchange = renderSamples; renderSamples(); }
+}
+
+/* ====== LITE CALIBRATION TAB (calibration + style + block-2; no Axis-1) ====== */
+function bootCalibLite(C, bodyId, pfx){
+  const body = $(bodyId);
+  if (!C){ body.innerHTML = `<p class='out muted'>Calibration data for <b>${pfx}</b> not generated yet. Run <code>build_calib_view.py ${pfx}</code> and reload.</p>`; return; }
+  const fp = C.fingerprint, cal = C.calib, b2 = C.block2;
+  const col = (b)=> b==="high"?"var(--green-d)":(b==="med"?"var(--amber)":"var(--red)");
+  const verdictOf = (a)=> a==null?"":(Math.abs(a-0.5)<0.1?"indistinguishable":(a<0.5?"caricature (overshoot)":"too clean / distinguishable"));
+  const ID = (s)=> `${pfx}_${s}`;
+  const vbThis = accBand(cal.acc);
+  const thisName = (cal.runs.find(r=>r.is_this)||{}).name || pfx;
+
+  const numRows = fp.numeric.map(r=>`<tr><td>${esc(r.sig)}</td><td>${r.p10}</td><td><b>${r.p50}</b></td><td>${r.p90}</td><td>${r.mimic}</td></tr>`).join("");
+  const fracRows = fp.frac.map(r=>{const off=Math.abs((r.mimic||0)-(r.real||0))>0.2; return `<tr><td>${esc(r.sig)}</td><td>${pct(r.real)}</td><td style="${off?'color:var(--amber)':''}">${pct(r.mimic)}</td></tr>`;}).join("");
+  const runRows = cal.runs.map(rn=>`<tr><td>${rn.is_this?`<b>${esc(rn.name)} (this tab)</b>`:esc(rn.name)}</td>
+      <td style="color:${col(accBand(rn.acc))};font-weight:600">${pct(rn.acc)}</td><td>${rn.two_sided.toFixed(3)}</td><td>${verdictOf(rn.acc)}</td></tr>`).join("");
+
+  // block-2 anchoring trajectory (the change this prompt version makes)
+  let b2Html = "", thisB2 = {};
+  if(b2){
+    thisB2 = b2.versions.find(v=>v.name===pfx) || {};
+    const vRows = b2.versions.map(v=>{
+      const d = Math.abs((v.rate||0)-(b2.real_rate||0));
+      const cl = d<0.12?'high':(d<0.30?'med':'low');
+      const nm = v.name.replace(/_/g,'.');
+      return `<tr><td>${v.name===pfx?`<b>${nm} (this tab)</b>`:nm}</td>
+        <td style="color:${col(cl)};font-weight:600">${pct(v.rate)}</td><td>${(v.avg||0).toFixed(2)}</td></tr>`;
+    }).join("");
+    const bandRows = ['quoted_spans','dquotes'].map(k=>{
+      const v=b2.bands[k]; const vc = v.verdict==='in-band'?'var(--green-d)':'var(--red)';
+      return `<tr><td>${esc(k)}</td><td>${v.p10} / ${v.p50} / ${v.p90}</td><td>${v.mimic}</td><td style="color:${vc};font-weight:600">${esc(v.verdict)}</td></tr>`;
+    }).join("");
+    b2Html = `
+    <section class="panel"><h2>Block-2 anchoring <span class="sub2">the change in this prompt version</span></h2>
+      <p class="muted" style="font-size:0.84rem;margin:0 0 8px">The real AV often names the local unit in block 2 by quoting a short verbatim fragment of the text; earlier mimics paraphrased instead. <b>Target = the real rate.</b> Right table: total quote counts must stay inside the real 10th to 90th percentile band (above that means caricature).</p>
+      <div class="cmp">
+        <div><h4 style="margin:0 0 4px;font-size:0.8rem;color:var(--mut)">block-2 verbatim-quote rate (target = real ${pct(b2.real_rate)})</h4>
+          <table class="gtable"><tr><th>version</th><th>quote rate</th><th>avg / block&nbsp;2</th></tr>
+            <tr><td><b>real AV (target)</b></td><td style="color:var(--green-d);font-weight:600">${pct(b2.real_rate)}</td><td>${(b2.real_avg||0).toFixed(2)}</td></tr>
+            ${vRows}</table></div>
+        <div><h4 style="margin:0 0 4px;font-size:0.8rem;color:var(--mut)">total quote-count bands (this version)</h4>
+          <table class="gtable"><tr><th>signature</th><th>real p10/med/p90</th><th>mimic</th><th>verdict</th></tr>${bandRows}</table></div>
+      </div></section>`;
+  }
+  const b2Metric = (b2 && thisB2.rate!=null)
+    ? `<div class="metric" style="color:${col(Math.abs((thisB2.rate||0)-(b2.real_rate||0))<0.12?'high':'med')}">${pct(thisB2.rate)}<small>block-2 quote rate (real ${pct(b2.real_rate)})</small></div>` : "";
+
+  const pGenres = [...new Set(C.pairs.map(p=>p.genre))].sort();
+
+  body.innerHTML = `
+    <section class="panel"><h2>Goal &amp; method <span class="sub2">prompt ${esc(thisName)}</span></h2>
+      <p style="margin:0 0 8px">${esc(C.meta.goal)}</p>
+      <div class="stats">
+        <div class="metric" style="color:${col(vbThis)}">${pct(cal.acc)}<small>discriminator (target 50%)</small></div>
+        <div class="metric">${C.pairs.length}<small>held-out pairs</small></div>
+        ${b2Metric}
+      </div>
+      <div class="verdict ${vbThis==='high'?'good':'bad'}" style="margin-top:10px">Calibration-only view for this prompt version (the block-2 anchoring iteration). The Axis-1 content audit was not re-run for this version; see the <b>v1.1</b> tab for the full claim-recoverability breakdown.</div>
+      <details style="margin-top:8px"><summary>the prompt (${C.meta.locked_chars} chars)</summary><pre class="prompt">${esc(C.meta.locked_prompt)}</pre></details>
+    </section>
+
+    ${b2Html}
+
+    <section class="panel"><h2>Calibration result <span class="sub2">cross-model style discriminator, Sonnet 4.6, no prefix</span></h2>
+      <p class="muted" style="font-size:0.84rem;margin:0 0 8px"><b>50% = indistinguishable = the goal</b> (two-sided: below 50% = caricature, above = too clean). 128 held-out tasks per version.</p>
+      <table class="gtable"><tr><th>prompt</th><th>discriminator acc</th><th>|acc&minus;0.5|</th><th>verdict</th></tr>${runRows}</table></section>
+
+    <section class="panel"><h2>Style fingerprint target <span class="sub2">from ${fp.n_reads} real reads, ${fp.n_genres} genres</span></h2>
+      <p class="muted" style="font-size:0.84rem;margin:0 0 8px">The realistic window each signature must fall inside (the 10th to 90th percentile). The mimic is calibrated to this window, not to a judge that could be gamed.</p>
+      <div class="cmp">
+        <div><h4 style="margin:0 0 4px;font-size:0.8rem;color:var(--mut)">numeric (p10 / median / p90 / mimic)</h4>
+          <table class="gtable"><tr><th>signature</th><th>p10</th><th>med</th><th>p90</th><th>mimic</th></tr>${numRows}</table></div>
+        <div><h4 style="margin:0 0 4px;font-size:0.8rem;color:var(--mut)">categorical (real vs this mimic)</h4>
+          <table class="gtable"><tr><th>signature</th><th>real</th><th>mimic</th></tr>${fracRows}</table></div>
+      </div></section>
+
+    <section class="panel"><h2>Real AV vs mimic <span class="sub2">${C.pairs.length} held-out pairs; the discriminator saw these (no prefix)</span></h2>
+      <div class="row" style="margin-bottom:8px"><label class="fld">genre</label>
+        <select id="${ID('calGenre')}"><option value="">all</option>${pGenres.map(gn=>`<option>${esc(gn)}</option>`).join("")}</select>
+        <span class="muted" style="font-size:0.82rem">green = discriminator fooled (mimic convincing) &middot; red = caught. Expand each for the conversation context.</span></div>
+      <div id="${ID('calPairs')}"></div></section>`;
+
+  function pairBadge(p){
+    if(p.correct===0) return `<span class="pill high">discriminator fooled</span>`;
+    if(p.correct===1) return `<span class="pill low">caught</span>`;
+    return `<span class="pill">n/a</span>`;
+  }
+  const calSel = $(ID('calGenre'));
+  function renderCalPairs(){
+    const gg = calSel.value;
+    const items = C.pairs.filter(p=>!gg||p.genre===gg).slice(0,128);
+    $(ID('calPairs')).innerHTML = items.map(p=>`
+      <div class="iter"><div class="top"><span class="rnd">${esc(p.genre)}</span>
+        <span class="badge">cos ${p.cosine.toFixed(2)}</span>${pairBadge(p)}
+        ${p.tell?`<span class="muted" style="font-size:0.8rem">${esc(p.tell)}</span>`:""}</div>
+        ${p.prefix?`<details style="margin-top:6px"><summary>show the surrounding text (the highlighted token is the one the read was written about)</summary><pre class="src">${ctxHL(p.prefix, p.token)}</pre></details>`:""}
+        <div class="cmp">
+          <div class="cmpcol nla"><h4>Real AV (with activation)</h4><div class="cmpbox">${esc(p.nla)}</div></div>
+          <div class="cmpcol mimic"><h4>Mimic (text only)</h4><div class="cmpbox">${esc(p.mimic)}</div></div></div>
+      </div>`).join("") || "<p class='muted'>none</p>";
+  }
+  if(calSel){ calSel.onchange = renderCalPairs; renderCalPairs(); }
+}
+
+/* ===================== ACTIVATION AUDIT (Δcos) ===================== */
+function bootActAudit(){
+  const body = $("actBody");
+  const A = window.ACT_AUDIT;
+  if(!A || !A.models || !A.models.length){
+    body.innerHTML = "<p class='out muted'>Activation-audit data not generated yet. Run <code>build_act_audit_view.py</code> per model, then reload.</p>";
+    return;
+  }
+  const models = A.models.slice();
+  const f3 = (x)=> (x==null?"n/a":Number(x).toFixed(3));
+  const sgn = (x)=> (x>=0?"+":"")+Number(x).toFixed(3);
+  const fidBand = (c)=> c>=0.90?"high":(c>=0.75?"med":"low");
+  const col = (b)=> b==="high"?"var(--green-d)":(b==="med"?"var(--amber)":"var(--red)");
+  const dcol = (d)=> d>=0.03?"var(--green-d)":(d<0?"var(--red)":"var(--mut)");
+  const fidFcol = (v)=> v==null?"var(--mut)":(v>=0.5?"var(--green-d)":(v>=0.2?"var(--amber)":"var(--red)"));
+  function cbar(c, color){ const w=Math.max(0,Math.min(100,c*100));
+    return `<div class="cbar"><i style="width:${w}%;background:${color}"></i></div>`; }
+  function dbar(d, scale){ const w=Math.min(50,Math.abs(d)/scale*50);
+    const side = d>=0 ? `<i class="pos" style="width:${w}%"></i>` : `<i class="neg" style="width:${w}%"></i>`;
+    return `<div class="dcell"><div class="dbar">${side}<div class="mid"></div></div><span class="dnum" style="color:${dcol(d)}">${sgn(d)}</span></div>`; }
+
+  const selOpts = models.map((m,i)=>`<option value="${i}">${esc(m.label)}, layer ${m.meta.layer}, ${m.summary.n} positions</option>`).join("");
+  body.innerHTML = `
+    <section class="panel"><div class="row">
+      <label class="fld">model</label><select id="aaModel">${selOpts}</select>
+      <span class="muted" id="aaModelSub" style="font-size:0.82rem"></span>
+    </div></section>
+    <div id="aaMain"></div>`;
+
+  function render(mi){
+    const m = models[mi], s = m.summary, g = m.gates, d = m.dist;
+    $("aaModelSub").textContent = `Model studied: ${m.meta.base}. Rebuilding helper: ${m.meta.ar}. ${m.meta.d_model} coordinates per vector.${m.meta.date?" Run "+m.meta.date+".":""}`;
+    const ratio = s.real ? s.mimic/s.real : 0;
+    const topG = (m.genres[0]||{}).theme || "";
+    const dColHead = s.mean_delta>=0?"var(--green-d)":"var(--red)";
+
+    const gv = g.validation, gi = g.injection;
+    const gateCards = [`<div class="metric" style="color:var(--green-d)">${g.alignment.match}/${g.alignment.n}<small>${gv?'positions that line up with the saved data':'positions placed at the right spot in the text'}</small></div>`];
+    if(gv){
+      gateCards.push(`<div class="metric">${f3(gv.pearson)}<small>agreement between our scores and the saved ones (1 is perfect)</small></div>`);
+      gateCards.push(`<div class="metric">${gv.mean_abs_err}<small>average difference from the saved scores (largest ${gv.max_abs_err})</small></div>`);
+    }
+    if(gi){
+      gateCards.push(`<div class="metric" style="color:${gi.cjk?'var(--red)':'var(--green-d)'}">${gi.n-gi.cjk}/${gi.n}<small>descriptions that came out clean (no random Chinese characters)</small></div>`);
+      if(gi.noexp!=null) gateCards.push(`<div class="metric">${gi.noexp}/${gi.n}<small>descriptions missing the expected tags</small></div>`);
+    }
+    if(g.difficulty_corr!=null) gateCards.push(`<div class="metric">${f3(g.difficulty_corr)}<small>how well hard-for-Llama positions are also hard here</small></div>`);
+    const gateNote = gv
+      ? "The first check confirms that our positions line up with the saved data. The second confirms that our scoring reproduces the scores recorded by the hosted service, using the same vectors, helper, and text. When both pass, the numbers on this page can be trusted."
+      : "For this model the descriptions were generated here rather than taken from a hosted service, so there is no saved score to compare against inside this step (the outside comparison is done separately in section 6). Instead, three sanity checks apply. The first places every position at the same point in the text as the Llama run. The second confirms the model actually read the inserted vector, since a failed insertion makes it produce random Chinese characters. The third confirms that positions which are hard for Llama are also hard here.";
+
+    const S = m.std, F = m.fve;
+    const satPct = F ? Math.round(F.norm_share*100) : 0;
+    const sColHead = S && S.delta>=0 ? "var(--green-d)" : "var(--red)";
+    // Headline metric: standardized cosine. Each coordinate is put on equal footing
+    // (z-scored against the gold distribution) before comparing, so the one or two
+    // oversized coordinates can no longer dominate the score. A mismatched control then
+    // scores about 0, as an unrelated pair should (Timkey and van Schijndel, 2021).
+    const stdCards = S ? `<div class="aa-head">
+      <div class="aa-card real"><div class="v">${f3(S.real)}</div><div class="l">standardized cosine, genuine description</div></div>
+      <div class="aa-card mimic"><div class="v">${f3(S.mimic)}</div><div class="l">standardized cosine, text-only description</div></div>
+      <div class="aa-card ctl"><div class="v">${f3(S.control)}</div><div class="l">standardized cosine, mismatched control (about 0 means chance)</div></div>
+      <div class="aa-card delta"><div class="v" style="color:${sColHead}">${sgn(S.delta)}</div><div class="l">how much the vector adds on its own (genuine minus text-only)</div></div>
+      <div class="aa-card"><div class="v">${esc(S.win)}</div><div class="l">positions where the genuine description wins</div></div></div>` : "";
+    // reference row: plain cosine (often saturated), variance explained, standardized R squared
+    const cards = `<div class="aa-head aa-sub">
+      <div class="aa-card real"><div class="v">${f3(s.real)}</div><div class="l">plain cosine, genuine (misleadingly high here)</div></div>
+      <div class="aa-card mimic"><div class="v">${f3(s.mimic)}</div><div class="l">plain cosine, text-only</div></div>
+      <div class="aa-card ctl"><div class="v">${f3(s.control)}</div><div class="l">plain cosine, mismatched control</div></div>
+      <div class="aa-card"><div class="v">${F?f3(F.real):'n/a'}</div><div class="l">fraction of variance explained, genuine</div></div>
+      <div class="aa-card"><div class="v">${S?f3(S.r2_real):'n/a'}</div><div class="l">standardized R squared, genuine</div></div></div>`;
+    const satNote = F && F.norm_share>0.5
+      ? `<b style="color:var(--amber)">For ${esc(m.label)}, the internal vectors are very lopsided. About ${satPct} percent of a typical vector's size comes from just one or two oversized coordinates.</b> Because those coordinates are nearly the same at every position, a plain cosine stays close to 1 for almost any description, and even a mismatched control scores ${f3(s.control)}. After we standardize those coordinates away, the control drops to <b>${S?f3(S.control):'about 0'}</b>, which is no better than chance, while the genuine description still scores <b>${S?f3(S.real):'about 0.85'}</b>.`
+      : (S ? `For ${esc(m.label)}, the internal vectors are fairly evenly spread. Only about ${satPct} percent of a typical vector's size comes from the shared part, so a plain cosine is already informative here. Standardizing gives the same picture: the mismatched control stays near chance at ${f3(S.control)} and the genuine description scores ${f3(S.real)}.` : "");
+    const explainer = S ? `<section class="panel" style="border-left:3px solid var(--amber)">
+        <h2>How the score works: standardized cosine <span class="sub2">put every coordinate on equal footing first</span></h2>
+        <div class="prose">
+          <p>Each rebuilt vector and each original vector is a long list of numbers, one per coordinate (this model has ${m.meta.d_model} of them). The usual way to compare two such vectors is <b>cosine similarity</b>, which measures whether they point in the same direction. It is 1 when they point exactly the same way, 0 when they are unrelated, and negative when they point in opposite directions.</p>
+          <p>The trouble is that a few coordinates of these vectors are far larger than all the others and barely change from one position to the next. Cosine adds up the contribution of every coordinate, so those few giant coordinates dominate the total and the result sits close to 1 for almost any pair, even a mismatched one. The numbers are correct, but they stop telling us whether the content actually matches.</p>
+          <p>Standardizing fixes this by rescaling every coordinate to the same footing before comparing. For each coordinate <i>i</i> we measure its average and its spread across all the original vectors, then replace each value by how many standard deviations it sits above or below that average:</p>
+          <div class="formula">z<sub>i</sub> = ( x<sub>i</sub> &minus; &mu;<sub>i</sub> ) &divide; &sigma;<sub>i</sub></div>
+          <p>Here x<sub>i</sub> is the original value of coordinate <i>i</i>, &mu;<sub>i</sub> is the average of that coordinate across all positions, and &sigma;<sub>i</sub> is its standard deviation, meaning how much it varies. Subtracting the average removes the constant part of the giant coordinates, and dividing by the spread means a coordinate that swings widely no longer counts for more than one that barely moves. The standardized score is then just the ordinary cosine of the two rescaled vectors:</p>
+          <div class="formula">standardized cosine = cos( z(rebuilt vector), z(original vector) )</div>
+          <p>This is the standard way to handle the problem (Timkey and van Schijndel, 2021). It gives a fair test, because a mismatched control now scores about 0, which is what an unrelated pair should score. Plain cosine, mean squared error, and the fraction of variance explained are kept alongside it only as familiar points of reference.</p>
+          <p>${satNote}</p>
+          <p class="muted" style="font-size:0.84rem">We also checked this against the publicly hosted copy of Gemma-3-27B on Neuronpedia. It returns the same near-identical plain cosines (a median of 0.99, with 95 percent of them above 0.95) and the same vector lengths we measured. So the plain cosines are correct, they are just uninformative on their own. Standardizing is what separates a genuine rebuild from the baseline created by those few giant coordinates.</p>
+        </div>
+      </section>` : "";
+
+    // headline table: standardized cos (primary) + std R² · raw cos / MSE / FVE references
+    const hrows = [["genuine description",S&&S.real,S&&S.r2_real,s.real,s.mse_real,F&&F.real,"var(--green)"],
+                   ["text-only description",S&&S.mimic,S&&S.r2_mimic,s.mimic,s.mse_mimic,F&&F.mimic,"var(--amber)"],
+                   ["mismatched control",S&&S.control,S&&S.r2_control,s.control,s.mse_control,F&&F.control,"var(--red)"]]
+      .map(([nm,sc,sr2,c,ms,fv,clr])=>`<tr><td>${nm}</td><td><b style="color:${fidFcol(sc)}">${f3(sc)}</b></td><td>${cbar(Math.max(0,sc||0),clr)}</td><td>${f3(sr2)}</td><td class="muted">${f3(c)}</td><td class="muted">${f3(ms)}</td><td class="muted">${f3(fv)}</td></tr>`).join("");
+
+    const bScaleS = Math.max(0.001, ...m.bands.map(b=>Math.abs(b.std_delta||0)));
+    const brows = m.bands.map(b=>`<tr><td>${esc(b.name)}</td><td>${b.n}</td><td style="color:${fidFcol(b.std_real)}"><b>${f3(b.std_real)}</b></td><td>${f3(b.std_mimic)}</td><td>${b.std_delta!=null?dbar(b.std_delta,bScaleS):"n/a"}</td><td class="muted">${f3(b.real)} / ${f3(b.mimic)}</td></tr>`).join("");
+
+    // genre table led by standardized cos, re-sorted by Δ (raw cos shown as reference)
+    const genresF = m.genres.slice().sort((a,b)=>(b.std_delta??-9)-(a.std_delta??-9));
+    const gScaleF = Math.max(0.001, ...genresF.map(x=>Math.abs(x.std_delta||0)));
+    const grows = genresF.map(x=>`<tr><td>${esc(x.theme)}</td><td>${x.n}</td><td style="color:${fidFcol(x.std_real)}"><b>${f3(x.std_real)}</b></td><td>${f3(x.std_mimic)}</td><td>${x.std_delta!=null?dbar(x.std_delta,gScaleF):"n/a"}</td><td class="muted">${f3(x.real)} / ${f3(x.mimic)} (${sgn(x.delta)})</td></tr>`).join("");
+
+    const fds = m.rows.map(r=>r.std_delta).filter(x=>x!=null).sort((a,b)=>a-b);
+    const fq = (q)=> fds.length?fds[Math.min(fds.length-1,Math.floor(q*fds.length))]:null;
+    const fveStats = {min:fds[0], p10:fq(.1), median:fq(.5), p90:fq(.9), max:fds[fds.length-1],
+                      neg:m.rows.filter(r=>r.std_delta!=null&&r.std_delta<0).length};
+    const topGF = (genresF[0]||{}).theme || "";
+    const sAct = (S&&S.real)? Math.round((S.delta/S.real)*100):0;
+
+    // ---- comprehensive narrative: per-model dossier + cross-model tables + shared suite ----
+    const D0 = m.dossier||{}, SU = m.suite||{}, GE = D0.geom||{}, RG = D0.rogue||{}, BT = D0.boot||{}, NP = D0.np||{}, MIM = SU.mimic||{};
+    const allM = models;                  // every loaded model carries its own dossier
+    const ci = (a)=> (a&&a.length===2) ? `[${f3(a[0])}, ${f3(a[1])}]` : "n/a";
+    const nGenres = new Set(m.rows.map(r=>r.theme)).size;
+
+    // §1: plain-English statement of what is measured
+    const overviewSec = `<section class="panel"><h2><span class="secnum">1</span>What this measures <span class="sub2">the question, the three models, the three comparisons</span></h2>
+      <div class="prose">
+        ${SU.abstract?`<div class="callout ok"><span class="ch">In one paragraph</span>${esc(SU.abstract)}</div>`:""}
+        <p style="margin-top:10px">As a model reads text, it builds an internal vector of numbers at every position, summarizing what it has understood so far. A natural-language autoencoder is a pair of helper models that work with these vectors. The first helper reads one internal vector and writes a short description of what it seems to represent. The second helper reads that description and tries to rebuild the original vector from the words alone. If the rebuilt vector points in the same direction as the original, the description captured the vector well.</p>
+        <p>This page asks a sharper question. When the first helper writes its description, how much of it actually came from the internal vector, and how much could a careful reader have guessed from the surrounding text on its own? To find out, at every position we rebuild the original vector from three different descriptions and measure how close each rebuild comes:</p>
+        <ul>
+          <li>The <b style="color:var(--green-d)">genuine description</b> is the one the first helper wrote after reading the actual vector.</li>
+          <li>The <b style="color:var(--amber)">text-only description</b> is written by a strong separate model (Claude Opus 4.8) that is shown the same passage but not the vector, and is asked to write in the same style. This stands for what the surrounding text alone suggests.</li>
+          <li>The <b style="color:var(--red)">mismatched control</b> is a description borrowed from a different position. This is the wrong-answer floor.</li>
+        </ul>
+        <p>The quantity we care about is how much better the genuine description rebuilds the vector than the text-only description does. If the two are about equal, the vector added nothing that the text did not already give away. If the genuine description is clearly better, the vector carried specific information that a text-only reader could not have known. (One technical note: the two scores often quoted for this kind of rebuild, cosine similarity and mean squared error, are not independent here. Because both vectors are first rescaled to the same length, mean squared error always equals two times one minus the cosine. So we report cosine and show mean squared error only as a familiar reference.)</p>
+      </div>
+    </section>`;
+
+    // §2: design + per-model configuration + the mimic baseline
+    const designSec = `<section class="panel"><h2><span class="secnum">2</span>How the test is set up <span class="sub2">keep everything fixed, change only the model</span></h2>
+      <div class="prose">
+        <p>To compare the four models fairly, we keep everything else the same and change only the model. Every model is tested on the <b>same ${s.n} positions across ${nGenres} kinds of text</b>, drawn from the same documents, at the same places in those documents (lined up again for each model, since they split text into tokens differently), and against the same text-only descriptions. The table below lists the settings used for the model shown.</p>
+        <table class="dossier" style="max-width:48rem">
+          <tr><td class="k">model being studied</td><td>${esc(m.meta.base)}</td></tr>
+          <tr><td class="k">helper that rebuilds the vector</td><td>${esc(m.meta.ar)}</td></tr>
+          <tr><td class="k">layer we read from</td><td>layer ${m.meta.layer}${D0.depth?` &nbsp;<span class="muted">(${esc(D0.depth)}, about two thirds of the way through the model)</span>`:""}</td></tr>
+          <tr><td class="k">number of coordinates per vector</td><td>${m.meta.d_model} &nbsp;<span class="muted">(rescaled to length ${f3(m.meta.mse_scale)} before scoring, which is the square root of the number of coordinates)</span></td></tr>
+          <tr><td class="k">size the inserted vector is set to</td><td>${D0.injection_scale!=null?D0.injection_scale:"n/a"} &nbsp;<span class="muted">(taken from the model's own settings, not chosen by us)</span></td></tr>
+          <tr><td class="k">where the genuine descriptions come from</td><td>${esc(D0.reads_source||"n/a")}</td></tr>
+        </table>
+        ${MIM.note?`<div class="callout warn"><span class="ch">Why the text-only comparison is fair, and a hard test to beat</span>${esc(MIM.note)}</div>`:""}
+      </div>
+    </section>`;
+
+    // §3b: residual-stream geometry across all four models (why raw cosine fails)
+    const geomRows = allM.map(x=>{
+      const g=(x.dossier&&x.dossier.geom)||{}, rg=(x.dossier&&x.dossier.rogue)||{};
+      const me = x.key===m.key ? ' class="me"' : '';
+      return `<tr${me}><td>${esc(x.label)}</td><td class="num">${g.norm||'n/a'}</td><td class="num">${g.hbar2!=null?f3(g.hbar2):'n/a'}</td><td class="num">${g.D!=null?f3(g.D):'n/a'}</td><td>${esc(rg.desc||'n/a')}</td><td class="num">${g.pw_raw!=null?f3(g.pw_raw):'n/a'} → ${g.pw_cen!=null?f3(g.pw_cen):'n/a'} → <b>${g.pw_std!=null?f3(g.pw_std):'n/a'}</b></td></tr>`;
+    }).join("");
+    const metricSec = `<section class="panel"><h2><span class="secnum">3b</span>Why a plain cosine is misleading here, and how we fix it <span class="sub2">the shape of the internal vectors, for all four models</span></h2>
+      <div class="prose">
+        <p>It helps to picture each vector as an arrow. If the arrows point in many different directions, cosine tells you something useful about whether two of them agree. But if one or two coordinates are enormous and stay almost the same at every position, every arrow is pulled toward one shared direction, and any two arrows then look almost parallel. In that case even a wrong rebuild scores high. For <b>${esc(m.label)}</b>, about ${satPct} percent of a typical vector points in that one shared direction, ${satPct>50?'which is enough to make a plain cosine almost useless here':'which is low enough that a plain cosine is already informative here'}. The fix is to standardize each coordinate, putting them all on equal footing as described above. Once we do that, two unrelated vectors score close to 0, which is what they should score.</p>
+        <table class="dossier">
+          <tr><th>model</th><th>typical vector length</th><th>share pointing the same way at every position</th><th>share that actually varies</th><th>the oversized coordinates</th><th>how similar two unrelated vectors look: plain, then after removing the average, then after standardizing</th></tr>
+          ${geomRows}
+        </table>
+        <p class="muted" style="font-size:0.84rem">The more of a vector that points in the one shared direction, the less is left to vary, and the more a plain cosine is pushed up toward 1 regardless of content. ${RG.desc?`For ${esc(m.label)}, the oversized coordinates are ${esc(RG.desc)}${RG.topval&&RG.topval!=='n/a'?`, with a largest value around ${esc(RG.topval)}${RG.sigma&&RG.sigma!=='n/a'?` and a typical spread of ${esc(RG.sigma)}`:''}`:''}.`:''} Two things confirm what is going on. First, a mismatched control scores about as high as the shared part is large, because it is only reproducing those constant oversized coordinates and carries no real signal of its own. Second, once those coordinates are standardized away, the mismatched control falls to chance while the genuine description still scores well. That is the decisive test shown in the headline above.</p>
+      </div>
+    </section>`;
+
+    // §5: statistical confidence (cross-model bootstrap + paired tests)
+    const statRows = allM.map(x=>{
+      const bt=(x.dossier&&x.dossier.boot)||{}, st=x.std||{}, fv=x.fve||{};
+      const me = x.key===m.key ? ' class="me"' : '';
+      return `<tr${me}><td>${esc(x.label)}</td><td class="num">${st.delta!=null?sgn(st.delta):'n/a'}</td><td class="num">${st.win||'n/a'}</td><td class="num">${fv.dfve!=null?sgn(fv.dfve):'n/a'}</td><td class="num">${ci(bt.dfve_ci)}</td><td class="num">${fv.mse_ratio!=null?f3(fv.mse_ratio)+'×':'n/a'}</td><td class="num">${ci(bt.mse_ci)}</td><td class="num">${bt.wilcoxon||'n/a'}</td></tr>`;
+    }).join("");
+    const statsSec = `<section class="panel"><h2><span class="secnum">5</span>How sure we are <span class="tag ok">result holds in every model</span><span class="sub2">a 20,000-sample bootstrap and paired tests over the ${s.n} positions</span></h2>
+      <div class="prose">
+        <p>${esc(SU.bootstrap||'')}</p>
+        <table class="dossier">
+          <tr><th>model</th><th>extra from the vector (standardized)</th><th>positions the genuine description wins</th><th>extra variance explained</th><th>95% range</th><th>error ratio, text-only vs genuine</th><th>95% range</th><th>significance (p)</th></tr>
+          ${statRows}
+        </table>
+        <p class="muted" style="font-size:0.84rem">The <b>error ratio</b> is the text-only description's rebuild error divided by the genuine description's rebuild error, so a value above 1 means the text-only rebuild was the worse of the two. This ratio, the direction of the advantage, and the count of positions the genuine description wins do not depend on the lopsided shape of the vectors, so they are the safest numbers to compare across models. The extra-variance-explained figure does depend on that shape, so we always read it together with its range rather than on its own. The significance column gives the chance of seeing an advantage this large if the vector really carried nothing extra; values this small mean that is essentially impossible.</p>
+        ${SU.mse_identity?`<div class="callout"><span class="ch">Why we quote cosine and not mean squared error</span>${esc(SU.mse_identity)}</div>`:""}
+      </div>
+    </section>`;
+
+    // §6: external validation against the live hosted NLA
+    const npTag = NP.hosted ? (NP.kind==='external'?'<span class="tag ext">publicly hosted</span>':'<span class="tag ext">partial check</span>') : '<span class="tag warn">not hosted publicly</span>';
+    const npSec = `<section class="panel"><h2><span class="secnum">6</span>Checking against a public copy of the model ${npTag}<span class="sub2">does Neuronpedia's hosted copy agree with our numbers?</span></h2>
+      <div class="prose">
+        ${NP.cos_np!=null?`<div class="aa-head aa-sub" style="opacity:1;margin-bottom:8px">
+          <div class="aa-card"><div class="v">${f3(NP.cos_ours)}</div><div class="l">our cosine</div></div>
+          <div class="aa-card"><div class="v">${f3(NP.cos_np)}</div><div class="l">Neuronpedia's cosine</div></div>
+          ${NP.np_dist?`<div class="aa-card"><div class="v">${NP.np_dist.n}</div><div class="l">positions checked on Neuronpedia (${NP.np_dist.genres} kinds of text)</div></div>
+          <div class="aa-card"><div class="v">${Math.round(NP.np_dist.frac95*100)}%</div><div class="l">of Neuronpedia's cosines above 0.95 (the same pattern we see)</div></div>`:''}
+        </div>`:''}
+        <p>${esc(NP.note||'')}</p>
+        ${NP.norm_field!=null?`<p class="muted" style="font-size:0.84rem">Neuronpedia also reports its own measure of how spread out this model's vectors are (${f3(NP.norm_field)}), and it is close to the value we computed independently (${f3(NP.our_D)}). This is more confirmation that the unusual cosines come from the shape of the vectors and not from a mistake on our side.</p>`:''}
+      </div>
+    </section>`;
+
+    // §7: injection / extraction faithfulness (the locally-generated reads)
+    const injSec = `<section class="panel"><h2><span class="secnum">7</span>Are the descriptions we generated ourselves trustworthy? <span class="sub2">checking how we inserted the vector into the model</span></h2>
+      <div class="prose">
+        <p>${esc(SU.injection||'')}</p>
+        ${SU.smell?`<div class="callout ok"><span class="ch">A simple check for a broken setup</span>${esc(SU.smell)}${gi&&gi.cjk!=null?` For ${esc(m.label)} in particular, ${gi.n-gi.cjk} of ${gi.n} descriptions came out clean.`:''}</div>`:''}
+      </div>
+    </section>`;
+
+    // §12: caveats and honest verification ceilings
+    const ceilItems = (SU.ceilings||[]).map(c=>`<li>${esc(c)}</li>`).join("");
+    const caveatSec = `<section class="panel"><h2><span class="secnum">12</span>Limits, and what we could not fully check <span class="sub2">the honest boundaries of this analysis</span></h2>
+      <div class="prose">
+        <ul class="clist">
+          <li>Each kind of text has only four positions, the text-only descriptions were written in one fixed style and reused for every model, and we looked at a single layer in each model. So the numbers broken down by kind of text should be read as rough guides, not precise figures.</li>
+          <li>The size of the effect cannot be compared directly from one model to another, because the rebuilding helpers differ and the baselines sit at different levels. What can be compared safely is the direction of the effect, the count of positions the genuine description wins, and the order of the error ratios (Qwen at 2.27, then Gemma-3-27B at 2.07, then Gemma-3-12B at 1.89, then Llama at 1.44).</li>
+          <li>For Gemma, the fraction-of-variance-explained figure is delicate. So little of each vector actually varies that a small change in cosine moves that figure a great deal. This is exactly why we lead with standardized cosine instead, and why the Gemma figure of about 0.65 should be read as roughly medium rather than as an exact value.</li>
+          ${ceilItems}
+        </ul>
+        ${SU.review?`<div class="callout ext"><span class="ch">Independent review</span>${esc(SU.review)}</div>`:''}
+      </div>
+    </section>`;
+
+    // §13: literature the method rests on
+    const citeItems = (SU.citations||[]).map(c=>`<li>${esc(c)}</li>`).join("");
+    const citeSec = SU.citations?`<section class="panel"><h2><span class="secnum">13</span>The research this builds on <span class="sub2">where the problem and the fix are documented</span></h2>
+      <ol class="citelist">${citeItems}</ol>
+    </section>`:'';
+
+    $("aaMain").innerHTML = `
+      ${overviewSec}
+      ${designSec}
+
+      <section class="panel"><h2><span class="secnum">3</span>Headline result <span class="sub2">${esc(m.label)}, layer ${m.meta.layer}, ${s.n} positions, scored with standardized cosine</span></h2>
+        ${stdCards}
+        <div class="muted" style="font-size:0.8rem;margin:10px 0 3px">Other scores, shown only for reference: plain cosine (which is misleadingly high here), the fraction of variance explained, and standardized R squared.</div>
+        ${cards}
+        <div class="verdict ${S&&S.delta>0?'good':'bad'}" style="margin-top:12px">Using standardized cosine, the genuine description rebuilds the vector at <b>${f3(S?S.real:0)}</b>, the text-only description reaches <b>${f3(S?S.mimic:0)}</b>, and a mismatched control falls to <b>${f3(S?S.control:0)}</b>, which is no better than chance. The genuine description does better than the text-only one by <b>${sgn(S?S.delta:0)}</b>, which means about ${sAct} percent of what the genuine description recovers could not have come from the surrounding text alone. The genuine description wins at <b>${esc(S?S.win:'n/a')}</b> of the positions, and its advantage is largest in <b>${esc(topGF)}</b> text. ${satPct>50?`A plain cosine hid all of this, showing a gap of only ${sgn(s.mean_delta)} with the control as high as ${f3(s.control)}, because most of that score came from the one or two oversized coordinates.`:``}</div>
+      </section>
+
+      ${explainer}
+      ${metricSec}
+
+      <section class="panel"><h2><span class="secnum">4</span>Every score side by side <span class="sub2">standardized cosine is the one we rely on; the rest are for reference</span></h2>
+        <table class="gtable full"><tr><th>rebuilt from</th><th>standardized cosine</th><th></th><th>standardized R squared</th><th class="muted">plain cosine</th><th class="muted">mean sq. error</th><th class="muted">variance explained</th></tr>${hrows}</table>
+        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">For all of these except mean squared error, higher is better. Standardized cosine is the score to read; the others are shown so you can see they tell a consistent story once the oversized coordinates are removed.</p>
+      </section>
+
+      ${statsSec}
+      ${npSec}
+      ${injSec}
+
+      <section class="panel"><h2><span class="secnum">8</span>Pipeline checks <span class="sub2">${gv?'both must pass before the numbers mean anything':'sanity checks; descriptions generated locally, with the outside check in section 6'}</span></h2>
+        <div class="row" style="gap:34px; align-items:flex-start">${gateCards.join("")}</div>
+        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">${gateNote}</p>
+      </section>
+
+      <section class="panel"><h2><span class="secnum">9</span>By how hard the position is to rebuild <span class="sub2">positions grouped by their original cosine; a lower group means a harder position</span></h2>
+        <table class="gtable full"><tr><th>difficulty group</th><th>positions</th><th>genuine</th><th>text-only</th><th>gap (genuine minus text-only)</th><th class="muted">plain cosine, genuine / text-only</th></tr>${brows}</table>
+        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">The gap tends to be widest where the position is hardest to rebuild, and it narrows where rebuilding is easy because the surrounding text already gives most of the answer.</p>
+      </section>
+
+      <section class="panel"><h2><span class="secnum">10</span>By kind of text <span class="sub2">where the vector matters most, and where the surrounding text already tells the story</span></h2>
+        <table class="gtable full"><tr><th>kind of text</th><th>positions</th><th>genuine</th><th>text-only</th><th>gap (genuine minus text-only)</th><th class="muted">plain cosine, genuine / text-only (gap)</th></tr>${grows}</table>
+      </section>
+
+      <section class="panel"><h2><span class="secnum">11</span>How the gap varies across positions <span class="sub2">the genuine-minus-text-only gap, position by position</span></h2>
+        <div class="stats">
+          <div class="metric">${sgn(fveStats.min)}<small>smallest</small></div>
+          <div class="metric">${sgn(fveStats.p10)}<small>10th percentile</small></div>
+          <div class="metric">${sgn(fveStats.median)}<small>middle</small></div>
+          <div class="metric">${sgn(fveStats.p90)}<small>90th percentile</small></div>
+          <div class="metric" style="color:var(--green-d)">${sgn(fveStats.max)}<small>largest</small></div>
+          <div class="metric" style="color:var(--red)">${fveStats.neg}/${s.n}<small>positions where text-only wins</small></div>
+        </div>
+        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">The mismatched control sits at about ${f3(S?S.control:0)} here, no better than chance, which confirms there is no leftover distortion. For reference, with a plain cosine the middle gap is ${sgn(d.median)} and the largest is ${sgn(d.max)}.${satPct>50?` Those plain-cosine gaps were squashed by the one or two oversized coordinates. The standardized gap, with a middle of ${sgn(fveStats.median)} and a largest of ${sgn(fveStats.max)}, shows the true size.`:``}</p>
+      </section>
+
+      ${caveatSec}
+      ${citeSec}
+
+      <section class="panel"><h2><span class="secnum">14</span>Every position <span class="sub2">all ${s.n} positions, with the genuine and text-only descriptions and their scores</span></h2>
+        <div class="row" style="margin-bottom:8px">
+          <label class="fld">kind of text</label><select id="aaGenre"><option value="">all</option>${[...new Set(m.rows.map(r=>r.theme))].sort().map(t=>`<option>${esc(t)}</option>`).join("")}</select>
+          <label class="fld">sort by</label><select id="aaSort">
+            <option value="fdelta_desc">biggest gap first (vector matters most)</option>
+            <option value="fdelta_asc">smallest gap first (text-only wins)</option>
+            <option value="freal_desc">genuine score, high to low</option>
+            <option value="freal_asc">genuine score, low to high</option>
+            <option value="delta_desc">plain-cosine gap, high to low</option>
+            <option value="pos">position order</option></select>
+          <span class="muted" style="font-size:0.82rem">The colored chips show the standardized-cosine scores. The plain cosine is shown in small grey text for reference.</span>
+        </div>
+        <div id="aaRows"></div>
+      </section>`;
+
+    const gsel = $("aaGenre"), ssel = $("aaSort");
+    function renderRows(){
+      const gg = gsel.value, so = ssel.value;
+      const cmp = {fdelta_desc:(a,b)=>(b.std_delta??-9)-(a.std_delta??-9), fdelta_asc:(a,b)=>(a.std_delta??9)-(b.std_delta??9),
+        freal_desc:(a,b)=>(b.std_real??-9)-(a.std_real??-9), freal_asc:(a,b)=>(a.std_real??9)-(b.std_real??9),
+        delta_desc:(a,b)=>b.delta-a.delta,
+        pos:(a,b)=>a.position-b.position}[so] || ((a,b)=>(b.std_delta??-9)-(a.std_delta??-9));
+      const rs = m.rows.filter(r=>!gg||r.theme===gg).slice().sort(cmp);
+      $("aaRows").innerHTML = rs.map(r=>{
+        const fdp = (r.std_delta||0)>=0?"pos":"neg";
+        return `<div class="iter aa-pair"><div class="top">
+          <span class="rnd">${esc(r.theme)}</span><span class="badge">pos ${r.position}</span>
+          ${r.token?`<span class="badge">tok <code>${showTok(r.token)}</code></span>`:""}
+          ${r.std_real!=null?`<span class="pill" style="background:${fidFcol(r.std_real)};color:#fff">genuine ${f3(r.std_real)}</span>
+          <span class="pill" style="background:${fidFcol(r.std_mimic)};color:#fff">text-only ${f3(r.std_mimic)}</span>
+          <span class="pill" style="background:${fidFcol(r.std_control)};color:#fff;opacity:.7">control ${f3(r.std_control)}</span>
+          <span class="pill delta ${fdp}">gap ${sgn(r.std_delta)}</span>`:""}
+          <span class="muted" style="font-size:0.78rem">plain cosine ${f3(r.cos_real)} / ${f3(r.cos_mimic)} / ${f3(r.cos_control)}, original ${f3(r.cosine_stored)}</span></div>
+        ${r.prefix?`<details style="margin-top:6px"><summary>show the surrounding text (the highlighted token is the one the description was written about)</summary><pre class="src">${ctxHL(r.prefix, r.llama_token||r.token)}</pre></details>`:""}
+        <div class="cmp">
+          <div class="cmpcol nla"><h4>Genuine description (written from the vector)</h4><div class="cmpbox">${esc(r.real_text)}</div></div>
+          <div class="cmpcol mimic"><h4>Text-only description (no vector)</h4><div class="cmpbox">${esc(r.mimic_text)}</div></div></div></div>`;
+      }).join("") || "<p class='muted'>none</p>";
+    }
+    gsel.onchange = renderRows; ssel.onchange = renderRows; renderRows();
+  }
+  $("aaModel").onchange = (e)=> render(parseInt(e.target.value,10));
+  render(0);
+}
+
+bootBrowser();
+bootActAudit();
+bootCalibLite(window.CALIB_v2_3, "calibBody_v23", "v2_3");
+bootCalib(window.CALIB_v2, "calibBody_v2", "v2");
+bootCalib(window.CALIB_v1_1, "calibBody_v11", "v11");
+bootRefine();
+</script>
+</body>
+</html>
