@@ -388,7 +388,7 @@ function bootRefine(){
     if(a==null) return ["", ""];
     if(Math.abs(a-0.5)<0.1) return ["good","Mimic is ~indistinguishable from the real NLA on held-out genres: the discriminator is near chance. Success."];
     if(a>0.5) return ["bad",`Mimic is still distinguishable (discriminator beats chance at ${pct(a)}): it does not yet match the real NLA style closely enough.`];
-    return ["bad",`Discriminator is BELOW chance (${pct(a)}): it systematically labels the MIMIC as the real NLA. The mimic has overshot into caricature. It looks more exaggeratedly NLA-like (repetition, mid-word cuts, confabulation) than the genuine, comparatively coherent Llama reads. The goal is to land as close to 50% as possible, from either side.`];
+    return ["bad",`Discriminator is below chance (${pct(a)}): it systematically labels the mimic as the real NLA. The mimic has overshot into caricature. It appears more exaggeratedly NLA-like (repetition, mid-word cuts, confabulation) than the genuine, comparatively coherent Llama reads. The objective is to land as close to 50% as possible, from either side.`];
   }
   const [vCls, vMsg] = verdictText(m.eval_overall_acc);
   const evalBand = accBand(m.eval_overall_acc);
@@ -557,9 +557,9 @@ function bootCalib(C, bodyId, pfx){
 
     <section class="panel"><h2>Axis 1: what is recoverable from text alone <span class="sub2">${ax.total_claims} atomic claims</span></h2>
       <p class="muted" style="font-size:0.84rem;margin:0 0 10px">Each real NLA read is broken into atomic claims. Each claim is labelled for whether the text supports it and whether the text-only mimic also makes it. Only claims that are <b>neither in the text nor in the mimic</b> can be content that came genuinely from the vector.</p>
-      <table class="gtable" style="margin-bottom:10px"><tr><th></th><th>in mimic</th><th>NOT in mimic</th></tr>
+      <table class="gtable" style="margin-bottom:10px"><tr><th></th><th>in mimic</th><th>not in mimic</th></tr>
         <tr><th>in text</th><td>${g.pos_pos} <span class="muted">trivially recoverable</span></td><td>${g.pos_neg} <span class="muted">mimic recall gap</span></td></tr>
-        <tr><th>NOT in text</th><td>${g.neg_pos} <span class="muted">shared guess or confabulation</span></td><td style="background:#f3ece0"><b>${g.neg_neg}</b> <span class="muted">vector-only candidates</span></td></tr></table>
+        <tr><th>not in text</th><td>${g.neg_pos} <span class="muted">shared guess or confabulation</span></td><td style="background:#f3ece0"><b>${g.neg_neg}</b> <span class="muted">vector-only candidates</span></td></tr></table>
       <div class="cmp">
         <div><h4 style="margin:0 0 4px;font-size:0.8rem;color:var(--mut)">derivable by category</h4>
           <table class="gtable"><tr><th>category</th><th>n</th><th>derivable</th></tr>${catRows}</table></div>
@@ -748,25 +748,25 @@ function bootActAudit(){
 
   function render(mi){
     const m = models[mi], s = m.summary, g = m.gates, d = m.dist;
-    $("aaModelSub").textContent = `Model studied: ${m.meta.base}. Rebuilding helper: ${m.meta.ar}. ${m.meta.d_model} coordinates per vector.${m.meta.date?" Run "+m.meta.date+".":""}`;
+    $("aaModelSub").textContent = `Model under study: ${m.meta.base}. Reconstruction model: ${m.meta.ar}. ${m.meta.d_model} coordinates per vector.${m.meta.date?" Run "+m.meta.date+".":""}`;
     const ratio = s.real ? s.mimic/s.real : 0;
     const topG = (m.genres[0]||{}).theme || "";
     const dColHead = s.mean_delta>=0?"var(--green-d)":"var(--red)";
 
     const gv = g.validation, gi = g.injection;
-    const gateCards = [`<div class="metric" style="color:var(--green-d)">${g.alignment.match}/${g.alignment.n}<small>${gv?'positions that line up with the saved data':'positions placed at the right spot in the text'}</small></div>`];
+    const gateCards = [`<div class="metric" style="color:var(--green-d)">${g.alignment.match}/${g.alignment.n}<small>${gv?'positions that align with the saved data':'positions placed at the correct location in the text'}</small></div>`];
     if(gv){
-      gateCards.push(`<div class="metric">${f3(gv.pearson)}<small>agreement between our scores and the saved ones (1 is perfect)</small></div>`);
+      gateCards.push(`<div class="metric">${f3(gv.pearson)}<small>agreement between the present scores and the saved ones (1 is perfect)</small></div>`);
       gateCards.push(`<div class="metric">${gv.mean_abs_err}<small>average difference from the saved scores (largest ${gv.max_abs_err})</small></div>`);
     }
     if(gi){
-      gateCards.push(`<div class="metric" style="color:${gi.cjk?'var(--red)':'var(--green-d)'}">${gi.n-gi.cjk}/${gi.n}<small>descriptions that came out clean (no random Chinese characters)</small></div>`);
+      gateCards.push(`<div class="metric" style="color:${gi.cjk?'var(--red)':'var(--green-d)'}">${gi.n-gi.cjk}/${gi.n}<small>descriptions free of corruption (no Chinese characters at random)</small></div>`);
       if(gi.noexp!=null) gateCards.push(`<div class="metric">${gi.noexp}/${gi.n}<small>descriptions missing the expected tags</small></div>`);
     }
-    if(g.difficulty_corr!=null) gateCards.push(`<div class="metric">${f3(g.difficulty_corr)}<small>how well hard-for-Llama positions are also hard here</small></div>`);
+    if(g.difficulty_corr!=null) gateCards.push(`<div class="metric">${f3(g.difficulty_corr)}<small>agreement on which positions are difficult, between Llama and this model</small></div>`);
     const gateNote = gv
-      ? "The first check confirms that our positions line up with the saved data. The second confirms that our scoring reproduces the scores recorded by the hosted service, using the same vectors, helper, and text. When both pass, the numbers on this page can be trusted."
-      : "For this model the descriptions were generated here rather than taken from a hosted service, so there is no saved score to compare against inside this step (the outside comparison is done separately in section 6). Instead, three sanity checks apply. The first places every position at the same point in the text as the Llama run. The second confirms the model actually read the inserted vector, since a failed insertion makes it produce random Chinese characters. The third confirms that positions which are hard for Llama are also hard here.";
+      ? "The first check confirms that the positions align with the saved data. The second confirms that the scoring here reproduces the scores recorded by the hosted service, using the same vectors, reconstruction model, and text. When both pass, the numbers on this page can be trusted."
+      : "For this model the descriptions were generated here rather than obtained from a hosted service, so there is no saved score to compare against at this step (the external comparison is performed separately in section 6). Three consistency checks apply instead. The first places every position at the same point in the text as the Llama run. The second confirms that the model actually read the inserted vector, since a failed insertion causes it to produce Chinese characters at random. The third confirms that positions which are difficult for Llama are also difficult here.";
 
     const S = m.std, F = m.fve;
     const satPct = F ? Math.round(F.norm_share*100) : 0;
@@ -778,31 +778,31 @@ function bootActAudit(){
     const stdCards = S ? `<div class="aa-head">
       <div class="aa-card real"><div class="v">${f3(S.real)}</div><div class="l">standardized cosine, genuine description</div></div>
       <div class="aa-card mimic"><div class="v">${f3(S.mimic)}</div><div class="l">standardized cosine, text-only description</div></div>
-      <div class="aa-card ctl"><div class="v">${f3(S.control)}</div><div class="l">standardized cosine, mismatched control (about 0 means chance)</div></div>
-      <div class="aa-card delta"><div class="v" style="color:${sColHead}">${sgn(S.delta)}</div><div class="l">how much the vector adds on its own (genuine minus text-only)</div></div>
-      <div class="aa-card"><div class="v">${esc(S.win)}</div><div class="l">positions where the genuine description wins</div></div></div>` : "";
+      <div class="aa-card ctl"><div class="v">${f3(S.control)}</div><div class="l">standardized cosine, mismatched control (approximately 0 indicates chance)</div></div>
+      <div class="aa-card delta"><div class="v" style="color:${sColHead}">${sgn(S.delta)}</div><div class="l">the vector's own contribution (genuine minus text-only)</div></div>
+      <div class="aa-card"><div class="v">${esc(S.win)}</div><div class="l">positions at which the genuine description is more accurate</div></div></div>` : "";
     // reference row: plain cosine (often saturated), variance explained, standardized R squared
     const cards = `<div class="aa-head aa-sub">
-      <div class="aa-card real"><div class="v">${f3(s.real)}</div><div class="l">plain cosine, genuine (misleadingly high here)</div></div>
-      <div class="aa-card mimic"><div class="v">${f3(s.mimic)}</div><div class="l">plain cosine, text-only</div></div>
-      <div class="aa-card ctl"><div class="v">${f3(s.control)}</div><div class="l">plain cosine, mismatched control</div></div>
+      <div class="aa-card real"><div class="v">${f3(s.real)}</div><div class="l">uncorrected cosine, genuine (misleadingly high here)</div></div>
+      <div class="aa-card mimic"><div class="v">${f3(s.mimic)}</div><div class="l">uncorrected cosine, text-only</div></div>
+      <div class="aa-card ctl"><div class="v">${f3(s.control)}</div><div class="l">uncorrected cosine, mismatched control</div></div>
       <div class="aa-card"><div class="v">${F?f3(F.real):'n/a'}</div><div class="l">fraction of variance explained, genuine</div></div>
       <div class="aa-card"><div class="v">${S?f3(S.r2_real):'n/a'}</div><div class="l">standardized R squared, genuine</div></div></div>`;
     const satNote = F && F.norm_share>0.5
-      ? `<b style="color:var(--amber)">For ${esc(m.label)}, the internal vectors are very lopsided. About ${satPct} percent of a typical vector's size comes from just one or two oversized coordinates.</b> Because those coordinates are nearly the same at every position, a plain cosine stays close to 1 for almost any description, and even a mismatched control scores ${f3(s.control)}. After we standardize those coordinates away, the control drops to <b>${S?f3(S.control):'about 0'}</b>, which is no better than chance, while the genuine description still scores <b>${S?f3(S.real):'about 0.85'}</b>.`
-      : (S ? `For ${esc(m.label)}, the internal vectors are fairly evenly spread. Only about ${satPct} percent of a typical vector's size comes from the shared part, so a plain cosine is already informative here. Standardizing gives the same picture: the mismatched control stays near chance at ${f3(S.control)} and the genuine description scores ${f3(S.real)}.` : "");
+      ? `<b style="color:var(--amber)">For ${esc(m.label)}, the internal vectors are highly concentrated. Approximately ${satPct} percent of a typical vector's magnitude comes from only one or two dominant coordinates.</b> Because those coordinates are nearly identical at every position, an uncorrected cosine remains close to 1 for almost any description, and even a mismatched control scores ${f3(s.control)}. After those coordinates are standardized away, the control falls to <b>${S?f3(S.control):'about 0'}</b>, no better than chance, while the genuine description still scores <b>${S?f3(S.real):'about 0.85'}</b>.`
+      : (S ? `For ${esc(m.label)}, the internal vectors are comparatively evenly distributed. Only about ${satPct} percent of a typical vector's magnitude comes from the shared direction, so an uncorrected cosine is already informative here. Standardization yields the same picture: the mismatched control remains near chance at ${f3(S.control)} and the genuine description scores ${f3(S.real)}.` : "");
     const explainer = S ? `<section class="panel" style="border-left:3px solid var(--amber)">
-        <h2>How the score works: standardized cosine <span class="sub2">put every coordinate on equal footing first</span></h2>
+        <h2>How the score works: standardized cosine <span class="sub2">placing every coordinate on an equal footing</span></h2>
         <div class="prose">
-          <p>Each rebuilt vector and each original vector is a long list of numbers, one per coordinate (this model has ${m.meta.d_model} of them). The usual way to compare two such vectors is <b>cosine similarity</b>, which measures whether they point in the same direction. It is 1 when they point exactly the same way, 0 when they are unrelated, and negative when they point in opposite directions.</p>
-          <p>The trouble is that a few coordinates of these vectors are far larger than all the others and barely change from one position to the next. Cosine adds up the contribution of every coordinate, so those few giant coordinates dominate the total and the result sits close to 1 for almost any pair, even a mismatched one. The numbers are correct, but they stop telling us whether the content actually matches.</p>
-          <p>Standardizing fixes this by rescaling every coordinate to the same footing before comparing. For each coordinate <i>i</i> we measure its average and its spread across all the original vectors, then replace each value by how many standard deviations it sits above or below that average:</p>
+          <p>Each reconstructed vector and each original vector is a high-dimensional vector with one number per coordinate (this model has ${m.meta.d_model} of them). The standard way to compare two such vectors is <b>cosine similarity</b>, which measures whether they point in the same direction. It equals 1 when they point in exactly the same direction, 0 when they are unrelated, and a negative value when they point in opposite directions.</p>
+          <p>The difficulty is that a few coordinates of these vectors are far larger than the rest and change very little from one position to the next. Cosine combines the contribution of every coordinate, so these few dominant coordinates control the total, and the result remains close to 1 for almost any pair of vectors, including a mismatched one. The values are correct, but they no longer indicate whether the content actually matches.</p>
+          <p>Standardization addresses this by rescaling every coordinate to a common footing before the comparison. For each coordinate <i>i</i>, its mean and its standard deviation are measured across all the original vectors, and each value is then replaced by the number of standard deviations it lies above or below the mean:</p>
           <div class="formula">z<sub>i</sub> = ( x<sub>i</sub> &minus; &mu;<sub>i</sub> ) &divide; &sigma;<sub>i</sub></div>
-          <p>Here x<sub>i</sub> is the original value of coordinate <i>i</i>, &mu;<sub>i</sub> is the average of that coordinate across all positions, and &sigma;<sub>i</sub> is its standard deviation, meaning how much it varies. Subtracting the average removes the constant part of the giant coordinates, and dividing by the spread means a coordinate that swings widely no longer counts for more than one that barely moves. The standardized score is then just the ordinary cosine of the two rescaled vectors:</p>
-          <div class="formula">standardized cosine = cos( z(rebuilt vector), z(original vector) )</div>
-          <p>This is the standard way to handle the problem (Timkey and van Schijndel, 2021). It gives a fair test, because a mismatched control now scores about 0, which is what an unrelated pair should score. Plain cosine, mean squared error, and the fraction of variance explained are kept alongside it only as familiar points of reference.</p>
+          <p>Here x<sub>i</sub> is the original value of coordinate <i>i</i>, &mu;<sub>i</sub> is the mean of that coordinate across all positions, and &sigma;<sub>i</sub> is its standard deviation, a measure of how much it varies. Subtracting the mean removes the nearly constant component of the dominant coordinates, and dividing by the standard deviation ensures that a coordinate which varies widely no longer counts for more than one that varies little. The standardized score is then the ordinary cosine of the two rescaled vectors:</p>
+          <div class="formula">standardized cosine = cos( z(reconstructed vector), z(original vector) )</div>
+          <p>This is the standard approach to the problem (Timkey and van Schijndel, 2021). It provides a fair test, because a mismatched control now scores approximately 0, the value expected of an unrelated pair. Uncorrected cosine, mean squared error, and the fraction of variance explained are retained alongside it only as familiar points of reference.</p>
           <p>${satNote}</p>
-          <p class="muted" style="font-size:0.84rem">We also checked this against the publicly hosted copy of Gemma-3-27B on Neuronpedia. It returns the same near-identical plain cosines (a median of 0.99, with 95 percent of them above 0.95) and the same vector lengths we measured. So the plain cosines are correct, they are just uninformative on their own. Standardizing is what separates a genuine rebuild from the baseline created by those few giant coordinates.</p>
+          <p class="muted" style="font-size:0.84rem">This was also checked against the publicly hosted copy of Gemma-3-27B on Neuronpedia, which returns the same near-identical uncorrected cosines (a median of 0.99, with 95 percent above 0.95) and the same vector lengths measured here. The uncorrected cosines are therefore correct; they are simply uninformative in isolation. Standardization is what distinguishes a genuine reconstruction from the baseline produced by those few dominant coordinates.</p>
         </div>
       </section>` : "";
 
@@ -836,31 +836,31 @@ function bootActAudit(){
     // §1: plain-English statement of what is measured
     const overviewSec = `<section class="panel"><h2><span class="secnum">1</span>What this measures <span class="sub2">the question, the three models, the three comparisons</span></h2>
       <div class="prose">
-        ${SU.abstract?`<div class="callout ok"><span class="ch">In one paragraph</span>${esc(SU.abstract)}</div>`:""}
-        <p style="margin-top:10px">As a model reads text, it builds an internal vector of numbers at every position, summarizing what it has understood so far. A natural-language autoencoder is a pair of helper models that work with these vectors. The first helper reads one internal vector and writes a short description of what it seems to represent. The second helper reads that description and tries to rebuild the original vector from the words alone. If the rebuilt vector points in the same direction as the original, the description captured the vector well.</p>
-        <p>This page asks a sharper question. When the first helper writes its description, how much of it actually came from the internal vector, and how much could a careful reader have guessed from the surrounding text on its own? To find out, at every position we rebuild the original vector from three different descriptions and measure how close each rebuild comes:</p>
+        ${SU.abstract?`<div class="callout ok"><span class="ch">Summary</span>${esc(SU.abstract)}</div>`:""}
+        <p style="margin-top:10px">As a language model processes text, it maintains at each position an internal vector of numbers that represents what it has read so far. A natural-language autoencoder is a pair of auxiliary models built around these vectors. The first reads a single internal vector and produces a short description of what that vector appears to represent. The second reads the description and reconstructs the original vector from the words alone. When the reconstructed vector points in the same direction as the original, the description has captured the vector accurately.</p>
+        <p>The present analysis poses a more specific question. When the first model writes its description, how much of the content originates in the internal vector, and how much could be inferred from the surrounding text alone? To answer this, at each position the original vector is reconstructed from three different descriptions, and the accuracy of each reconstruction is measured.</p>
         <ul>
-          <li>The <b style="color:var(--green-d)">genuine description</b> is the one the first helper wrote after reading the actual vector.</li>
-          <li>The <b style="color:var(--amber)">text-only description</b> is written by a strong separate model (Claude Opus 4.8) that is shown the same passage but not the vector, and is asked to write in the same style. This stands for what the surrounding text alone suggests.</li>
-          <li>The <b style="color:var(--red)">mismatched control</b> is a description borrowed from a different position. This is the wrong-answer floor.</li>
+          <li>The <b style="color:var(--green-d)">genuine description</b> is the description the first model produced after reading the actual vector.</li>
+          <li>The <b style="color:var(--amber)">text-only description</b> is produced by a separate, capable model (Claude Opus 4.8) that is given the same passage but not the vector, and is instructed to write in the same style. It represents what the surrounding text alone implies.</li>
+          <li>The <b style="color:var(--red)">mismatched control</b> is a description taken from an unrelated position. It establishes the score expected of a description that does not correspond to the vector.</li>
         </ul>
-        <p>The quantity we care about is how much better the genuine description rebuilds the vector than the text-only description does. If the two are about equal, the vector added nothing that the text did not already give away. If the genuine description is clearly better, the vector carried specific information that a text-only reader could not have known. (One technical note: the two scores often quoted for this kind of rebuild, cosine similarity and mean squared error, are not independent here. Because both vectors are first rescaled to the same length, mean squared error always equals two times one minus the cosine. So we report cosine and show mean squared error only as a familiar reference.)</p>
+        <p>The quantity of interest is the extent to which the genuine description reconstructs the vector more accurately than the text-only description does. If the two are comparable, the vector contributed nothing beyond what the text already determined. If the genuine description is clearly more accurate, the vector carried specific information that was not available from the text alone. Two measures are commonly reported for reconstructions of this kind, cosine similarity and mean squared error, but they are not independent here: because both vectors are first rescaled to a common length, the mean squared error always equals two times one minus the cosine. Cosine is therefore reported as the primary measure, and mean squared error is included only as a familiar reference.</p>
       </div>
     </section>`;
 
     // §2: design + per-model configuration + the mimic baseline
-    const designSec = `<section class="panel"><h2><span class="secnum">2</span>How the test is set up <span class="sub2">keep everything fixed, change only the model</span></h2>
+    const designSec = `<section class="panel"><h2><span class="secnum">2</span>How the test is set up <span class="sub2">all conditions held fixed except the model under study</span></h2>
       <div class="prose">
-        <p>To compare the four models fairly, we keep everything else the same and change only the model. Every model is tested on the <b>same ${s.n} positions across ${nGenres} kinds of text</b>, drawn from the same documents, at the same places in those documents (lined up again for each model, since they split text into tokens differently), and against the same text-only descriptions. The table below lists the settings used for the model shown.</p>
+        <p>To compare the four models fairly, all conditions are held fixed except the model under study. Each model is evaluated on the <b>same ${s.n} positions across ${nGenres} categories of text</b>, drawn from the same documents at the same locations within them (realigned for each model, since the models segment text into tokens differently), and against the same text-only descriptions. The table below lists the configuration for the model currently selected.</p>
         <table class="dossier" style="max-width:48rem">
-          <tr><td class="k">model being studied</td><td>${esc(m.meta.base)}</td></tr>
-          <tr><td class="k">helper that rebuilds the vector</td><td>${esc(m.meta.ar)}</td></tr>
-          <tr><td class="k">layer we read from</td><td>layer ${m.meta.layer}${D0.depth?` &nbsp;<span class="muted">(${esc(D0.depth)}, about two thirds of the way through the model)</span>`:""}</td></tr>
+          <tr><td class="k">model under study</td><td>${esc(m.meta.base)}</td></tr>
+          <tr><td class="k">model that reconstructs the vector</td><td>${esc(m.meta.ar)}</td></tr>
+          <tr><td class="k">layer read from</td><td>layer ${m.meta.layer}${D0.depth?` &nbsp;<span class="muted">(${esc(D0.depth)}, about two thirds of the way through the model)</span>`:""}</td></tr>
           <tr><td class="k">number of coordinates per vector</td><td>${m.meta.d_model} &nbsp;<span class="muted">(rescaled to length ${f3(m.meta.mse_scale)} before scoring, which is the square root of the number of coordinates)</span></td></tr>
-          <tr><td class="k">size the inserted vector is set to</td><td>${D0.injection_scale!=null?D0.injection_scale:"n/a"} &nbsp;<span class="muted">(taken from the model's own settings, not chosen by us)</span></td></tr>
-          <tr><td class="k">where the genuine descriptions come from</td><td>${esc(D0.reads_source||"n/a")}</td></tr>
+          <tr><td class="k">length the inserted vector is set to</td><td>${D0.injection_scale!=null?D0.injection_scale:"n/a"} &nbsp;<span class="muted">(taken from the model's own configuration, not chosen for this analysis)</span></td></tr>
+          <tr><td class="k">source of the genuine descriptions</td><td>${esc(D0.reads_source||"n/a")}</td></tr>
         </table>
-        ${MIM.note?`<div class="callout warn"><span class="ch">Why the text-only comparison is fair, and a hard test to beat</span>${esc(MIM.note)}</div>`:""}
+        ${MIM.note?`<div class="callout warn"><span class="ch">Why the text-only comparison is fair, and why it is demanding</span>${esc(MIM.note)}</div>`:""}
       </div>
     </section>`;
 
@@ -870,14 +870,14 @@ function bootActAudit(){
       const me = x.key===m.key ? ' class="me"' : '';
       return `<tr${me}><td>${esc(x.label)}</td><td class="num">${g.norm||'n/a'}</td><td class="num">${g.hbar2!=null?f3(g.hbar2):'n/a'}</td><td class="num">${g.D!=null?f3(g.D):'n/a'}</td><td>${esc(rg.desc||'n/a')}</td><td class="num">${g.pw_raw!=null?f3(g.pw_raw):'n/a'} → ${g.pw_cen!=null?f3(g.pw_cen):'n/a'} → <b>${g.pw_std!=null?f3(g.pw_std):'n/a'}</b></td></tr>`;
     }).join("");
-    const metricSec = `<section class="panel"><h2><span class="secnum">3b</span>Why a plain cosine is misleading here, and how we fix it <span class="sub2">the shape of the internal vectors, for all four models</span></h2>
+    const metricSec = `<section class="panel"><h2><span class="secnum">3b</span>Why an uncorrected cosine is misleading here, and how it is corrected <span class="sub2">the shape of the internal vectors, for all four models</span></h2>
       <div class="prose">
-        <p>It helps to picture each vector as an arrow. If the arrows point in many different directions, cosine tells you something useful about whether two of them agree. But if one or two coordinates are enormous and stay almost the same at every position, every arrow is pulled toward one shared direction, and any two arrows then look almost parallel. In that case even a wrong rebuild scores high. For <b>${esc(m.label)}</b>, about ${satPct} percent of a typical vector points in that one shared direction, ${satPct>50?'which is enough to make a plain cosine almost useless here':'which is low enough that a plain cosine is already informative here'}. The fix is to standardize each coordinate, putting them all on equal footing as described above. Once we do that, two unrelated vectors score close to 0, which is what they should score.</p>
+        <p>Cosine similarity is informative when the vectors being compared point in genuinely different directions. It becomes unreliable when one or two coordinates take very large values that are almost the same at every position, because those coordinates pull every vector toward a single shared direction and make any two vectors appear nearly aligned. Under those conditions even an incorrect reconstruction receives a high score. For <b>${esc(m.label)}</b>, approximately ${satPct} percent of a typical vector lies along that shared direction, ${satPct>50?'which is enough to render an uncorrected cosine largely uninformative here':'which is low enough that an uncorrected cosine is already informative here'}. The correction is to standardize each coordinate, placing them all on an equal footing as described above. After standardization, two unrelated vectors score close to 0, as they should.</p>
         <table class="dossier">
-          <tr><th>model</th><th>typical vector length</th><th>share pointing the same way at every position</th><th>share that actually varies</th><th>the oversized coordinates</th><th>how similar two unrelated vectors look: plain, then after removing the average, then after standardizing</th></tr>
+          <tr><th>model</th><th>typical vector length</th><th>share aligned with the shared direction</th><th>share that varies across positions</th><th>the dominant coordinates</th><th>apparent similarity of two unrelated vectors: uncorrected, then after centering, then after standardizing</th></tr>
           ${geomRows}
         </table>
-        <p class="muted" style="font-size:0.84rem">The more of a vector that points in the one shared direction, the less is left to vary, and the more a plain cosine is pushed up toward 1 regardless of content. ${RG.desc?`For ${esc(m.label)}, the oversized coordinates are ${esc(RG.desc)}${RG.topval&&RG.topval!=='n/a'?`, with a largest value around ${esc(RG.topval)}${RG.sigma&&RG.sigma!=='n/a'?` and a typical spread of ${esc(RG.sigma)}`:''}`:''}.`:''} Two things confirm what is going on. First, a mismatched control scores about as high as the shared part is large, because it is only reproducing those constant oversized coordinates and carries no real signal of its own. Second, once those coordinates are standardized away, the mismatched control falls to chance while the genuine description still scores well. That is the decisive test shown in the headline above.</p>
+        <p class="muted" style="font-size:0.84rem">The larger the share of a vector that lies along the shared direction, the less remains to vary across positions, and the more an uncorrected cosine is driven toward 1 regardless of content. ${RG.desc?`For ${esc(m.label)}, the dominant coordinates are ${esc(RG.desc)}${RG.topval&&RG.topval!=='n/a'?`, with a largest value around ${esc(RG.topval)}${RG.sigma&&RG.sigma!=='n/a'?` and a typical spread of ${esc(RG.sigma)}`:''}`:''}.`:''} Two observations confirm the mechanism. First, a mismatched control scores about as high as the shared share is large, because it reproduces only those nearly constant dominant coordinates and carries no genuine signal of its own. Second, once those coordinates are standardized away, the mismatched control falls to chance, whereas the genuine description continues to score well. This is the decisive test reported in the headline above.</p>
       </div>
     </section>`;
 
@@ -887,49 +887,49 @@ function bootActAudit(){
       const me = x.key===m.key ? ' class="me"' : '';
       return `<tr${me}><td>${esc(x.label)}</td><td class="num">${st.delta!=null?sgn(st.delta):'n/a'}</td><td class="num">${st.win||'n/a'}</td><td class="num">${fv.dfve!=null?sgn(fv.dfve):'n/a'}</td><td class="num">${ci(bt.dfve_ci)}</td><td class="num">${fv.mse_ratio!=null?f3(fv.mse_ratio)+'×':'n/a'}</td><td class="num">${ci(bt.mse_ci)}</td><td class="num">${bt.wilcoxon||'n/a'}</td></tr>`;
     }).join("");
-    const statsSec = `<section class="panel"><h2><span class="secnum">5</span>How sure we are <span class="tag ok">result holds in every model</span><span class="sub2">a 20,000-sample bootstrap and paired tests over the ${s.n} positions</span></h2>
+    const statsSec = `<section class="panel"><h2><span class="secnum">5</span>Statistical confidence <span class="tag ok">result holds in every model</span><span class="sub2">a 20,000-sample bootstrap and paired tests over the ${s.n} positions</span></h2>
       <div class="prose">
         <p>${esc(SU.bootstrap||'')}</p>
         <table class="dossier">
           <tr><th>model</th><th>extra from the vector (standardized)</th><th>positions the genuine description wins</th><th>extra variance explained</th><th>95% range</th><th>error ratio, text-only vs genuine</th><th>95% range</th><th>significance (p)</th></tr>
           ${statRows}
         </table>
-        <p class="muted" style="font-size:0.84rem">The <b>error ratio</b> is the text-only description's rebuild error divided by the genuine description's rebuild error, so a value above 1 means the text-only rebuild was the worse of the two. This ratio, the direction of the advantage, and the count of positions the genuine description wins do not depend on the lopsided shape of the vectors, so they are the safest numbers to compare across models. The extra-variance-explained figure does depend on that shape, so we always read it together with its range rather than on its own. The significance column gives the chance of seeing an advantage this large if the vector really carried nothing extra; values this small mean that is essentially impossible.</p>
-        ${SU.mse_identity?`<div class="callout"><span class="ch">Why we quote cosine and not mean squared error</span>${esc(SU.mse_identity)}</div>`:""}
+        <p class="muted" style="font-size:0.84rem">The <b>error ratio</b> is the text-only description's reconstruction error divided by the genuine description's reconstruction error, so a value above 1 indicates that the text-only reconstruction was the less accurate of the two. This ratio, the direction of the advantage, and the number of positions at which the genuine description is more accurate do not depend on the concentrated shape of the vectors, so they are the most reliable quantities to compare across models. The extra-variance-explained figure does depend on that shape, so it is always read together with its confidence interval rather than in isolation. The significance column gives the probability of observing an advantage this large if the vector in fact carried no additional information; values this small indicate that this is effectively impossible.</p>
+        ${SU.mse_identity?`<div class="callout"><span class="ch">Why cosine is reported and not mean squared error</span>${esc(SU.mse_identity)}</div>`:""}
       </div>
     </section>`;
 
     // §6: external validation against the live hosted NLA
     const npTag = NP.hosted ? (NP.kind==='external'?'<span class="tag ext">publicly hosted</span>':'<span class="tag ext">partial check</span>') : '<span class="tag warn">not hosted publicly</span>';
-    const npSec = `<section class="panel"><h2><span class="secnum">6</span>Checking against a public copy of the model ${npTag}<span class="sub2">does Neuronpedia's hosted copy agree with our numbers?</span></h2>
+    const npSec = `<section class="panel"><h2><span class="secnum">6</span>External validation against a public copy of the model ${npTag}<span class="sub2">agreement between the present numbers and Neuronpedia's hosted copy</span></h2>
       <div class="prose">
         ${NP.cos_np!=null?`<div class="aa-head aa-sub" style="opacity:1;margin-bottom:8px">
-          <div class="aa-card"><div class="v">${f3(NP.cos_ours)}</div><div class="l">our cosine</div></div>
+          <div class="aa-card"><div class="v">${f3(NP.cos_ours)}</div><div class="l">cosine computed here</div></div>
           <div class="aa-card"><div class="v">${f3(NP.cos_np)}</div><div class="l">Neuronpedia's cosine</div></div>
-          ${NP.np_dist?`<div class="aa-card"><div class="v">${NP.np_dist.n}</div><div class="l">positions checked on Neuronpedia (${NP.np_dist.genres} kinds of text)</div></div>
-          <div class="aa-card"><div class="v">${Math.round(NP.np_dist.frac95*100)}%</div><div class="l">of Neuronpedia's cosines above 0.95 (the same pattern we see)</div></div>`:''}
+          ${NP.np_dist?`<div class="aa-card"><div class="v">${NP.np_dist.n}</div><div class="l">positions checked on Neuronpedia (${NP.np_dist.genres} categories of text)</div></div>
+          <div class="aa-card"><div class="v">${Math.round(NP.np_dist.frac95*100)}%</div><div class="l">of Neuronpedia's cosines above 0.95 (the same pattern observed here)</div></div>`:''}
         </div>`:''}
         <p>${esc(NP.note||'')}</p>
-        ${NP.norm_field!=null?`<p class="muted" style="font-size:0.84rem">Neuronpedia also reports its own measure of how spread out this model's vectors are (${f3(NP.norm_field)}), and it is close to the value we computed independently (${f3(NP.our_D)}). This is more confirmation that the unusual cosines come from the shape of the vectors and not from a mistake on our side.</p>`:''}
+        ${NP.norm_field!=null?`<p class="muted" style="font-size:0.84rem">Neuronpedia also reports its own measure of the dispersion of this model's vectors (${f3(NP.norm_field)}), which is close to the value computed independently here (${f3(NP.our_D)}). This provides further confirmation that the unusual cosines arise from the shape of the vectors and not from an error in the present analysis.</p>`:''}
       </div>
     </section>`;
 
     // §7: injection / extraction faithfulness (the locally-generated reads)
-    const injSec = `<section class="panel"><h2><span class="secnum">7</span>Are the descriptions we generated ourselves trustworthy? <span class="sub2">checking how we inserted the vector into the model</span></h2>
+    const injSec = `<section class="panel"><h2><span class="secnum">7</span>Reliability of the descriptions generated here <span class="sub2">verification of how the vector was inserted into the model</span></h2>
       <div class="prose">
         <p>${esc(SU.injection||'')}</p>
-        ${SU.smell?`<div class="callout ok"><span class="ch">A simple check for a broken setup</span>${esc(SU.smell)}${gi&&gi.cjk!=null?` For ${esc(m.label)} in particular, ${gi.n-gi.cjk} of ${gi.n} descriptions came out clean.`:''}</div>`:''}
+        ${SU.smell?`<div class="callout ok"><span class="ch">A simple diagnostic for a faulty setup</span>${esc(SU.smell)}${gi&&gi.cjk!=null?` For ${esc(m.label)} in particular, ${gi.n-gi.cjk} of ${gi.n} descriptions were free of this corruption.`:''}</div>`:''}
       </div>
     </section>`;
 
     // §12: caveats and honest verification ceilings
     const ceilItems = (SU.ceilings||[]).map(c=>`<li>${esc(c)}</li>`).join("");
-    const caveatSec = `<section class="panel"><h2><span class="secnum">12</span>Limits, and what we could not fully check <span class="sub2">the honest boundaries of this analysis</span></h2>
+    const caveatSec = `<section class="panel"><h2><span class="secnum">12</span>Limitations <span class="sub2">the boundaries of this analysis</span></h2>
       <div class="prose">
         <ul class="clist">
-          <li>Each kind of text has only four positions, the text-only descriptions were written in one fixed style and reused for every model, and we looked at a single layer in each model. So the numbers broken down by kind of text should be read as rough guides, not precise figures.</li>
-          <li>The size of the effect cannot be compared directly from one model to another, because the rebuilding helpers differ and the baselines sit at different levels. What can be compared safely is the direction of the effect, the count of positions the genuine description wins, and the order of the error ratios (Qwen at 2.27, then Gemma-3-27B at 2.07, then Gemma-3-12B at 1.89, then Llama at 1.44).</li>
-          <li>For Gemma, the fraction-of-variance-explained figure is delicate. So little of each vector actually varies that a small change in cosine moves that figure a great deal. This is exactly why we lead with standardized cosine instead, and why the Gemma figure of about 0.65 should be read as roughly medium rather than as an exact value.</li>
+          <li>Each category of text contains only four positions, the text-only descriptions were written in a single fixed style and reused for every model, and a single layer was examined in each model. The figures broken down by category of text should therefore be read as approximate rather than precise.</li>
+          <li>The magnitude of the effect cannot be compared directly across models, because the reconstruction models differ and the baselines sit at different levels. What can be compared reliably is the direction of the effect, the number of positions at which the genuine description is more accurate, and the ordering of the error ratios (Qwen at 2.27, then Gemma-3-27B at 2.07, then Gemma-3-12B at 1.89, then Llama at 1.44).</li>
+          <li>For Gemma, the fraction-of-variance-explained figure is sensitive. So little of each vector varies that a small change in cosine moves the figure substantially. This is precisely why standardized cosine is used as the primary measure, and why the Gemma figure of approximately 0.65 should be read as moderate rather than as an exact value.</li>
           ${ceilItems}
         </ul>
         ${SU.review?`<div class="callout ext"><span class="ch">Independent review</span>${esc(SU.review)}</div>`:''}
@@ -938,7 +938,7 @@ function bootActAudit(){
 
     // §13: literature the method rests on
     const citeItems = (SU.citations||[]).map(c=>`<li>${esc(c)}</li>`).join("");
-    const citeSec = SU.citations?`<section class="panel"><h2><span class="secnum">13</span>The research this builds on <span class="sub2">where the problem and the fix are documented</span></h2>
+    const citeSec = SU.citations?`<section class="panel"><h2><span class="secnum">13</span>Supporting literature <span class="sub2">where the problem and its correction are documented</span></h2>
       <ol class="citelist">${citeItems}</ol>
     </section>`:'';
 
@@ -946,37 +946,37 @@ function bootActAudit(){
       ${overviewSec}
       ${designSec}
 
-      <section class="panel"><h2><span class="secnum">3</span>Headline result <span class="sub2">${esc(m.label)}, layer ${m.meta.layer}, ${s.n} positions, scored with standardized cosine</span></h2>
+      <section class="panel"><h2><span class="secnum">3</span>Principal result <span class="sub2">${esc(m.label)}, layer ${m.meta.layer}, ${s.n} positions, scored with standardized cosine</span></h2>
         ${stdCards}
-        <div class="muted" style="font-size:0.8rem;margin:10px 0 3px">Other scores, shown only for reference: plain cosine (which is misleadingly high here), the fraction of variance explained, and standardized R squared.</div>
+        <div class="muted" style="font-size:0.8rem;margin:10px 0 3px">Additional measures, shown only for reference: the uncorrected cosine (which is misleadingly high here), the fraction of variance explained, and the standardized R squared.</div>
         ${cards}
-        <div class="verdict ${S&&S.delta>0?'good':'bad'}" style="margin-top:12px">Using standardized cosine, the genuine description rebuilds the vector at <b>${f3(S?S.real:0)}</b>, the text-only description reaches <b>${f3(S?S.mimic:0)}</b>, and a mismatched control falls to <b>${f3(S?S.control:0)}</b>, which is no better than chance. The genuine description does better than the text-only one by <b>${sgn(S?S.delta:0)}</b>, which means about ${sAct} percent of what the genuine description recovers could not have come from the surrounding text alone. The genuine description wins at <b>${esc(S?S.win:'n/a')}</b> of the positions, and its advantage is largest in <b>${esc(topGF)}</b> text. ${satPct>50?`A plain cosine hid all of this, showing a gap of only ${sgn(s.mean_delta)} with the control as high as ${f3(s.control)}, because most of that score came from the one or two oversized coordinates.`:``}</div>
+        <div class="verdict ${S&&S.delta>0?'good':'bad'}" style="margin-top:12px">Measured by standardized cosine, the genuine description reconstructs the vector at <b>${f3(S?S.real:0)}</b>, the text-only description reaches <b>${f3(S?S.mimic:0)}</b>, and a mismatched control falls to <b>${f3(S?S.control:0)}</b>, no better than chance. The genuine description exceeds the text-only description by <b>${sgn(S?S.delta:0)}</b>, which indicates that approximately ${sAct} percent of what the genuine description recovers could not have come from the surrounding text alone. The genuine description is the more accurate of the two at <b>${esc(S?S.win:'n/a')}</b> of the positions, and its advantage is largest in <b>${esc(topGF)}</b> text. ${satPct>50?`An uncorrected cosine concealed this entirely, showing an advantage of only ${sgn(s.mean_delta)} with the control as high as ${f3(s.control)}, because most of that score derived from the one or two dominant coordinates.`:``}</div>
       </section>
 
       ${explainer}
       ${metricSec}
 
-      <section class="panel"><h2><span class="secnum">4</span>Every score side by side <span class="sub2">standardized cosine is the one we rely on; the rest are for reference</span></h2>
-        <table class="gtable full"><tr><th>rebuilt from</th><th>standardized cosine</th><th></th><th>standardized R squared</th><th class="muted">plain cosine</th><th class="muted">mean sq. error</th><th class="muted">variance explained</th></tr>${hrows}</table>
-        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">For all of these except mean squared error, higher is better. Standardized cosine is the score to read; the others are shown so you can see they tell a consistent story once the oversized coordinates are removed.</p>
+      <section class="panel"><h2><span class="secnum">4</span>Every score side by side <span class="sub2">standardized cosine is the primary measure; the remainder are for reference</span></h2>
+        <table class="gtable full"><tr><th>reconstructed from</th><th>standardized cosine</th><th></th><th>standardized R squared</th><th class="muted">uncorrected cosine</th><th class="muted">mean sq. error</th><th class="muted">variance explained</th></tr>${hrows}</table>
+        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">For all of these measures except mean squared error, a higher value is better. Standardized cosine is the measure to read; the others are shown to demonstrate that the measures agree once the dominant coordinates are removed.</p>
       </section>
 
       ${statsSec}
       ${npSec}
       ${injSec}
 
-      <section class="panel"><h2><span class="secnum">8</span>Pipeline checks <span class="sub2">${gv?'both must pass before the numbers mean anything':'sanity checks; descriptions generated locally, with the outside check in section 6'}</span></h2>
+      <section class="panel"><h2><span class="secnum">8</span>Pipeline checks <span class="sub2">${gv?'both must pass before the results can be trusted':'consistency checks; descriptions generated locally, with the external check in section 6'}</span></h2>
         <div class="row" style="gap:34px; align-items:flex-start">${gateCards.join("")}</div>
         <p class="muted" style="font-size:0.84rem;margin:8px 0 0">${gateNote}</p>
       </section>
 
-      <section class="panel"><h2><span class="secnum">9</span>By how hard the position is to rebuild <span class="sub2">positions grouped by their original cosine; a lower group means a harder position</span></h2>
-        <table class="gtable full"><tr><th>difficulty group</th><th>positions</th><th>genuine</th><th>text-only</th><th>gap (genuine minus text-only)</th><th class="muted">plain cosine, genuine / text-only</th></tr>${brows}</table>
-        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">The gap tends to be widest where the position is hardest to rebuild, and it narrows where rebuilding is easy because the surrounding text already gives most of the answer.</p>
+      <section class="panel"><h2><span class="secnum">9</span>By reconstruction difficulty <span class="sub2">positions grouped by their original cosine; a lower group indicates a more difficult position</span></h2>
+        <table class="gtable full"><tr><th>difficulty group</th><th>positions</th><th>genuine</th><th>text-only</th><th>gap (genuine minus text-only)</th><th class="muted">uncorrected cosine, genuine / text-only</th></tr>${brows}</table>
+        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">The gap tends to be largest where the position is most difficult to reconstruct, and it narrows where reconstruction is easy, because the surrounding text already supplies most of the answer.</p>
       </section>
 
-      <section class="panel"><h2><span class="secnum">10</span>By kind of text <span class="sub2">where the vector matters most, and where the surrounding text already tells the story</span></h2>
-        <table class="gtable full"><tr><th>kind of text</th><th>positions</th><th>genuine</th><th>text-only</th><th>gap (genuine minus text-only)</th><th class="muted">plain cosine, genuine / text-only (gap)</th></tr>${grows}</table>
+      <section class="panel"><h2><span class="secnum">10</span>By category of text <span class="sub2">where the vector contributes most, and where the surrounding text already supplies the content</span></h2>
+        <table class="gtable full"><tr><th>category of text</th><th>positions</th><th>genuine</th><th>text-only</th><th>gap (genuine minus text-only)</th><th class="muted">uncorrected cosine, genuine / text-only (gap)</th></tr>${grows}</table>
       </section>
 
       <section class="panel"><h2><span class="secnum">11</span>How the gap varies across positions <span class="sub2">the genuine-minus-text-only gap, position by position</span></h2>
@@ -986,9 +986,9 @@ function bootActAudit(){
           <div class="metric">${sgn(fveStats.median)}<small>middle</small></div>
           <div class="metric">${sgn(fveStats.p90)}<small>90th percentile</small></div>
           <div class="metric" style="color:var(--green-d)">${sgn(fveStats.max)}<small>largest</small></div>
-          <div class="metric" style="color:var(--red)">${fveStats.neg}/${s.n}<small>positions where text-only wins</small></div>
+          <div class="metric" style="color:var(--red)">${fveStats.neg}/${s.n}<small>positions at which text-only is more accurate</small></div>
         </div>
-        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">The mismatched control sits at about ${f3(S?S.control:0)} here, no better than chance, which confirms there is no leftover distortion. For reference, with a plain cosine the middle gap is ${sgn(d.median)} and the largest is ${sgn(d.max)}.${satPct>50?` Those plain-cosine gaps were squashed by the one or two oversized coordinates. The standardized gap, with a middle of ${sgn(fveStats.median)} and a largest of ${sgn(fveStats.max)}, shows the true size.`:``}</p>
+        <p class="muted" style="font-size:0.84rem;margin:8px 0 0">The mismatched control sits at approximately ${f3(S?S.control:0)} here, no better than chance, which confirms that no residual distortion remains. For reference, with an uncorrected cosine the median gap is ${sgn(d.median)} and the largest is ${sgn(d.max)}.${satPct>50?` These uncorrected gaps were suppressed by the one or two dominant coordinates. The standardized gap, with a median of ${sgn(fveStats.median)} and a maximum of ${sgn(fveStats.max)}, reflects its true magnitude.`:``}</p>
       </section>
 
       ${caveatSec}
@@ -996,15 +996,15 @@ function bootActAudit(){
 
       <section class="panel"><h2><span class="secnum">14</span>Every position <span class="sub2">all ${s.n} positions, with the genuine and text-only descriptions and their scores</span></h2>
         <div class="row" style="margin-bottom:8px">
-          <label class="fld">kind of text</label><select id="aaGenre"><option value="">all</option>${[...new Set(m.rows.map(r=>r.theme))].sort().map(t=>`<option>${esc(t)}</option>`).join("")}</select>
+          <label class="fld">category of text</label><select id="aaGenre"><option value="">all</option>${[...new Set(m.rows.map(r=>r.theme))].sort().map(t=>`<option>${esc(t)}</option>`).join("")}</select>
           <label class="fld">sort by</label><select id="aaSort">
-            <option value="fdelta_desc">biggest gap first (vector matters most)</option>
-            <option value="fdelta_asc">smallest gap first (text-only wins)</option>
+            <option value="fdelta_desc">largest gap first (vector contributes most)</option>
+            <option value="fdelta_asc">smallest gap first (text-only more accurate)</option>
             <option value="freal_desc">genuine score, high to low</option>
             <option value="freal_asc">genuine score, low to high</option>
-            <option value="delta_desc">plain-cosine gap, high to low</option>
+            <option value="delta_desc">uncorrected-cosine gap, high to low</option>
             <option value="pos">position order</option></select>
-          <span class="muted" style="font-size:0.82rem">The colored chips show the standardized-cosine scores. The plain cosine is shown in small grey text for reference.</span>
+          <span class="muted" style="font-size:0.82rem">The colored chips show the standardized-cosine scores. The uncorrected cosine is shown in small grey text for reference.</span>
         </div>
         <div id="aaRows"></div>
       </section>`;
@@ -1026,8 +1026,8 @@ function bootActAudit(){
           <span class="pill" style="background:${fidFcol(r.std_mimic)};color:#fff">text-only ${f3(r.std_mimic)}</span>
           <span class="pill" style="background:${fidFcol(r.std_control)};color:#fff;opacity:.7">control ${f3(r.std_control)}</span>
           <span class="pill delta ${fdp}">gap ${sgn(r.std_delta)}</span>`:""}
-          <span class="muted" style="font-size:0.78rem">plain cosine ${f3(r.cos_real)} / ${f3(r.cos_mimic)} / ${f3(r.cos_control)}, original ${f3(r.cosine_stored)}</span></div>
-        ${r.prefix?`<details style="margin-top:6px"><summary>show the surrounding text (the highlighted token is the one the description was written about)</summary><pre class="src">${ctxHL(r.prefix, r.llama_token||r.token)}</pre></details>`:""}
+          <span class="muted" style="font-size:0.78rem">uncorrected cosine ${f3(r.cos_real)} / ${f3(r.cos_mimic)} / ${f3(r.cos_control)}, original ${f3(r.cosine_stored)}</span></div>
+        ${r.prefix?`<details style="margin-top:6px"><summary>show the surrounding text (the highlighted token is the one the description concerns)</summary><pre class="src">${ctxHL(r.prefix, r.llama_token||r.token)}</pre></details>`:""}
         <div class="cmp">
           <div class="cmpcol nla"><h4>Genuine description (written from the vector)</h4><div class="cmpbox">${esc(r.real_text)}</div></div>
           <div class="cmpcol mimic"><h4>Text-only description (no vector)</h4><div class="cmpbox">${esc(r.mimic_text)}</div></div></div></div>`;
