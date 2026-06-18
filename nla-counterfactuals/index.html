@@ -195,6 +195,18 @@
   .fquote{font-style:italic; color:var(--ink); background:var(--panel2); border-left:3px solid var(--line2);
     border-radius:4px; padding:8px 11px; font-size:0.88rem; line-height:1.5;}
   .fwhy{font-size:0.84rem; color:var(--mut); margin-top:8px;}
+
+  /* ── dashboard: reconstruction cosine table ── */
+  .gcard .mname{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .gcard .mid{font-weight:400; font-size:0.9rem; color:var(--mut);}
+  .fidblock{margin:0 0 18px;}
+  .fidhead{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:7px;}
+  .fidmeta{font-size:0.84rem; color:var(--mut);}
+  .fidtable{border-collapse:collapse; width:100%; max-width:580px; font-size:0.9rem;}
+  .fidtable th,.fidtable td{border:1px solid var(--line); padding:5px 11px; text-align:left;}
+  .fidtable th{background:var(--panel2); color:var(--mut); font-weight:600;}
+  .fidtable td.num{font-variant-numeric:tabular-nums; text-align:right;}
+  .sitegrid .hd.modelhd{display:flex; align-items:center;}
 </style>
 </head>
 <body>
@@ -270,104 +282,151 @@
   <!-- ════════════════════ TAB 3: cross-model dashboard ════════════════════ -->
   <div class="tabpage" id="page-dashboard">
     <section class="panel">
-      <h2>How this works</h2>
+      <h2>What this page shows</h2>
       <div class="how">
-        <p>When the NLA reads a hidden activation and writes a sentence describing it, we want to know
-          one thing: is it really reading the activation, or just paraphrasing the words next to it? The
-          reveal-early, call-back-later setup is built to tell those apart.</p>
+        <p>This page reports a single experiment, run on two language models, Gemma and Llama. The
+          experiment asks one question. When a model reads one of its own hidden states and writes a
+          sentence describing it, is that sentence really based on the hidden state, or is the model just
+          repeating the words that happen to sit next to it?</p>
+        <p>To separate those two cases, every example states a fact early and then refers back to it later
+          using a word that is the same no matter what the fact was. If the description of that later word
+          still names the early fact, the model genuinely carried the fact forward. If it does not, the
+          model was only reading the surface words.</p>
 
-        <p class="scopebar"><b>What this scores:</b> only the callback experiment (the “Callback reads”
-          tab data), across the two hosted models (gemma, llama). It does not include the authored
-          families from the first tab. Those are a separate apparatus with a different evaluation method
-          (a local base-model presence gate plus a multiple-choice grader), and none of that feeds these
-          numbers.</p>
-        <ul class="how-list">
-          <li><b>In scope:</b> the live hosted-NLA reads from the callback items (cat vs dog, Japan vs Italy, and so on).</li>
-          <li><b>Out of scope:</b> the 28 authored families in tab 1.</li>
-        </ul>
-
-        <p>Each item runs in two shapes. In <b>mid_single</b> the callback word sits in the middle of a
-          single message. In <b>multiturn</b> it is spread across a real chat: the user reveals the fact,
-          the model writes a reply (generated live), then the user refers back, which also lets us read
-          the model’s own reply.</p>
-
-        <h3>Which reads are scored</h3>
-        <p>Every callback item is run in two versions (value <b>v</b> and value <b>v′</b>), and each
-          version has a few read sites. All of them are scored and shown separately:</p>
-        <ul class="how-list">
-          <li><span class="dot" style="background:#b45309"></span><b>condition:</b> the activation at the value word itself (where the fact first appears).</li>
-          <li><span class="dot" style="background:#4a7c59"></span><b>callback:</b> the activation at the shared later word that is identical in both versions. This is the real test.</li>
-          <li><span class="dot" style="background:#3a6ea5"></span><b>assistant_ref / assistant_end:</b> points inside the model’s own generated reply (multiturn items only).</li>
-        </ul>
-        <p>The “n scored” under each bar is how many reads of that type were clear enough to score. For
-          example gemma condition is 66 (33 items × 2 versions); callback is similar; assistant sites only
-          exist for the multiturn items, so their n is smaller.</p>
-
-        <h3>How the judging works, step by step</h3>
-        <ol class="how-steps">
-          <li>For each read, the NLA already produced an <b>AV description</b>: one sentence describing the activation at that token.</li>
-          <li>We hand that description to <b>three independent LLM judges</b>. Each judge sees only the
-            description plus the two candidate values, labeled <b>option A</b> (= value v) and
-            <b>option B</b> (= value v′). They do not see the transcript, and they do not see which version
-            the read actually came from. The A/B labeling is the same for both versions, so position gives
-            nothing away.</li>
-          <li>Each judge answers A, B, or neither. We map A → v, B → v′, and take the majority of the
-            three. A three-way split counts as neither.</li>
-          <li>We compare that consensus to the true version the read came from:
-            <ul class="how-sub">
-              <li>consensus matches the truth → <b>grounded</b> (correct)</li>
-              <li>consensus is the other value → <b>wrong</b></li>
-              <li>consensus is neither → <b>unclear</b>, set aside</li>
-            </ul>
-          </li>
-        </ol>
-        <p class="formula"><b>grounding shown on each bar = grounded / (grounded + wrong)</b><br>
-          unclear reads are reported next to the bar and left out of that percentage.</p>
-
-        <h3>Reconstruction fidelity (cosine)</h3>
-        <p>Cosine is separate from the judges. Take the description, rebuild an activation from it, and
-          measure cosine similarity to the original. Higher means the description captured more of the
-          activation.</p>
+        <p class="scopebar"><b>What is included here.</b> These results come only from the live reads of
+          the two hosted models on the recall examples, which you can browse in the "Callback reads" tab.
+          The authored families in the first tab are a separate test, with their own method, and none of
+          their results are mixed into the numbers on this page.</p>
       </div>
     </section>
 
     <section class="panel">
-      <h2>Result at a glance</h2>
+      <h2>How the test is set up</h2>
+      <div class="how">
+        <p>Each example is written in two versions that differ by a single fact. For instance, one version
+          says the new hobby is oil painting and the other says it is sculpture. Everything else in the two
+          versions is identical.</p>
+
+        <p>Each example is run in one of two shapes. In the <b>single-message</b> shape, the fact and the
+          later reference both sit inside one message written by the user. In the <b>full-conversation</b>
+          shape, the user states the fact, the model writes a reply on its own, and then the user refers
+          back to it. The full-conversation shape also lets us read points inside the model's own reply.</p>
+
+        <h3>The points we read</h3>
+        <p>Inside each version we read the hidden state at a few specific words. Each kind of read is scored
+          and shown on its own.</p>
+        <ul class="how-list">
+          <li><span class="dot" style="background:#b45309"></span><b>The fact word.</b> The word where the
+            fact first appears, such as "painting". This is the easy case, because the word itself names the fact.</li>
+          <li><span class="dot" style="background:#4a7c59"></span><b>The recall word.</b> A later word that
+            is exactly the same in both versions. This is the real test, because the word gives nothing away on its own.</li>
+          <li><span class="dot" style="background:#3a6ea5"></span><b>The model's own reply.</b> Points inside
+            the reply that the model wrote. These exist only in the full-conversation examples.</li>
+        </ul>
+        <p>The count shown under each result is how many reads of that kind were clear enough to score. The
+          fact word and the recall word exist in every example, so they have the most reads. The reply
+          points exist only in the full-conversation examples, so they have fewer.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>How we decide whether a read is correct</h2>
+      <div class="how">
+        <p>For every read, the model has already written one sentence that describes the hidden state. We
+          judge that sentence on its own, without letting the judge see anything else.</p>
+        <ol class="how-steps">
+          <li>We show the sentence to three separate language-model judges. Each judge sees only the
+            sentence and the two possible facts, listed as choice A and choice B. The judges do not see the
+            conversation, and they do not see which version the read actually came from. The two choices are
+            listed in the same order for both versions, so the order itself gives nothing away.</li>
+          <li>Each judge picks choice A, choice B, or neither. We take the majority vote of the three
+            judges. If the three judges disagree completely, the result counts as neither.</li>
+          <li>We then compare the majority vote to the fact the read really came from. If the vote matches
+            the true fact, the read is <b>correct</b>. If the vote is the other fact, the read is
+            <b>wrong</b>. If the vote is neither, the read is <b>unclear</b> and is set aside.</li>
+        </ol>
+        <p class="formula"><b>The score on each bar is the number of correct reads divided by the number
+          that were either correct or wrong.</b><br>
+          Unclear reads are counted and shown next to each bar, but they are left out of the percentage.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Result at a glance, for each model</h2>
+      <p class="note" style="margin-top:0">The large number is how often the model's description of the
+        recall word points to the correct early fact, counting only the reads that were clear enough to
+        score. Gemma and Llama each have their own card below.</p>
       <div id="glance"></div>
     </section>
 
     <section class="panel">
-      <h2>Grounding by read site</h2>
-      <p class="note" id="siteNote" style="margin-top:0">Each bar is the share of clear reads the
-        judges grounded to the right value (longer is better). The <b>condition</b> site sits on
-        the value word itself, so near 100% there is close to an upper bound. The <b>callback</b>
-        site is the real test: the read token is the same in both versions, so getting it right
-        means the early fact was carried forward.</p>
+      <h2>Grounding by read site: Gemma and Llama side by side</h2>
+      <p class="note" id="siteNote" style="margin-top:0">Each bar is the share of clear reads that the
+        judges matched to the correct fact, and a longer bar is better. The <b>fact word</b> sits on the
+        answer itself, so a score near 100% there is close to a ceiling. The <b>recall word</b> is the real
+        test, because that word is identical in both versions, so getting it right means the early fact was
+        carried forward.</p>
       <div id="bysite"></div>
+    </section>
+
+    <section class="panel">
+      <h2>About the reconstruction cosine, and why it needs care</h2>
+      <div class="how">
+        <p>Alongside the judges, the system also reports an automatic number for each read, called the
+          reconstruction cosine. It rebuilds a hidden state from the description and measures how close the
+          rebuilt state is to the original, on a scale that tops out at 1. A higher number is meant to mean
+          a fuller description.</p>
+        <p><b>The recorded values are genuine.</b> We re-checked every stored cosine against the live
+          Neuronpedia service. All two hundred reads that we sampled matched the service exactly, and the
+          related error value matches its own definition to within rounding. So the numbers are recorded
+          correctly.</p>
+        <p><b>Even so, the cosine cannot be compared between the two models, and here is the reason.</b>
+          Gemma stores its hidden states in a very lopsided way. Almost all of the size of any hidden state
+          points along one shared direction that is nearly the same for every word. When that happens, any
+          two hidden states already look similar, so the cosine comes out high even for a description that
+          has nothing to do with the real one. We measured this directly. On Gemma, a deliberately
+          mismatched description still scores about 0.94, while on Llama the same kind of mismatched test
+          scores only about 0.17. In other words, Gemma's cosine begins near the top of the scale before any
+          real reading happens, so it has very little room left to show a real difference.</p>
+        <p>The tables below make this concrete. For each read site they show the raw cosine, the floor,
+          which is the score a mismatched description already reaches on that model, and an adjusted score
+          that measures how far the real reading rises above that floor. Once the floor is taken out, Llama
+          actually recovers more of the hidden state than Gemma at every site, which is the opposite of what
+          the raw cosine seems to say.</p>
+        <div id="fidelity"></div>
+        <p class="note">The floor values come from a separate study of these same two models and layers, so
+          treat the adjusted scores as an approximate correction rather than an exact measurement. The
+          dependable way to compare the two models is the grounding score above, which is decided by the
+          judges and does not depend on this geometry at all.</p>
+      </div>
     </section>
 
     <section class="panel">
       <h2>Where it fails, and why</h2>
       <div class="how">
-        <p>Across both models, callback misses come in two kinds, and they are not the same thing.</p>
+        <p>When a read at the recall word goes wrong, it goes wrong in one of two ways, and the two are
+          worth telling apart.</p>
 
-        <p><b>Unclear (set aside).</b> Most misses are the description naming the scene but not the
-          thing. It supports “someone talking about their recovery” or “a person’s relationship with a
-          houseplant”, but not knee versus shoulder, or orchid versus cactus. These cluster on referents
-          that are abstract or hard to picture: a plant, a gift, an instrument, a piece of furniture, a
-          place. The description is not wrong, it just does not commit, so it is left out of the percentage.</p>
+        <p><b>Unclear, and set aside.</b> Most of the misses are cases where the description names the
+          general situation but never picks the specific thing. It will say "someone talking about their
+          recovery" or "a person looking after a houseplant" without ever choosing knee or shoulder, or
+          orchid or cactus. These tend to happen when the thing being referred to is abstract or hard to
+          picture, such as a plant, a gift, a musical instrument, a piece of furniture, or a place. The
+          description is not wrong, it simply does not commit, so it is left out of the percentage.</p>
 
-        <p><b>Wrong (the informative one).</b> A smaller set commits to the wrong value, and it is almost
-          always the more stereotypical member of the category. When the activation evidence is weak, the
-          prior wins. Often the description writes the prototype out in full: for a tea item it says “a cup
-          of coffee”, for a fog item “the rain has ruined my hike”, for a wine item “a small glass of
-          whiskey”. Sometimes the prototype it reaches for is a third option that is neither choice, like
-          reading a cello as a violin, which then lands as unclear rather than wrong.</p>
+        <p><b>Wrong, which is the more revealing case.</b> A smaller number of reads commit to the wrong
+          answer, and when they do, they almost always pick the more typical member of the category. When
+          the hidden state does not carry strong evidence, the model falls back on what is usually true.
+          Often it writes that typical answer out in full: for an example about tea it says "a cup of
+          coffee", for an example about fog it says "the rain has ruined my hike", and for an example about
+          wine it says "a small glass of whiskey". Sometimes the typical answer it reaches for is a third
+          thing that is neither of the two choices, such as reading a cello as a violin, which then counts
+          as unclear rather than wrong.</p>
 
-        <p><b>Both models, same items.</b> Fog read as rain and wine read as whiskey happen for gemma and
-          llama alike. That points to a shared prior about what these categories usually are, rather than
-          one model’s quirk: the description leans on its prior exactly when the activation does not pin
-          the answer down.</p>
+        <p><b>The same items trip up both models.</b> Fog read as rain, and wine read as whiskey, happen
+          for Gemma and Llama alike. That suggests a shared assumption about what these categories usually
+          are, rather than a quirk of one model. The description leans on that assumption exactly when the
+          hidden state does not pin the answer down.</p>
       </div>
 
       <div class="fail-examples">
@@ -419,7 +478,7 @@ const $ = (id) => document.getElementById(id);
 const C  = window.CATALOG  || null;   // authored families
 const CB = window.CALLBACK || null;   // live callback data (multi-model, schema v3)
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
-function pct(x,nd=0){ return x==null?"—":(x*100).toFixed(nd)+"%"; }
+function pct(x,nd=0){ return x==null?"n/a":(x*100).toFixed(nd)+"%"; }
 
 let state = {
   tab:"families",
@@ -438,7 +497,7 @@ function showTab(t){
 
 // ════════════════════════════ TAB 1: authored families ════════════════════════════
 function renderStats(){
-  if(!C){ $("stats").innerHTML = '<span class="pill bad">catalog.js not found — run export_catalog.py</span>'; return; }
+  if(!C){ $("stats").innerHTML = '<span class="pill bad">catalog.js not found. Run export_catalog.py</span>'; return; }
   const ba = Object.entries(C.by_attribute).map(([k,v]) => `${k}&nbsp;<b>${v}</b>`).join(" · ");
   $("stats").innerHTML =
     `<span><b>${C.n_families}</b> families</span>` +
@@ -523,7 +582,7 @@ function renderDetail(){
     ? `<span class="pill ${f.audit.passed?"good":"bad"}">token-identity ${f.audit.passed?"pass":"FAIL"}</span>`
     : `<span class="pill">not audited</span>`;
   const anchorTok = f.anchor_token != null ? `<code>${esc(f.anchor_token)}</code>` : "<i>not audited</i>";
-  const idxs = f.audit ? `${f.audit.read_index_v} / ${f.audit.read_index_v_prime}` : "—";
+  const idxs = f.audit ? `${f.audit.read_index_v} / ${f.audit.read_index_v_prime}` : "n/a";
 
   const wtabs = f.wordings.map((_,i) =>
     `<button class="${i===state.wording?"on":""}" data-w="${i}">wording ${i}</button>`).join("");
@@ -561,7 +620,7 @@ function renderDetail(){
       ${f.style==="explicit" ? "stated" : "implied"} difference to verbalize it correctly.
     </div>
     <div class="legend">
-      <span><span class="sw" style="background:#f6ddb8"></span>upstream difference${highlightUp?"":" (rich content — not word-highlighted)"}</span>
+      <span><span class="sw" style="background:#f6ddb8"></span>upstream difference${highlightUp?"":" (rich content, not word-highlighted)"}</span>
       <span><span class="sw" style="background:#f3efe6"></span>shared suffix (token-identical)</span>
       <span><span class="sw" style="background:#bfe0c8"></span>anchor / read site</span>
     </div>`;
@@ -576,7 +635,7 @@ function cbCur(){ const m = cbModels(); return state.cbModel ? m[state.cbModel] 
 
 function renderCbStats(){
   if(!CB || !CB.models || !CB.model_aliases.length){
-    $("cbStats").innerHTML = '<span class="pill">callback.js not found — run export_browser.py</span>'; return;
+    $("cbStats").innerHTML = '<span class="pill">callback.js not found. Run export_browser.py</span>'; return;
   }
   const m = cbCur();
   if(!m){ $("cbStats").innerHTML = '<span class="pill">no data for this model</span>'; return; }
@@ -589,7 +648,7 @@ function renderCbStats(){
     `<span>callback grounding <b>${pct(acc)}</b></span>` +
     `<span style="color:var(--mut)">${bm}</span>`;
   $("cbNote").textContent = m.n_items===0
-    ? "No items collected yet for this model — run collect.py --model "+state.cbModel+", then export_browser.py."
+    ? "No items collected yet for this model. Run collect.py --model "+state.cbModel+", then export_browser.py."
     : "Each item shows the two counterfactual conditions; reads are highlighted in the transcript with AV text + AR cosine/mse + the blind-judge verdict below.";
 }
 
@@ -680,12 +739,12 @@ function verdictCell(r){
 
 function readsTable(cond){
   const rows = cond.reads.map(r=>{
-    const cos = r.cosine==null?"—":r.cosine.toFixed(3);
-    const mse = r.mse==null?"—":r.mse.toFixed(3);
+    const cos = r.cosine==null?"n/a":r.cosine.toFixed(3);
+    const mse = r.mse==null?"n/a":r.mse.toFixed(3);
     const found = r.found?"":' <span style="color:var(--red)">(not found)</span>';
     return `<tr><td><span class="tag ${r.name}">${esc(r.name)}</span></td>
-      <td class="num">${r.token?('<code>'+esc(r.token)+'</code>'):'—'}${found}</td>
-      <td class="num">${r.token_identical?'shared':'—'}</td>
+      <td class="num">${r.token?('<code>'+esc(r.token)+'</code>'):'n/a'}${found}</td>
+      <td class="num">${r.token_identical?'shared':'n/a'}</td>
       <td>${verdictCell(r)}</td>
       <td class="num">${cos}</td><td class="num">${mse}</td>
       <td class="av">${esc(r.description||"")}</td></tr>`;
@@ -709,8 +768,8 @@ function renderCbDetail(){
       <span><span class="sw" style="background:#f6ddb8"></span>condition (info revealed)</span>
       <span><span class="sw" style="background:#bfe0c8"></span>callback (shared read token)</span>
       <span><span class="sw" style="background:#cfe0f0"></span>assistant read</span></div>
-    <div class="reads"><h3 style="font-size:1rem;margin:14px 0 6px">condition v — reads</h3>${readsTable(v)}
-      <h3 style="font-size:1rem;margin:14px 0 6px">condition v′ — reads</h3>${readsTable(vp)}</div>`;
+    <div class="reads"><h3 style="font-size:1rem;margin:14px 0 6px">reads for version v</h3>${readsTable(v)}
+      <h3 style="font-size:1rem;margin:14px 0 6px">reads for version v′</h3>${readsTable(vp)}</div>`;
 }
 
 function renderCallbackTab(){
@@ -720,63 +779,66 @@ function renderCallbackTab(){
 // ════════════════════════════ TAB 3: cross-model dashboard ════════════════════════════
 const SITE_ORDER = ["condition","callback","assistant_ref","assistant_end"];
 const SITE_META = {
-  condition:     {label:"condition",     color:"#b45309", desc:"fact first appears"},
-  callback:      {label:"callback",      color:"#4a7c59", desc:"shared later word"},
-  assistant_ref: {label:"assistant ref", color:"#3a6ea5", desc:"model names it in its reply"},
-  assistant_end: {label:"assistant end", color:"#3a6ea5", desc:"end of model's reply"},
+  condition:     {label:"fact word",    color:"#b45309", desc:"where the fact first appears"},
+  callback:      {label:"recall word",  color:"#4a7c59", desc:"same word in both versions"},
+  assistant_ref: {label:"reply, named", color:"#3a6ea5", desc:"where the model names it"},
+  assistant_end: {label:"reply, end",   color:"#3a6ea5", desc:"end of the model's reply"},
 };
+// The score a deliberately mismatched description already reaches on each model,
+// its "floor", measured in a separate activation-space study of these same models
+// and layers. Gemma's hidden states are highly anisotropic, so its floor sits near
+// the top of the scale and its raw cosine cannot be compared to Llama's. See the
+// cosine box on the page for the full explanation.
+const CONTROL_FLOOR = { gemma: 0.942, llama: 0.165 };
+const MODEL_LABEL   = { gemma: "Gemma", llama: "Llama" };
 function siteAcc(g){ if(!g) return null; const c=g.grounded+g.wrong; return c?g.grounded/c:null; }
 function siteHasData(g){ return g && (g.grounded+g.wrong+g.neither+g.ungraded) > 0; }
+function adjCos(raw, floor){ return (raw==null||floor==null)?null:(raw-floor)/(1-floor); }
 
-// ── at a glance: one calm card per model ──
+// ── at a glance: one card per model ──
 function verdictText(m){
   if(!m.has_grades) return "Grading has not run for this model yet.";
   const g = (m.summary && m.summary.grounding && m.summary.grounding.callback) || null;
   const acc = siteAcc(g);
-  if(acc==null) return "No callback reads have been scored yet.";
+  if(acc==null) return "No recall-word reads have been scored yet.";
   let lead;
-  if(acc >= 0.9)      lead = "Reads the early fact at the callback word almost every time it is clear enough to score.";
-  else if(acc >= 0.75) lead = "Usually reads the early fact at the callback word.";
-  else                 lead = "Often misses the early fact at the callback word.";
+  if(acc >= 0.9)       lead = "When the recall word is clear enough to score, this model names the correct early fact almost every time.";
+  else if(acc >= 0.75) lead = "This model usually names the correct early fact at the recall word.";
+  else                 lead = "This model often misses the early fact at the recall word.";
   const n = g.neither || 0;
-  const tail = n ? ` ${n} read${n>1?"s were":" was"} too vague to score either way.` : "";
+  const tail = n ? ` ${n} read${n>1?"s were":" was"} too vague to score either way, and ${n>1?"those are":"that one is"} left out of the percentage.` : "";
   return lead + tail;
 }
 function glanceCard(a){
   const m = cbModels()[a]; if(!m) return "";
   const s = m.summary || {};
-  const cbcos = s.fidelity && s.fidelity.callback ? s.fidelity.callback.cos_mean : null;
-  const prog = m.target_items ? Math.round(100*m.n_items/m.target_items) : 100;
+  const g = (s.grounding && s.grounding.callback) || null;
+  const modes = m.by_mode ? `${m.by_mode.mid_single||0} single-message, ${m.by_mode.multiturn||0} full-conversation` : "";
+  const breakdown = g
+    ? `<b>${g.grounded}</b> correct, <b>${g.wrong}</b> wrong, <b>${g.neither}</b> unclear, out of ${g.grounded+g.wrong+g.neither} reads at the recall word`
+    : "";
   return `<div class="gcard">
-    <div class="mname">${esc(a)}</div>
-    <div class="msub">${esc(m.model_id||"")} · layer ${m.layer}</div>
-    <div class="gprog-lab">${m.n_items} of ${m.target_items} items collected</div>
-    <div class="gprog"><div style="width:${prog}%"></div></div>
-    <div class="gmetric"><span class="num">${m.has_grades?pct(s.callback_accuracy):"—"}</span>
-      <span class="lab">of clear callback reads<br>point to the right value</span></div>
-    <div class="gsecond">callback reconstruction (cosine) <b>${cbcos==null?"—":cbcos.toFixed(2)}</b></div>
+    <div class="mname"><span class="fmodel ${a}">${esc(MODEL_LABEL[a]||a)}</span> <span class="mid">${esc(m.model_id||"")}</span></div>
+    <div class="msub">layer ${m.layer} · ${m.n_items} examples${modes?` · ${modes}`:""}</div>
+    <div class="gmetric"><span class="num">${m.has_grades?pct(s.callback_accuracy):"n/a"}</span>
+      <span class="lab">of clear recall-word reads<br>point to the correct fact</span></div>
+    <div class="gsecond">${breakdown}</div>
     <div class="verdict">${verdictText(m)}</div>
   </div>`;
 }
 
-// ── grounding by read site: one green bar per model, per site ──
+// ── grounding by read site: one bar per model, per site (cosine has its own box) ──
 function siteCell(m, site){
   const s = m.summary || {};
   const g = (s.grounding||{})[site];
-  const f = (s.fidelity||{})[site];
   if(!siteHasData(g)) return `<div class="scell empty-cell">no data yet</div>`;
-  if(!m.has_grades){
-    const cos = f ? f.cos_mean : null;
-    return `<div class="scell"><div class="sub">not graded${cos!=null?` · cos ${cos.toFixed(2)}`:""}</div></div>`;
-  }
+  if(!m.has_grades) return `<div class="scell"><div class="sub">not graded yet</div></div>`;
   const acc = siteAcc(g);
   const n = g.grounded + g.wrong;          // reads clear enough to score
-  const cos = f ? f.cos_mean : null;
-  const sub = `${n} scored` + (cos!=null?` · cos ${cos.toFixed(2)}`:"")
-            + (g.neither?` · ${g.neither} unclear`:"");
+  const sub = `${n} scored` + (g.neither?` · ${g.neither} unclear`:"");
   return `<div class="scell">
     <div class="top"><span class="gbar"><div style="width:${acc==null?0:Math.round(acc*100)}%"></div></span>
-      <span class="pct">${acc==null?"—":pct(acc)}</span></div>
+      <span class="pct">${acc==null?"n/a":pct(acc)}</span></div>
     <div class="sub">${sub}</div></div>`;
 }
 function renderBySite(){
@@ -784,10 +846,10 @@ function renderBySite(){
   if(!aliases.length){ $("bysite").innerHTML = `<div class="empty">No callback data yet.</div>`; return; }
   const sites = SITE_ORDER.filter(site =>
     aliases.some(a => siteHasData(((cbModels()[a].summary||{}).grounding||{})[site])));
-  const cols = `170px repeat(${aliases.length}, 1fr)`;
+  const cols = `190px repeat(${aliases.length}, 1fr)`;
   let html = `<div class="sitegrid" style="grid-template-columns:${cols}">`;
   html += `<div class="hd"></div>` + aliases.map(a =>
-    `<div class="hd modelhd">${esc(a)}</div>`).join("");
+    `<div class="hd modelhd"><span class="fmodel ${a}">${esc(MODEL_LABEL[a]||a)}</span></div>`).join("");
   for(const site of sites){
     const meta = SITE_META[site] || {label:site, color:"#888", desc:""};
     html += `<div class="sname"><span class="dot" style="background:${meta.color}"></span>${meta.label}` +
@@ -798,10 +860,42 @@ function renderBySite(){
   $("bysite").innerHTML = html;
 }
 
+// ── reconstruction cosine, shown with the per-model floor and an adjusted score ──
+function renderFidelity(){
+  const aliases = (CB && CB.model_aliases) || [];
+  let html = "";
+  for(const a of aliases){
+    const m = cbModels()[a]; if(!m) continue;
+    const floor = CONTROL_FLOOR[a];
+    const fid = (m.summary||{}).fidelity || {};
+    let rows = "";
+    for(const site of SITE_ORDER){
+      const f = fid[site];
+      if(!f || f.cos_mean==null) continue;
+      const adj = adjCos(f.cos_mean, floor);
+      const meta = SITE_META[site] || {label:site};
+      rows += `<tr><td>${meta.label}</td>
+        <td class="num">${f.cos_mean.toFixed(3)}</td>
+        <td class="num">${floor!=null?floor.toFixed(3):"n/a"}</td>
+        <td class="num"><b>${adj!=null?adj.toFixed(3):"n/a"}</b></td></tr>`;
+    }
+    if(!rows) continue;
+    html += `<div class="fidblock">
+      <div class="fidhead"><span class="fmodel ${a}">${esc(MODEL_LABEL[a]||a)}</span>
+        <span class="fidmeta">${esc(m.model_id||"")}, layer ${m.layer}. A mismatched description already scores about ${floor!=null?floor.toFixed(2):"n/a"} on this model.</span></div>
+      <table class="fidtable">
+        <tr><th>read site</th><th>raw cosine</th><th>floor</th><th>adjusted</th></tr>
+        ${rows}
+      </table></div>`;
+  }
+  $("fidelity").innerHTML = html || `<div class="empty">No cosine data yet.</div>`;
+}
+
 function renderDashboard(){
   const aliases = (CB && CB.model_aliases) || [];
   $("glance").innerHTML = aliases.map(glanceCard).join("") || `<div class="empty">No callback data yet.</div>`;
   renderBySite();
+  renderFidelity();
 }
 
 // ════════════════════════════ wiring ════════════════════════════
@@ -840,7 +934,7 @@ function init(){
     $("cbSearch").oninput = (e) => { state.cbq = e.target.value; renderCbList(); };
     const f = cbVisible()[0]; if(f){ state.cbSel = f.item_id; renderCbList(); renderCbDetail(); }
   } else {
-    $("cbStats").innerHTML = '<span class="pill">callback.js not found — run export_browser.py</span>';
+    $("cbStats").innerHTML = '<span class="pill">callback.js not found. Run export_browser.py</span>';
   }
 
   // --- dashboard ---
