@@ -24,6 +24,16 @@ python3 -m http.server 8000
 
 Each site is also openable directly (`file://…/nla-mimics/index.html`); the data is embedded as `window.*` JavaScript globals, so no server is strictly required.
 
+## Updating
+
+The site files are copies of build output in the upstream NLA research repo. To refresh both viewers from the latest research-repo output and publish:
+
+```sh
+bash "/Users/agastyasridharan/ruhr research/nla-viewers/sync.sh"
+```
+
+`sync.sh` re-copies each site's entry HTML plus every local `<script src>` file it references (so regenerated or newly added data files are picked up automatically), then commits and pushes only if something changed. GitHub Pages redeploys ~30–60s later. Point it at a relocated research repo with `NLA_RESEARCH_REPO=/path/to/repo bash sync.sh`.
+
 ## Data
 
 Each viewer's data lives beside its `index.html` as auto-generated `.js` files (e.g. `viewer_data.js`, `catalog.js`). These are static snapshots; regenerate them from the upstream NLA research repo's build scripts.
