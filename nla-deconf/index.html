@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>A New Warm-Start — NLA De-confabulation Findings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#1a1a1a; --muted:#6b6b6b; --faint:#9a948a; --line:#e3e0d8; --bg:#faf8f3;
+          --panel:#fff; --accent:#7a2e2e;
+          --green:#2e6b4f; --amber:#c0892e; --red:#b5552e; --grey:#8a8a8a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:'EB Garamond',Georgia,serif; font-size:18px; line-height:1.55;
+         -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:920px; margin:0 auto; padding:64px 28px 110px; }
+  a { color:var(--accent); }
+  code, .mono { font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace; font-size:.84em; }
+  h1 { font-size:2.6rem; font-weight:600; margin:0 0 .15em; letter-spacing:-.01em; line-height:1.1; }
+  .subtitle { color:var(--muted); font-size:1.16rem; margin:0 0 1.1em; max-width:42em; }
+  .meta-line { color:var(--faint); font-size:.92rem; margin:0 0 2.4em; }
+  .meta-line span { margin-right:1.3em; }
+  h2 { font-size:1.6rem; font-weight:600; margin:2.6em 0 .1em; }
+  h2 .num { color:var(--faint); font-weight:500; margin-right:.4em; }
+  .sec-sub { color:var(--muted); margin:.1em 0 1.2em; font-size:1.02rem; }
+  .headline { background:#fffdf8; border:1px solid var(--line); border-left:4px solid var(--accent);
+              border-radius:9px; padding:20px 24px; margin:1.4em 0 .4em; font-size:1.12rem; }
+  .headline b { color:var(--accent); }
+  .qbox { color:var(--muted); font-style:italic; margin:.7em 0 0; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+           padding:20px 22px; margin:0 0 16px; }
+  ul.clean { margin:.2em 0; padding-left:1.2em; }
+  ul.clean li { margin:.35em 0; }
+  table { border-collapse:collapse; width:100%; font-size:.96rem; margin:.3em 0; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:.86rem; text-transform:uppercase; letter-spacing:.03em; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .swatch { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:7px; vertical-align:baseline; }
+  .arm-tag { font-size:.82rem; color:var(--muted); }
+  /* arms legend */
+  .legend { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:.4em 0 0; }
+  .legend .arm { border:1px solid var(--line); border-radius:9px; padding:13px 15px; background:var(--panel); border-top:3px solid #ccc; }
+  .legend .arm h4 { margin:0 0 .25em; font-size:1.05rem; }
+  .legend .arm p { margin:0; color:var(--muted); font-size:.92rem; line-height:1.4; }
+  /* findings */
+  .find { border:1px solid var(--line); border-radius:9px; padding:15px 18px; margin:0 0 12px; background:var(--panel); }
+  .find h3 { margin:0 0 .3em; font-size:1.14rem; color:var(--accent); }
+  .find p { margin:0; font-size:1rem; }
+  /* stacked bars */
+  .bars { margin:.4em 0; }
+  .barrow { display:flex; align-items:center; gap:12px; margin:9px 0; }
+  .barrow .lab { flex:0 0 165px; font-size:.95rem; }
+  .barrow .track { flex:1; height:24px; border-radius:5px; overflow:hidden; display:flex; background:#eee; border:1px solid var(--line); }
+  .barrow .track > div { height:100%; }
+  .barrow .gr { flex:0 0 86px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  .legend-inline { font-size:.85rem; color:var(--muted); margin:.3em 0 0; }
+  .legend-inline b { font-weight:600; }
+  /* chart */
+  .chart { width:100%; height:auto; display:block; }
+  .chart text { font-family:'IBM Plex Mono',monospace; fill:var(--muted); }
+  .clegend { display:flex; gap:18px; flex-wrap:wrap; font-size:.9rem; margin:.5em 0 0; }
+  .clegend span { display:inline-flex; align-items:center; }
+  /* badges */
+  .badge { display:inline-block; font-size:.74rem; font-weight:600; padding:2px 9px; border-radius:20px;
+           color:#fff; text-transform:uppercase; letter-spacing:.04em; }
+  .badge.grounded{ background:var(--green); } .badge.mixed{ background:var(--amber); }
+  .badge.confabulated{ background:var(--red); } .badge.unknown{ background:var(--grey); }
+  /* example browser */
+  .navwrap { margin:.2em 0 1em; }
+  .navrow { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:6px 0; }
+  .navrow .navlab { flex:0 0 78px; color:var(--muted); font-size:.85rem; }
+  .navbtn { font-family:'IBM Plex Mono',monospace; font-size:.8rem; border:1px solid var(--line);
+            background:var(--panel); border-radius:6px; padding:5px 9px; cursor:pointer; color:var(--ink); }
+  .navbtn:hover { border-color:var(--accent); }
+  .navbtn.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .navbtn.teach::after { content:" \2605"; color:var(--amber); }
+  .navbtn.on.teach::after { color:#ffd; }
+  .exhead { font-size:.9rem; color:var(--muted); margin:.2em 0 .5em; }
+  .ctx { background:#f4f1ea; border:1px solid var(--line); border-radius:8px; padding:13px 15px;
+         font-size:.92rem; max-height:230px; overflow:auto; white-space:pre-wrap; line-height:1.5; }
+  .ctx .tail { background:#fff2cc; padding:0 2px; }
+  .armgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 0; }
+  @media (max-width:680px){ .armgrid{ grid-template-columns:1fr; } }
+  .armcard { border:1px solid var(--line); border-radius:9px; padding:13px 15px; background:var(--panel); border-top:3px solid #ccc; }
+  .armcard .top { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0 0 .4em; }
+  .armcard .top h4 { margin:0; font-size:1.02rem; }
+  .armcard .fve { font-size:.82rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .armcard .style { font-size:.78rem; color:var(--faint); margin:0 0 .4em; }
+  .armcard .ws { font-size:.9rem; color:var(--muted); border-left:2px solid var(--line); padding-left:9px; margin:.3em 0; }
+  .armcard .ws b { color:var(--faint); font-style:normal; }
+  .armcard .gen { font-size:.95rem; margin:.3em 0; }
+  .armcard .confab { margin:.45em 0 0; font-size:.85rem; }
+  .armcard .confab .ch { display:block; color:var(--red); background:#fbeee8; border-radius:4px;
+                         padding:2px 7px; margin:3px 0; }
+  details.samples { margin:.5em 0 0; font-size:.88rem; }
+  details.samples summary { cursor:pointer; color:var(--accent); }
+  details.samples .s { border-top:1px dashed var(--line); padding:5px 0; color:var(--muted); }
+  footer { margin-top:4em; padding-top:1.4em; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem; }
+  .err { color:var(--red); font-family:monospace; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+  <div class="wrap" id="app"><p class="err" id="boot">Loading findings…</p></div>
+
+  <script src="deconf_data.js"></script>
+  <script>
+  "use strict";
+  var DV = {};
+  (function () {
+    function esc(s){ return String(s==null?"":s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+    var ARMC = {};        // arm key -> color
+    var ARMLAB = {};      // arm key -> label
+    var ARMORDER = [];
+
+    function vClass(v){ return ({grounded:"grounded",mixed:"mixed",confabulated:"confabulated"})[v] || "unknown"; }
+
+    // ---- FVE-vs-step line chart (SVG string) ----
+    function lineChart(D){
+      var W=860,H=300,padL=44,padR=14,padT=14,padB=34;
+      var xmax=500, ymin=0, ymax=70;
+      function X(s){ return padL + (s/xmax)*(W-padL-padR); }
+      function Y(v){ return padT + (1-(v-ymin)/(ymax-ymin))*(H-padT-padB); }
+      var g="";
+      // gridlines y
+      [0,20,40,60].forEach(function(yv){
+        var y=Y(yv);
+        g+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#e8e4db"/>';
+        g+='<text x="'+(padL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="11">'+yv+'%</text>';
+      });
+      [0,100,200,300,400,500].forEach(function(xv){
+        var x=X(xv);
+        g+='<text x="'+x+'" y="'+(H-12)+'" text-anchor="middle" font-size="11">'+xv+'</text>';
+      });
+      g+='<text x="'+(padL+(W-padL-padR)/2)+'" y="'+H+'" text-anchor="middle" font-size="11">RL step</text>';
+      ARMORDER.forEach(function(k){
+        var pts=D.training.trajectories[k]||[];
+        var d=pts.filter(function(p){return p[1]!=null;})
+                 .map(function(p){return X(p[0]).toFixed(1)+","+Y(p[1]).toFixed(1);}).join(" ");
+        g+='<polyline points="'+d+'" fill="none" stroke="'+ARMC[k]+'" stroke-width="1.7" opacity="0.92"/>';
+      });
+      return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="FVE versus RL step">'+g+'</svg>';
+    }
+
+    // ---- grounded-rate stacked bars ----
+    function bars(D){
+      var h="";
+      D.grounded.forEach(function(r){
+        var tot=r.total||18;
+        function seg(n,c){ return n>0 ? '<div style="width:'+(n/tot*100)+'%;background:'+c+'"></div>' : ""; }
+        h+='<div class="barrow">'+
+             '<div class="lab"><span class="swatch" style="background:'+ARMC[r.arm]+'"></span>'+esc(ARMLAB[r.arm])+'</div>'+
+             '<div class="track">'+seg(r.grounded,"var(--green)")+seg(r.mixed,"var(--amber)")+seg(r.confab,"var(--red)")+'</div>'+
+             '<div class="gr">'+r.grounded_rate.toFixed(3)+'</div>'+
+           '</div>';
+      });
+      h+='<div class="legend-inline"><b style="color:var(--green)">grounded</b> &middot; '+
+         '<b style="color:var(--amber)">mixed</b> (grounded core + a fabricated specific) &middot; '+
+         '<b style="color:var(--red)">confabulated</b> &nbsp;|&nbsp; bar = 18 examples; number = grounded-rate (grounded + ½·mixed)/total</div>';
+      return h;
+    }
+
+    // ---- one example detail ----
+    DV.show = function(gi){
+      var D=window.DECONF, ex=D.examples[gi];
+      var host=document.getElementById("ex-detail");
+      if(!ex||!host) return;
+      // nav active state
+      var btns=document.querySelectorAll(".navbtn");
+      for(var b=0;b<btns.length;b++){ var on=(btns[b].getAttribute("data-gi")==String(gi));
+        if(on) btns[b].classList.add("on"); else btns[b].classList.remove("on"); }
+      var ctx=esc(ex.context);
+      // highlight the activation-local tail (after an elision marker if present)
+      var mark=ctx.indexOf("[middle elided]");
+      if(mark>=0){ var cut=ctx.indexOf("\n",mark); cut=cut<0?mark:cut+1;
+        ctx=ctx.slice(0,cut)+'<span class="tail">'+ctx.slice(cut)+'</span>'; }
+      var setlab = ex.set==="heldout" ? "HELD-OUT (unseen activation)" : "TRAINING (carries a warm-start target)";
+      var h='<div class="exhead">'+setlab+' &middot; <span class="mono">doc '+esc(String(ex.doc_id).split(":").pop())+
+            '</span> &middot; activation at token '+esc(ex.pos)+'</div>'+
+            '<div class="ctx">'+ctx+'</div><div class="armgrid">';
+      ARMORDER.forEach(function(k){
+        var a=ex.arms[k]||{}, vc=vClass(a.verdict);
+        h+='<div class="armcard" style="border-top-color:'+ARMC[k]+'">'+
+             '<div class="top"><h4>'+esc(ARMLAB[k])+'</h4>'+
+               '<span><span class="badge '+vc+'">'+esc(a.verdict||"?")+'</span></span></div>'+
+             '<div class="style">'+(a.style?("style: "+esc(a.style)+"  ·  "):"")+'FVE '+(a.fve==null?"n/a":a.fve.toFixed(3))+'</div>';
+        if(a.warmstart) h+='<div class="ws"><b>warm-start (t=0): </b>'+esc(a.warmstart)+'</div>';
+        h+='<div class="gen">'+(ex.set==="train_warmstart"?'<b style="color:var(--faint);font-size:.78rem">post-RL (t=final): </b>':"")+esc(a.expl)+'</div>';
+        if(a.confab&&a.confab.length){
+          h+='<div class="confab"><span style="color:var(--faint);font-size:.78rem">flagged as unsupported by the context:</span>';
+          a.confab.forEach(function(c){ h+='<span class="ch">'+esc(c)+'</span>'; });
+          h+='</div>';
+        }
+        if(a.samples&&a.samples.length>1){
+          h+='<details class="samples"><summary>all '+a.samples.length+' samples</summary>';
+          a.samples.forEach(function(s,si){ h+='<div class="s">#'+(si+1)+
+            ' (FVE '+(s.fve==null?"n/a":Number(s.fve).toFixed(3))+', '+(s.ntok||"?")+' tok): '+esc(s.expl)+'</div>'; });
+          h+='</details>';
+        }
+        h+='</div>';
+      });
+      h+='</div>';
+      host.innerHTML=h;
+    };
+
+    function exampleBrowser(D){
+      var ho=[], tr=[];
+      D.examples.forEach(function(ex,gi){
+        var teach=(D.teaching||[]).some(function(t){return t.set===ex.set && t.i===ex.i;});
+        var lab=(ex.set==="heldout"?"HO":"TR")+ex.i;
+        var btn='<button class="navbtn'+(teach?" teach":"")+'" data-gi="'+gi+'" onclick="DV.show('+gi+')">'+lab+'</button>';
+        (ex.set==="heldout"?ho:tr).push(btn);
+      });
+      return '<div class="navwrap">'+
+        '<div class="navrow"><span class="navlab">Held-out</span>'+ho.join("")+'</div>'+
+        '<div class="navrow"><span class="navlab">Training</span>'+tr.join("")+'</div>'+
+        '<div class="legend-inline">&#9733; = teaching example. Click any to see the document and all four arms side by side.</div>'+
+        '</div><div id="ex-detail"></div>';
+    }
+
+    function render(){
+      var D=window.DECONF;
+      var app=document.getElementById("app");
+      if(!D){ if(app) app.innerHTML='<p class="err">deconf_data.js failed to load (window.DECONF missing).</p>'; return; }
+      (D.arms||[]).forEach(function(a){ ARMC[a.key]=a.color; ARMLAB[a.key]=a.label; ARMORDER.push(a.key); });
+
+      var H="";
+      // header
+      H+='<h1>'+esc(D.meta.title)+'</h1>'+
+         '<p class="subtitle">'+esc(D.meta.subtitle)+'</p>'+
+         '<p class="meta-line"><span>'+esc(D.meta.date)+'</span><span>base '+esc(D.meta.base_model)+'</span>'+
+           '<span>layer '+esc(D.meta.layer)+'</span><span>4 arms &middot; 4&times;H100</span></p>';
+      H+='<div class="headline">'+esc(D.meta.headline).replace(/0\.917/,"<b>0.917</b>")+
+         '<div class="qbox">Headline question: '+esc(D.meta.question)+'</div></div>';
+
+      // arms legend
+      H+='<h2><span class="num">·</span>The four arms</h2>'+
+         '<p class="sec-sub">All arms share the same activations and the same training pipeline. They differ only in the source of the warm-start summary.</p><div class="legend">';
+      D.arms.forEach(function(a){
+        H+='<div class="arm" style="border-top-color:'+a.color+'"><h4>'+esc(a.label)+
+           '</h4><p><span class="arm-tag">'+esc(a.tag)+'</span><br>'+esc(a.blurb)+'</p></div>';
+      });
+      H+='</div>';
+      H+='<div class="panel" style="margin-top:14px"><ul class="clean">'+
+         D.design.map(function(d){return "<li>"+esc(d)+"</li>";}).join("")+'</ul></div>';
+
+      // tests run
+      H+='<h2><span class="num">1.</span>Tests run</h2>'+
+         '<table><thead><tr><th>Test</th><th>What it did</th><th>Result</th></tr></thead><tbody>'+
+         D.tests.map(function(t){return "<tr><td><b>"+esc(t.name)+"</b></td><td>"+esc(t.what)+"</td><td>"+esc(t.result)+"</td></tr>";}).join("")+
+         '</tbody></table>';
+
+      // training
+      H+='<h2><span class="num">2.</span>Training: 4 arms through 500 RL steps</h2>'+
+         '<p class="sec-sub">'+esc(D.training.note)+'</p>';
+      H+='<table><thead><tr><th>Arm</th><th class="num">FVE (final-30)</th><th class="num">reward</th><th class="num">KL</th><th class="num">held-out FVE</th></tr></thead><tbody>'+
+         D.training.end_state.map(function(r){
+           return '<tr><td><span class="swatch" style="background:'+ARMC[r.arm]+'"></span>'+esc(ARMLAB[r.arm])+
+             '</td><td class="num">'+r.fve.toFixed(1)+'%</td><td class="num">'+r.reward.toFixed(3)+
+             '</td><td class="num">'+r.kl.toFixed(3)+'</td><td class="num">'+r.heldout_fve.toFixed(3)+'</td></tr>';
+         }).join("")+'</tbody></table>';
+      H+='<div class="panel">'+lineChart(D)+'<div class="clegend">'+
+         ARMORDER.map(function(k){return '<span><span class="swatch" style="background:'+ARMC[k]+'"></span>'+esc(ARMLAB[k])+'</span>';}).join("")+
+         '</div></div>';
+
+      // grounded-rate
+      H+='<h2><span class="num">3.</span>Grounded-rate (independently judged + adversarially audited)</h2>'+
+         '<p class="sec-sub">A 23-agent workflow scored every generation against the real document: 18 independent judges, then one adversarial auditor per arm to catch false-positive and false-negative confabulation flags. n = 18 examples per arm.</p>'+
+         '<div class="panel"><div class="bars">'+bars(D)+'</div></div>';
+
+      // findings
+      H+='<h2><span class="num">4.</span>Findings</h2>';
+      D.findings.forEach(function(f){ H+='<div class="find"><h3>'+esc(f.title)+'</h3><p>'+esc(f.body)+'</p></div>'; });
+
+      // example browser
+      H+='<h2><span class="num">5.</span>The examples</h2>'+
+         '<p class="sec-sub">Every probe example: the document the model was reading, and all four arms&#39; explanations of the same injected activation, with the audited verdict, the explanation style, the FVE, the verbatim claims flagged as unsupported, and all four sampled generations.</p>'+
+         exampleBrowser(D);
+
+      // teaching callouts
+      H+='<h2><span class="num">6.</span>Teaching cases</h2><div class="panel"><ul class="clean">'+
+         D.teaching.map(function(t){var lab=(t.set==="heldout"?"HO":"TR")+t.i;
+           return '<li><b>'+esc(t.title)+'</b> ('+lab+'): '+esc(t.note)+'</li>';}).join("")+'</ul></div>';
+
+      // synthesis
+      H+='<h2><span class="num">7.</span>What it means</h2><div class="panel"><ul class="clean">'+
+         D.synthesis_points.map(function(s){return "<li>"+esc(s)+"</li>";}).join("")+'</ul></div>';
+
+      // caveats + next
+      H+='<h2><span class="num">8.</span>Caveats &amp; next steps</h2>'+
+         '<div class="armgrid"><div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Honest caveats</h3><ul class="clean">'+
+           D.caveats.map(function(c){return "<li>"+esc(c)+"</li>";}).join("")+'</ul></div>'+
+         '<div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Next steps</h3><ul class="clean">'+
+           D.nextsteps.map(function(c){return "<li>"+esc(c)+"</li>";}).join("")+'</ul></div></div>';
+
+      H+='<footer>NLA de-confabulation experiment &middot; '+esc(D.meta.date)+
+         ' &middot; rendered client-side, no tracking &middot; data: <span class="mono">deconf_data.js</span></footer>';
+
+      app.innerHTML=H;
+      // default to the first teaching example
+      var first=0; (D.teaching&&D.teaching[0]) && D.examples.forEach(function(ex,gi){
+        if(ex.set===D.teaching[0].set && ex.i===D.teaching[0].i) first=gi; });
+      DV.show(first);
+    }
+
+    DV.render=render;
+    try { render(); }
+    catch(e){ var app=document.getElementById("app"); if(app) app.innerHTML='<p class="err">render error: '+esc(e&&e.stack||e)+'</p>'; }
+  })();
+  </script>
+</body>
+</html>

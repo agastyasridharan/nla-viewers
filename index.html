@@ -22,6 +22,7 @@
            margin:0 0 18px; background:#fff; transition:border-color .15s, transform .15s, box-shadow .15s; }
   a.card:hover { border-color:var(--accent); transform:translateY(-2px);
                  box-shadow:0 6px 22px rgba(0,0,0,.06); }
+  a.card.feature { border-left:4px solid var(--accent); }
   .card h2 { margin:0 0 .25em; font-size:1.5rem; font-weight:600; }
   .card p { margin:0; color:var(--muted); font-size:1.02rem; }
   .card .go { color:var(--accent); font-weight:600; }
@@ -32,7 +33,12 @@
 <body>
   <div class="wrap">
     <h1>NLA Research Viewers</h1>
-    <p class="lede">Interactive browsers for two strands of natural-language-autoencoder analysis.</p>
+    <p class="lede">Interactive browsers for three strands of natural-language-autoencoder analysis.</p>
+
+    <a class="card feature" href="nla-deconf/">
+      <h2>A New Warm-Start &rarr;</h2>
+      <p>De-confabulating NLAs by conditioning the warm-start on what the activation actually encodes. Four arms, training curves, an independently-judged grounded-rate (evidence 0.917 vs control 0.556), and a browser of every test example with all four arms side by side.</p>
+    </a>
 
     <a class="card" href="nla-mimics/">
       <h2>NLA Corpus Viewer &rarr;</h2>

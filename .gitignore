@@ -1,1 +1,5 @@
 .DS_Store
+
+# local-only boot-on-click launcher (contains SSH host/user; never publish)
+launcher.py
+start-launcher.command
