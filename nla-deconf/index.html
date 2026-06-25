@@ -49,6 +49,19 @@
   .find { border:1px solid var(--line); border-radius:9px; padding:15px 18px; margin:0 0 12px; background:var(--panel); }
   .find h3 { margin:0 0 .3em; font-size:1.14rem; color:var(--accent); }
   .find p { margin:0; font-size:1rem; }
+  /* training detail */
+  h3.subh { font-size:1.18rem; font-weight:600; margin:1.4em 0 .5em; }
+  .pipe { display:flex; flex-direction:column; gap:0; }
+  .pstep { display:flex; gap:14px; padding:11px 0; border-bottom:1px solid var(--line); }
+  .pstep:last-child { border-bottom:none; }
+  .pnum { flex:0 0 118px; font-family:'IBM Plex Mono',monospace; font-size:.82rem; font-weight:500; color:var(--accent); }
+  .pbody { flex:1; font-size:.96rem; }
+  .pio { font-family:'IBM Plex Mono',monospace; font-size:.78rem; color:var(--faint); margin-left:.4em; }
+  .pwhat { color:var(--muted); }
+  .promptbox { background:#f4f1ea; border:1px solid var(--line); border-radius:7px; padding:11px 13px;
+               font-family:'IBM Plex Mono',monospace; font-size:.8rem; white-space:pre-wrap; line-height:1.45; margin:.2em 0 1em; overflow:auto; }
+  .plabel { font-size:.86rem; color:var(--muted); font-weight:600; margin:.4em 0 .25em; }
+  .datanote { font-size:.9rem; color:var(--muted); margin:.4em 0 0; }
   /* stacked bars */
   .bars { margin:.4em 0; }
   .barrow { display:flex; align-items:center; gap:12px; margin:9px 0; }
@@ -163,6 +176,40 @@
       return h;
     }
 
+    // ---- how each arm is trained ----
+    function trainingDetail(D){
+      var T=D.training_detail; if(!T) return "";
+      var h='<p class="sec-sub">'+esc(T.intro)+'</p>';
+      h+='<div class="panel"><div class="pipe">';
+      T.pipeline.forEach(function(p){
+        h+='<div class="pstep"><div class="pnum">'+esc(p.stage)+'</div><div class="pbody">'+
+           '<b>'+esc(p.name)+'</b><span class="pio">'+esc(p.io)+'</span><br>'+
+           '<span class="pwhat">'+esc(p.what)+'</span></div></div>';
+      });
+      h+='</div></div>';
+      h+='<h3 class="subh">Hyperparameters</h3>'+
+         '<table><thead><tr><th>Phase</th><th>Trainable</th><th>LR</th><th>Batch</th><th>Steps</th><th>Notes</th></tr></thead><tbody>'+
+         T.hparams.map(function(r){return '<tr><td><b>'+esc(r.phase)+'</b></td><td>'+esc(r.adapter)+'</td><td>'+esc(r.lr)+
+           '</td><td>'+esc(r.batch)+'</td><td>'+esc(r.steps)+'</td><td>'+esc(r.notes)+'</td></tr>';}).join("")+'</tbody></table>';
+      h+='<h3 class="subh">Architecture &amp; objective</h3><div class="panel"><ul class="clean">'+
+         T.architecture.map(function(a){return "<li>"+esc(a)+"</li>";}).join("")+'</ul>'+
+         '<p style="margin:.6em 0 0">'+esc(T.objective)+'</p></div>';
+      h+='<h3 class="subh">The one difference: each arm&#39;s warm-start</h3><div class="armgrid">';
+      T.per_arm.forEach(function(p){
+        h+='<div class="armcard" style="border-top-color:'+(ARMC[p.arm]||"#ccc")+'">'+
+           '<div class="top"><h4>'+esc(ARMLAB[p.arm]||p.arm)+'</h4></div>'+
+           '<div class="style">'+esc(p.title)+'</div><div class="gen">'+esc(p.recipe)+'</div></div>';
+      });
+      h+='</div>';
+      h+='<h3 class="subh">The exact prompts</h3><div class="panel">'+
+         '<div class="plabel">Actor (AV) &mdash; reads the injected activation:</div>'+
+         '<pre class="promptbox">'+esc(T.actor_prompt)+'</pre>'+
+         '<div class="plabel">Critic (AR) &mdash; reconstructs the activation from the explanation:</div>'+
+         '<pre class="promptbox">'+esc(T.critic_prompt)+'</pre>'+
+         '<p class="datanote">'+esc(T.data_note)+'</p></div>';
+      return h;
+    }
+
     // ---- one example detail ----
     DV.show = function(gi){
       var D=window.DECONF, ex=D.examples[gi];
@@ -247,14 +294,17 @@
       H+='<div class="panel" style="margin-top:14px"><ul class="clean">'+
          D.design.map(function(d){return "<li>"+esc(d)+"</li>";}).join("")+'</ul></div>';
 
+      // how each arm is trained
+      H+='<h2><span class="num">1.</span>How each arm is trained</h2>'+trainingDetail(D);
+
       // tests run
-      H+='<h2><span class="num">1.</span>Tests run</h2>'+
+      H+='<h2><span class="num">2.</span>Tests run</h2>'+
          '<table><thead><tr><th>Test</th><th>What it did</th><th>Result</th></tr></thead><tbody>'+
          D.tests.map(function(t){return "<tr><td><b>"+esc(t.name)+"</b></td><td>"+esc(t.what)+"</td><td>"+esc(t.result)+"</td></tr>";}).join("")+
          '</tbody></table>';
 
       // training
-      H+='<h2><span class="num">2.</span>Training: 4 arms through 500 RL steps</h2>'+
+      H+='<h2><span class="num">3.</span>Training results: 4 arms through 500 RL steps</h2>'+
          '<p class="sec-sub">'+esc(D.training.note)+'</p>';
       H+='<table><thead><tr><th>Arm</th><th class="num">FVE (final-30)</th><th class="num">reward</th><th class="num">KL</th><th class="num">held-out FVE</th></tr></thead><tbody>'+
          D.training.end_state.map(function(r){
@@ -267,30 +317,30 @@
          '</div></div>';
 
       // grounded-rate
-      H+='<h2><span class="num">3.</span>Grounded-rate (independently judged + adversarially audited)</h2>'+
+      H+='<h2><span class="num">4.</span>Grounded-rate (independently judged + adversarially audited)</h2>'+
          '<p class="sec-sub">A 23-agent workflow scored every generation against the real document: 18 independent judges, then one adversarial auditor per arm to catch false-positive and false-negative confabulation flags. n = 18 examples per arm.</p>'+
          '<div class="panel"><div class="bars">'+bars(D)+'</div></div>';
 
       // findings
-      H+='<h2><span class="num">4.</span>Findings</h2>';
+      H+='<h2><span class="num">5.</span>Findings</h2>';
       D.findings.forEach(function(f){ H+='<div class="find"><h3>'+esc(f.title)+'</h3><p>'+esc(f.body)+'</p></div>'; });
 
       // example browser
-      H+='<h2><span class="num">5.</span>The examples</h2>'+
+      H+='<h2><span class="num">6.</span>The examples</h2>'+
          '<p class="sec-sub">Every probe example: the document the model was reading, and all four arms&#39; explanations of the same injected activation, with the audited verdict, the explanation style, the FVE, the verbatim claims flagged as unsupported, and all four sampled generations.</p>'+
          exampleBrowser(D);
 
       // teaching callouts
-      H+='<h2><span class="num">6.</span>Teaching cases</h2><div class="panel"><ul class="clean">'+
+      H+='<h2><span class="num">7.</span>Teaching cases</h2><div class="panel"><ul class="clean">'+
          D.teaching.map(function(t){var lab=(t.set==="heldout"?"HO":"TR")+t.i;
            return '<li><b>'+esc(t.title)+'</b> ('+lab+'): '+esc(t.note)+'</li>';}).join("")+'</ul></div>';
 
       // synthesis
-      H+='<h2><span class="num">7.</span>What it means</h2><div class="panel"><ul class="clean">'+
+      H+='<h2><span class="num">8.</span>What it means</h2><div class="panel"><ul class="clean">'+
          D.synthesis_points.map(function(s){return "<li>"+esc(s)+"</li>";}).join("")+'</ul></div>';
 
       // caveats + next
-      H+='<h2><span class="num">8.</span>Caveats &amp; next steps</h2>'+
+      H+='<h2><span class="num">9.</span>Caveats &amp; next steps</h2>'+
          '<div class="armgrid"><div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Honest caveats</h3><ul class="clean">'+
            D.caveats.map(function(c){return "<li>"+esc(c)+"</li>";}).join("")+'</ul></div>'+
          '<div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Next steps</h3><ul class="clean">'+

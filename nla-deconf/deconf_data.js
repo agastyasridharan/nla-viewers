@@ -44,6 +44,98 @@ window.DECONF = {
   "Base model Qwen3-8B-Base, layer 24, chosen so activations align with the Qwen-Scope SAE. The activation is injected at layer 1 (the L24 vector is added early so the whole network reads it).",
   "The premise: the warm-start teaches confabulation because Claude writes the targets from the CONTEXT while the Verbaliser only ever sees the ACTIVATION. Every claim not recoverable from the activation is a supervised lesson in asserting what cannot be known."
  ],
+ "training_detail": {
+  "intro": "Two networks are trained jointly. The Activation Verbaliser (AV) is the actor: it reads an injected activation and writes an explanation. The Activation Reconstructor (AR) is the critic: it reads an explanation and predicts back the activation. The objective is reconstruction — a good explanation is one the AR can invert to the original vector. Every arm runs the identical five-stage pipeline below on Qwen3-8B-Base; the arms differ only at Stage 2 (the warm-start summary source).",
+  "pipeline": [
+   {
+    "stage": "0 · Extract",
+    "name": "Activation extraction",
+    "what": "Run Qwen3-8B-Base over 20k diverse FineFineWeb documents; at 10 sampled positions per document (position ≥ 50 for enough left-context) record the layer-24 residual-stream activation (d_model = 4096) and the truncated context up to that token. Raw vectors, never normalized.",
+    "io": "→ 200k (activation, context) rows"
+   },
+   {
+    "stage": "1 · Split",
+    "name": "Document-level split",
+    "what": "Partition by unique document into av_sft / ar_sft / rl buckets (50k / 50k / 100k rows). All positions from one document stay in one bucket, so no activation is ever seen by two stages.",
+    "io": "→ av_sft, ar_sft, rl parquets"
+   },
+   {
+    "stage": "2 · Warm-start",
+    "name": "Summary generation (the arm difference)",
+    "what": "Claude writes the 2–3 feature explanation that will supervise the AV. This is the ONLY stage that differs across arms (see per-arm recipes below).",
+    "io": "→ explained parquets"
+   },
+   {
+    "stage": "3 · Build",
+    "name": "Token meta + critic template",
+    "what": "Wrap each explanation in the actor and critic prompt templates; bake in the injection marker token, injection scale, and MSE scale into a sidecar contract asserted at load time.",
+    "io": "→ av_sft / ar_sft training sets"
+   },
+   {
+    "stage": "4 · Train",
+    "name": "AV-SFT → AR-SFT → RL",
+    "what": "Warm-start the AV by supervised fine-tuning on the Stage-2 summaries, warm-start the AR to invert them, then jointly optimise both with RL (GRPO) where the reward is reconstruction quality.",
+    "io": "→ final RL policy (iter_000500)"
+   }
+  ],
+  "architecture": [
+   "AV (actor): the full 36-layer Qwen3-8B-Base with a LoRA adapter. A forward hook at layer 1 finds the injection marker token (㈎, id 149705) in the input and ADDS the target activation to the residual stream there, norm-matched (Karvonen injection): h ← h + ||h||·v/||v||. The L24 vector is injected early so the whole network processes it.",
+   "AR (critic): the base truncated to its first 25 layers, with its own LoRA adapter and a 4096×4096 value head. It reads the explanation under a suffix-anchored template and predicts the activation from the hidden state at the LAST token. The value-head input is normalized first (normalize-before-value_head), which bounds its norm and prevents the bf16+Adam blow-up that otherwise NaNs AR training.",
+   "Everything is 4-bit QLoRA (NF4, double-quant, bf16 compute). Only the LoRA adapters and the value head train; the quantized base is frozen."
+  ],
+  "hparams": [
+   {
+    "phase": "AV-SFT",
+    "adapter": "LoRA r128 α16 (rsLoRA)",
+    "lr": "3e-5",
+    "batch": "64 (arm1) / 32 (arm0,2,3)",
+    "steps": "1000",
+    "notes": "Full base; layer-1 injection hook; gradient checkpointing forced reentrant (torch 2.12). arm0/2/3 use batch 32 to fit the longer targets in 94 GB."
+   },
+   {
+    "phase": "AR-SFT",
+    "adapter": "LoRA r128 α16 on q,k,v,o",
+    "lr": "3e-5",
+    "batch": "64 / 32",
+    "steps": "1000",
+    "notes": "Backbone truncated to 25 layers, final norm stripped, value head identity-init (norm 64). Suffix-anchored read at the last token."
+   },
+   {
+    "phase": "RL (GRPO)",
+    "adapter": "AV LoRA lr 1e-5 + co-trained critic lr 5e-5",
+    "lr": "1e-5 / 5e-5",
+    "batch": "16 prompts × 16 samples",
+    "steps": "500",
+    "notes": "KL-to-init β = 0.01, temperature 1.0, max-new 150 tokens, save-every 50. Reward = −normalized-MSE between AR(explanation) and the true activation. ~185 s/step."
+   }
+  ],
+  "objective": "RL is GRPO with a live, co-trained critic. For each activation the AV samples 16 explanations; each is scored by the AR as reward = −MSE(AR(explanation), activation) on mse_scale-normalized vectors. GRPO pushes the policy toward the higher-reward samples in each group, with a KL-to-init penalty (β = 0.01) that defends the warm-start's calibrated prior (this is the channel through which 'say less when ambiguous' survives). The critic is trained simultaneously on the same explanations (its gradient does not flow into the discrete explanation tokens). Progress is reported as FVE = 1 − MSE / rawvar-baseline (baseline 0.5747); FVE 0 = predicting the mean activation, 1 = perfect reconstruction.",
+  "per_arm": [
+   {
+    "arm": "arm0_control",
+    "title": "Control — the paper's open recipe",
+    "recipe": "Claude (Sonnet) reads the FULL truncated context and writes the 2–3 features a language model would use to predict the next tokens (the paper's 'leads-the-witness' summary prompt). Because Claude sees the context, the targets contain context-derived specifics the activation may not actually encode — the hypothesised source of confabulation."
+   },
+   {
+    "arm": "arm1_prompt",
+    "title": "Prompt-only de-confab — the attribution control",
+    "recipe": "Identical pipeline and context access, but the summary prompt is edited to forbid unsupported specifics: 'assert only what a single mid-layer activation could encode; for a copied name/date/number, do not assert it unless the model would be predicting it; prefer distributional language for specifics.' Isolates 'a more careful prompt' from real evidence — does telling Claude to be careful suffice?"
+   },
+   {
+    "arm": "arm2_filter",
+    "title": "Discriminative filter — keep what pays rent",
+    "recipe": "Claude over-generates 5–6 candidate features from a richer prompt. A GPU pre-AR (arm0's AR-SFT checkpoint, deliberately independent of every arm's evaluation AR) then scores each candidate's contrastive ΔMSE: how much removing it hurts reconstruction of the TRUE activation versus hard-negative near-neighbour distractors. Keep the 2–3 highest-rent features; drop near-verbatim claims (high n-gram overlap with the context) so the filter cannot reward copying."
+   },
+   {
+    "arm": "arm3_evidence",
+    "title": "Activation-derived evidence — Claude never sees the context",
+    "recipe": "An evidence list is built ENTIRELY from the vector, on GPU: (1) kNN — the k≈8–16 nearest activations from DIFFERENT documents; their shared theme is what the direction encodes (per-document idiosyncrasies wash out). (2) Causal next-token readout — patch the activation in at L24, run the model forward, read the top tokens it actually induces (the model's own readout, faithful by construction). (3) Qwen-Scope SAE — encode the vector, take the top firing features, and feed each feature's max-activating contexts computed from our own corpus (grounded text, never machine labels). Claude writes the 2–3 features from this evidence alone, never seeing the row's own context."
+   }
+  ],
+  "actor_prompt": "You are a meticulous AI researcher conducting an important investigation into activation vectors from a language model. Your overall task is to describe the semantic content of that activation vector. We will pass the vector enclosed in <concept> tags into your context. You must then produce an explanation for the vector, enclosed within <explanation> tags. The explanation consists of 2-3 text snippets describing that vector. Here is the vector: <concept>㈎</concept>. Please provide an explanation.",
+  "critic_prompt": "Summary of the following text: <text>{explanation}</text> <summary>",
+  "data_note": "Datagen never normalizes (all parquets store raw vectors). Normalization happens at injection time (injection scale) and at loss time (mse_scale = √4096 = 64). The marker token, templates, and scales live in a sidecar that is asserted against the live tokenizer at startup. RL trained on the first 30k rows of the shuffled rl split; the held-out probe used rows 30000+ (unseen by every arm)."
+ },
  "tests": [
   {
    "name": "Shared datagen",
