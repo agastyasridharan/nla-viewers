@@ -135,6 +135,13 @@ ck('organism-gap links rendered', app.indexOf('arxiv.org/abs/2503.10965') !== -1
 // summary count consistency
 ck('summary reproduced_here matches arms+hosted',
   D2.eval_suite.summary.reproduced_here === (D2.eval_suite.reproduced.length + D2.eval_suite.reproduced_hosted.length));
+// SAE consistency (arms) + blackmail + answer-thrashing (hosted)
+ck('SAE-consistency card present', D2.eval_suite.reproduced.some(r => r.key === 'sae_consistency')
+  && app.indexOf('SAE Consistency') !== -1 && app.indexOf('polysemantic') !== -1);
+ck('blackmail case study present', D2.eval_suite.reproduced_hosted.some(r => r.key === 'blackmail')
+  && app.indexOf('Agentic Misalignment') !== -1);
+ck('answer-thrashing honest negative present', D2.eval_suite.reproduced_hosted.some(r => r.key === 'answer_thrashing')
+  && app.indexOf('honest negative') !== -1);
 
 console.log(out.join('\n'));
 console.log(out.some(l => l.startsWith('FAIL')) ? '\nRESULT: FAIL' : '\nRESULT: PASS');
