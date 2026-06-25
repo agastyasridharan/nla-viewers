@@ -113,6 +113,35 @@
   details.samples .s { border-top:1px dashed var(--line); padding:5px 0; color:var(--muted); }
   footer { margin-top:4em; padding-top:1.4em; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem; }
   .err { color:var(--red); font-family:monospace; white-space:pre-wrap; }
+  /* eval-suite reproduction */
+  .tagpill { display:inline-block; font-size:.7rem; font-weight:600; padding:2px 8px; border-radius:20px;
+             color:#fff; white-space:nowrap; letter-spacing:.02em; }
+  .reval { border:1px solid var(--line); border-radius:10px; padding:16px 19px; margin:0 0 16px; background:var(--panel); }
+  .reval .ev-head { font-size:1.12rem; margin:0 0 .3em; display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .reval .ev-what { color:var(--muted); font-size:.96rem; margin:.2em 0 .7em; }
+  .reval .ev-headline { background:#fffdf8; border-left:3px solid var(--accent); border-radius:6px;
+                        padding:10px 14px; font-size:1.0rem; margin:.2em 0 .6em; }
+  .reval .ev-metric { font-size:.88rem; color:var(--muted); margin:.2em 0 .5em; }
+  .evtable tr.hl td { background:#eef5f0; }
+  .evtable td.best { color:var(--green); font-weight:600; }
+  .exclaims { margin:10px 0 0; }
+  .exclaim-arm { margin:.5em 0; }
+  .exclaim-arm .alab { font-size:.82rem; color:var(--faint); margin:0 0 .2em; }
+  .chip { display:inline-block; font-size:.8rem; border-radius:5px; padding:2px 7px; margin:2px 3px 2px 0; line-height:1.3; }
+  .chip .sp { font-size:.66rem; text-transform:uppercase; opacity:.7; margin-right:.3em; letter-spacing:.04em; }
+  .chip-true { background:#e9f3ec; color:#235; border:1px solid #cfe6d6; }
+  .chip-fr { background:#fcf3e2; color:#5a4520; border:1px solid #ecd9b3; }
+  .chip-fu { background:#fbeae6; color:#6a2a1e; border:1px solid #efc9bd; }
+  .framebadge { display:inline-block; font-size:.72rem; font-weight:600; padding:2px 8px; border-radius:5px; color:#fff; }
+  .fb-eval { background:var(--accent); } .fb-deploy { background:var(--green); }
+  .catsec { font-weight:600; font-size:1.04rem; margin:1.3em 0 .2em; padding-bottom:.2em; border-bottom:2px solid var(--line); }
+  .catrow { display:grid; grid-template-columns:1fr 64px 190px; gap:10px; align-items:start;
+            padding:9px 4px; border-bottom:1px solid var(--line); font-size:.95rem; }
+  .catrow .cn { font-weight:500; }
+  .catrow .cwhy { color:var(--faint); font-size:.82rem; font-weight:400; margin:.15em 0 0; }
+  .catrow .cp { color:var(--faint); font-size:.8rem; text-align:right; }
+  .catrow .ct { text-align:right; }
+  @media (max-width:680px){ .catrow{ grid-template-columns:1fr; } .catrow .cp,.catrow .ct{ text-align:left; } }
 </style>
 </head>
 <body>
@@ -268,6 +297,110 @@
         '</div><div id="ex-detail"></div>';
     }
 
+    // ---- eval-suite reproduction ----
+    function tagPill(D,tag){
+      var L=((D.eval_suite||{}).tag_legend||{})[tag]||{label:tag,color:"#888"};
+      return '<span class="tagpill" style="background:'+L.color+'">'+esc(L.label)+'</span>';
+    }
+    function chipCls(v){ return v==="true"?"chip-true":(v==="false_related"?"chip-fr":"chip-fu"); }
+    function fmtPct(x){ return (x==null?"n/a":Number(x).toFixed(1)+"%"); }
+    function revalTable(D,r){
+      var rows=r.table||[]; if(!rows.length) return "";
+      var hl=function(k){return k==="arm3_evidence"?" class=\"hl\"":"";};
+      var H='<table class="evtable">';
+      if(r.key==="confab_specificity"){
+        H+='<thead><tr><th>Arm</th><th class="num">Theme %true</th><th class="num">Entity %true</th><th class="num">Detail %true</th><th class="num">Overall %true</th><th class="num">claims/expl</th></tr></thead><tbody>';
+        rows.forEach(function(x){ H+='<tr'+hl(x.arm)+'><td><span class="swatch" style="background:'+(ARMC[x.arm]||"#ccc")+'"></span>'+esc(x.label)+
+          '</td><td class="num">'+fmtPct(x.theme)+'<span class="mono" style="color:var(--faint)"> n'+x.theme_n+'</span>'+
+          '</td><td class="num">'+fmtPct(x.entity)+'<span class="mono" style="color:var(--faint)"> n'+x.entity_n+'</span>'+
+          '</td><td class="num">'+fmtPct(x.detail)+'<span class="mono" style="color:var(--faint)"> n'+x.detail_n+'</span>'+
+          '</td><td class="num"><b>'+fmtPct(x.overall)+'</b></td><td class="num">'+Number(x.claims).toFixed(2)+'</td></tr>'; });
+      } else if(r.key==="writing_quality"){
+        H+='<thead><tr><th>Arm</th><th class="num">Writing quality (0–100)</th></tr></thead><tbody>';
+        rows.forEach(function(x){ H+='<tr'+hl(x.arm)+'><td><span class="swatch" style="background:'+(ARMC[x.arm]||"#ccc")+'"></span>'+esc(x.label)+
+          '</td><td class="num">'+Number(x.wq).toFixed(1)+'</td></tr>'; });
+      } else if(r.key==="eval_awareness"){
+        H+='<thead><tr><th>Arm</th><th class="num">Sensitivity (eval)</th><th class="num">False-pos (deploy)</th><th class="num">Separation</th></tr></thead><tbody>';
+        rows.forEach(function(x){ H+='<tr'+hl(x.arm)+'><td><span class="swatch" style="background:'+(ARMC[x.arm]||"#ccc")+'"></span>'+esc(x.label)+
+          '</td><td class="num">'+Number(x.sensitivity).toFixed(2)+'</td><td class="num">'+Number(x.fpr).toFixed(2)+
+          '</td><td class="num"><b>'+(x.separation>=0?"+":"")+Number(x.separation).toFixed(2)+'</b></td></tr>'; });
+      } else if(r.key==="suffix_prediction"){
+        H+='<thead><tr><th>Arm</th><th class="num">10-way accuracy</th><th class="num">vs chance</th></tr></thead><tbody>';
+        rows.forEach(function(x){ H+='<tr'+hl(x.arm)+'><td><span class="swatch" style="background:'+(ARMC[x.arm]||"#ccc")+'"></span>'+esc(x.label)+
+          '</td><td class="num"><b>'+Number(x.accuracy).toFixed(2)+'</b></td><td class="num" style="color:var(--faint)">0.10</td></tr>'; });
+      }
+      H+='</tbody></table>';
+      return H;
+    }
+    function revalExamples(D,r){
+      var ex=r.examples||[]; if(!ex.length) return "";
+      var H='<details class="samples"><summary>example explanations ('+ex.length+')</summary>';
+      if(r.key==="confab_specificity"){
+        ex.forEach(function(b){
+          H+='<div class="exclaims"><div class="alab mono">'+esc(b.key)+'</div>';
+          ARMORDER.forEach(function(k){
+            var cl=(b.arms||{})[k]; if(!cl||!cl.length) return;
+            H+='<div class="exclaim-arm"><div class="alab">'+esc(ARMLAB[k])+'</div>';
+            cl.forEach(function(c){ H+='<span class="chip '+chipCls(c.verdict)+'"><span class="sp">'+esc(c.specificity)+'</span>'+esc(c.text)+'</span>'; });
+            H+='</div>';
+          });
+          H+='</div>';
+        });
+      } else if(r.key==="eval_awareness"){
+        ex.forEach(function(b){
+          H+='<div class="exclaims"><span class="framebadge '+(b.frame==="eval"?"fb-eval":"fb-deploy")+'">'+esc(b.frame)+'</span> '+
+             '<span class="mono" style="font-size:.82rem">'+esc(b.id)+'</span><div class="ctx" style="max-height:90px;margin:.4em 0">'+esc(b.prompt)+'</div>';
+          ARMORDER.forEach(function(k){ var t=(b.arms||{})[k]||""; H+='<div class="exclaim-arm"><div class="alab">'+esc(ARMLAB[k])+'</div><div style="font-size:.92rem">'+esc(t)+'</div></div>'; });
+          H+='</div>';
+        });
+      } else if(r.key==="suffix_prediction"){
+        ex.forEach(function(b){
+          H+='<div class="exclaims"><span class="mono" style="font-size:.82rem">'+esc(b.id)+' · '+esc(b.domain||"")+'</span>'+
+             '<div style="font-size:.86rem;color:var(--muted);margin:.3em 0"><b>true continuation:</b> <span class="mono">'+esc(b.true_suffix)+'</span></div>';
+          ARMORDER.forEach(function(k){ var t=(b.arms||{})[k]||""; H+='<div class="exclaim-arm"><div class="alab">'+esc(ARMLAB[k])+'</div><div style="font-size:.92rem">'+esc(t)+'</div></div>'; });
+          H+='</div>';
+        });
+      }
+      H+='</details>';
+      return H;
+    }
+    function revalCard(D,r){
+      var h='<div class="reval"><div class="ev-head"><span>'+esc(r.paper)+'</span> <span class="mono" style="color:var(--faint);font-size:.82rem">'+esc(r.pages)+'</span> '+tagPill(D,r.tag)+'</div>';
+      h+='<p class="ev-what">'+esc(r.what)+'</p>';
+      h+='<div class="ev-headline">'+esc(r.headline)+'</div>';
+      if(r.metric) h+='<div class="ev-metric"><b>Metric.</b> '+esc(r.metric)+'</div>';
+      h+=revalTable(D,r);
+      if(r.caveat) h+='<div class="ev-metric" style="font-style:italic"><b>Caveat.</b> '+esc(r.caveat)+'</div>';
+      h+=revalExamples(D,r);
+      return h+'</div>';
+    }
+    function evalSuite(D){
+      var E=D.eval_suite; if(!E) return "";
+      var s=E.summary;
+      var h='<p class="sec-sub">'+esc(E.intro)+'</p>';
+      h+='<div class="panel"><b>'+s.total+'</b> evaluations catalogued &middot; <b>'+s.reproduced_here+'</b> reproduced here on the open arms &middot; <b>'+s.already_on_site+'</b> already shown above.<div style="margin-top:.7em;line-height:2">';
+      Object.keys(E.tag_legend).forEach(function(t){ h+=tagPill(D,t)+' <span class="mono" style="margin:0 1.1em 0 .2em">'+(s.tag_counts[t]||0)+'</span>'; });
+      h+='</div></div>';
+      h+='<h3 class="subh">Reproduced on the four arms</h3>';
+      E.reproduced.forEach(function(r){ h+=revalCard(D,r); });
+      h+='<h3 class="subh">Already shown above (also paper evals)</h3><div class="panel"><ul class="clean">';
+      E.already_on_site.forEach(function(a){ h+='<li><b>'+esc(a.paper)+'</b> <span class="mono" style="color:var(--faint)">'+esc(a.pages)+'</span> &rarr; see &ldquo;'+esc(a.ref)+'&rdquo; above. '+esc(a.note)+'</li>'; });
+      h+='</ul></div>';
+      h+='<h3 class="subh">The full catalog &mdash; all '+s.total+' paper evaluations</h3>'+
+         '<p class="sec-sub">Every evaluation, case study, and experiment in the paper, with the reproducibility verdict for our open-model resources.</p>';
+      h+='<div class="panel">';
+      Object.keys(E.tag_legend).forEach(function(t){ var L=E.tag_legend[t]; h+='<div style="margin:.35em 0">'+tagPill(D,t)+' <span style="color:var(--muted);font-size:.9rem;margin-left:.4em">'+esc(L.desc)+'</span></div>'; });
+      h+='</div>';
+      E.catalog.forEach(function(sec){
+        h+='<div class="catsec">'+esc(sec.section)+' <span class="mono" style="color:var(--faint);font-weight:400;font-size:.82rem">pp. '+esc(sec.pages)+'</span></div>';
+        sec.evals.forEach(function(e){
+          h+='<div class="catrow"><div class="cn">'+esc(e.name)+(e.purpose?'<div class="cwhy">'+esc(e.purpose)+'</div>':'')+'</div>'+
+             '<div class="cp mono">p.'+esc(e.pages)+'</div><div class="ct">'+tagPill(D,e.tag)+'</div></div>';
+        });
+      });
+      return h;
+    }
+
     function render(){
       var D=window.DECONF;
       var app=document.getElementById("app");
@@ -321,26 +454,31 @@
          '<p class="sec-sub">A 23-agent workflow scored every generation against the real document: 18 independent judges, then one adversarial auditor per arm to catch false-positive and false-negative confabulation flags. n = 18 examples per arm.</p>'+
          '<div class="panel"><div class="bars">'+bars(D)+'</div></div>';
 
+      // eval-suite reproduction
+      if(D.eval_suite){
+        H+='<h2><span class="num">5.</span>NLA paper eval-suite reproduction</h2>'+evalSuite(D);
+      }
+
       // findings
-      H+='<h2><span class="num">5.</span>Findings</h2>';
+      H+='<h2><span class="num">6.</span>Findings</h2>';
       D.findings.forEach(function(f){ H+='<div class="find"><h3>'+esc(f.title)+'</h3><p>'+esc(f.body)+'</p></div>'; });
 
       // example browser
-      H+='<h2><span class="num">6.</span>The examples</h2>'+
+      H+='<h2><span class="num">7.</span>The examples</h2>'+
          '<p class="sec-sub">Every probe example: the document the model was reading, and all four arms&#39; explanations of the same injected activation, with the audited verdict, the explanation style, the FVE, the verbatim claims flagged as unsupported, and all four sampled generations.</p>'+
          exampleBrowser(D);
 
       // teaching callouts
-      H+='<h2><span class="num">7.</span>Teaching cases</h2><div class="panel"><ul class="clean">'+
+      H+='<h2><span class="num">8.</span>Teaching cases</h2><div class="panel"><ul class="clean">'+
          D.teaching.map(function(t){var lab=(t.set==="heldout"?"HO":"TR")+t.i;
            return '<li><b>'+esc(t.title)+'</b> ('+lab+'): '+esc(t.note)+'</li>';}).join("")+'</ul></div>';
 
       // synthesis
-      H+='<h2><span class="num">8.</span>What it means</h2><div class="panel"><ul class="clean">'+
+      H+='<h2><span class="num">9.</span>What it means</h2><div class="panel"><ul class="clean">'+
          D.synthesis_points.map(function(s){return "<li>"+esc(s)+"</li>";}).join("")+'</ul></div>';
 
       // caveats + next
-      H+='<h2><span class="num">9.</span>Caveats &amp; next steps</h2>'+
+      H+='<h2><span class="num">10.</span>Caveats &amp; next steps</h2>'+
          '<div class="armgrid"><div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Honest caveats</h3><ul class="clean">'+
            D.caveats.map(function(c){return "<li>"+esc(c)+"</li>";}).join("")+'</ul></div>'+
          '<div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Next steps</h3><ul class="clean">'+
