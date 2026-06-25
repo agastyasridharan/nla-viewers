@@ -304,10 +304,32 @@
     }
     function chipCls(v){ return v==="true"?"chip-true":(v==="false_related"?"chip-fr":"chip-fu"); }
     function fmtPct(x){ return (x==null?"n/a":Number(x).toFixed(1)+"%"); }
+    function fmtCell(v,fmt){
+      if(v==null) return "n/a";
+      if(fmt==="pct") return fmtPct(v);
+      if(fmt==="f3") return Number(v).toFixed(3);
+      if(fmt==="f2") return Number(v).toFixed(2);
+      if(fmt==="signed2") return (v>=0?"+":"")+Number(v).toFixed(2);
+      if(fmt==="signed3") return (v>=0?"+":"")+Number(v).toFixed(3);
+      return String(v);
+    }
     function revalTable(D,r){
       var rows=r.table||[]; if(!rows.length) return "";
       var hl=function(k){return k==="arm3_evidence"?" class=\"hl\"":"";};
       var H='<table class="evtable">';
+      if(r.columns){   // generic table: r.columns=[{key,label,fmt,bold}], first col is the row label
+        H+='<thead><tr>'; r.columns.forEach(function(c,ci){ H+='<th'+(ci>0?' class="num"':'')+'>'+esc(c.label)+'</th>'; }); H+='</tr></thead><tbody>';
+        rows.forEach(function(x){
+          H+='<tr'+(x.arm?hl(x.arm):"")+'>';
+          r.columns.forEach(function(c,ci){
+            var v=x[c.key];
+            if(ci===0){ H+='<td>'+(x.arm?'<span class="swatch" style="background:'+(ARMC[x.arm]||"#ccc")+'"></span>':"")+esc(String(v==null?"":v))+'</td>'; }
+            else { var d=fmtCell(v,c.fmt); H+='<td class="num">'+(c.bold?'<b>'+d+'</b>':d)+(x[c.key+"_n"]!=null?'<span class="mono" style="color:var(--faint)"> n'+x[c.key+"_n"]+'</span>':"")+'</td>'; }
+          });
+          H+='</tr>';
+        });
+        H+='</tbody></table>'; return H;
+      }
       if(r.key==="confab_specificity"){
         H+='<thead><tr><th>Arm</th><th class="num">Theme %true</th><th class="num">Entity %true</th><th class="num">Detail %true</th><th class="num">Overall %true</th><th class="num">claims/expl</th></tr></thead><tbody>';
         rows.forEach(function(x){ H+='<tr'+hl(x.arm)+'><td><span class="swatch" style="background:'+(ARMC[x.arm]||"#ccc")+'"></span>'+esc(x.label)+
@@ -334,7 +356,18 @@
     }
     function revalExamples(D,r){
       var ex=r.examples||[]; if(!ex.length) return "";
-      var H='<details class="samples"><summary>example explanations ('+ex.length+')</summary>';
+      var H='<details class="samples"><summary>'+esc(r.examples_label||("example explanations ("+ex.length+")"))+'</summary>';
+      if(r.gen_examples){   // generic: ex=[{badge,badgecls,title,sub,blocks:[{label,text}]}]
+        ex.forEach(function(b){
+          H+='<div class="exclaims">';
+          if(b.badge) H+='<span class="framebadge '+(b.badgecls||"fb-eval")+'">'+esc(b.badge)+'</span> ';
+          if(b.title) H+='<span class="mono" style="font-size:.82rem">'+esc(b.title)+'</span>';
+          if(b.sub) H+='<div style="font-size:.86rem;color:var(--muted);margin:.3em 0">'+esc(b.sub)+'</div>';
+          (b.blocks||[]).forEach(function(bl){ H+='<div class="exclaim-arm"><div class="alab">'+esc(bl.label)+'</div><div style="font-size:.92rem">'+esc(bl.text)+'</div></div>'; });
+          H+='</div>';
+        });
+        H+='</details>'; return H;
+      }
       if(r.key==="confab_specificity"){
         ex.forEach(function(b){
           H+='<div class="exclaims"><div class="alab mono">'+esc(b.key)+'</div>';
@@ -383,6 +416,18 @@
       h+='</div></div>';
       h+='<h3 class="subh">Reproduced on the four arms</h3>';
       E.reproduced.forEach(function(r){ h+=revalCard(D,r); });
+      if(E.reproduced_hosted && E.reproduced_hosted.length){
+        h+='<h3 class="subh">Reproduced on the hosted Llama-3.3-70B NLA</h3>';
+        if(E.hosted_intro) h+='<p class="sec-sub">'+esc(E.hosted_intro)+'</p>';
+        E.reproduced_hosted.forEach(function(r){ h+=revalCard(D,r); });
+      }
+      if(E.organism_gap){
+        var g=E.organism_gap;
+        h+='<h3 class="subh">'+esc(g.title)+'</h3><div class="panel">';
+        (g.paras||[]).forEach(function(p){ h+='<p style="margin:.5em 0">'+esc(p)+'</p>'; });
+        if(g.links&&g.links.length){ h+='<div style="margin-top:.6em;font-size:.9rem">'; g.links.forEach(function(l){ h+='<div style="margin:.2em 0">&rsaquo; <a href="'+esc(l.url)+'" target="_blank" rel="noopener">'+esc(l.label)+'</a></div>'; }); h+='</div>'; }
+        h+='</div>';
+      }
       h+='<h3 class="subh">Already shown above (also paper evals)</h3><div class="panel"><ul class="clean">';
       E.already_on_site.forEach(function(a){ h+='<li><b>'+esc(a.paper)+'</b> <span class="mono" style="color:var(--faint)">'+esc(a.pages)+'</span> &rarr; see &ldquo;'+esc(a.ref)+'&rdquo; above. '+esc(a.note)+'</li>'; });
       h+='</ul></div>';

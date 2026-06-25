@@ -111,8 +111,30 @@ if (hasAware) {
     && app.indexOf('Separation') !== -1 && app.indexOf('False-pos (deploy)') !== -1);
   ck('suffix-prediction table rendered', app.indexOf('10-way accuracy') !== -1);
   ck('eval-awareness caveat shown', app.indexOf('on-distribution analog') !== -1);
-  ck('all 4 reproduced cards', D2.eval_suite.reproduced.length === 4);
 }
+// new arm-based evals (steganography + claim-removal; behavioural if present)
+ck('steganography card present', D2.eval_suite.reproduced.some(r => r.key === 'steganography')
+  && app.indexOf('FVE-maintained') !== -1);
+ck('claim-removal card present', D2.eval_suite.reproduced.some(r => r.key === 'claim_removal')
+  && app.indexOf('claim verifier') !== -1);
+ck('generic table renders (French col)', app.indexOf('French') !== -1);
+// hosted Llama-70B NLA subsection
+ck('hosted reproduced subsection', D2.eval_suite.reproduced_hosted
+  && D2.eval_suite.reproduced_hosted.length >= 4
+  && app.indexOf('Reproduced on the hosted Llama-3.3-70B NLA') !== -1);
+ck('safety-sandbagging card present', D2.eval_suite.reproduced_hosted.some(r => r.key === 'safety_sandbagging')
+  && app.indexOf('answered correctly') !== -1);
+ck('language-switching case study', D2.eval_suite.reproduced_hosted.some(r => r.key === 'language_switching'));
+ck('hosted eval-awareness corpus', D2.eval_suite.reproduced_hosted.some(r => r.key === 'eval_awareness_corpus'));
+// organism gap note
+ck('organism-gap note rendered', D2.eval_suite.organism_gap
+  && app.indexOf('auditing-game gap') !== -1
+  && app.indexOf('out-of-distribution') !== -1);
+ck('organism-gap links rendered', app.indexOf('arxiv.org/abs/2503.10965') !== -1
+  && app.indexOf('auditing-agents/llama-3.3-70b-dpo-rt-lora') !== -1);
+// summary count consistency
+ck('summary reproduced_here matches arms+hosted',
+  D2.eval_suite.summary.reproduced_here === (D2.eval_suite.reproduced.length + D2.eval_suite.reproduced_hosted.length));
 
 console.log(out.join('\n'));
 console.log(out.some(l => l.startsWith('FAIL')) ? '\nRESULT: FAIL' : '\nRESULT: PASS');
