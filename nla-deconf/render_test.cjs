@@ -155,12 +155,33 @@ ck('phase1 truncation curve drawn', app.indexOf('Which tokens pay rent') !== -1
   && app.indexOf('fraction of explanation tokens kept') !== -1 && app.indexOf('<polyline') !== -1);
 ck('phase1 table columns present', app.indexOf('FVE (own critic)') !== -1
   && app.indexOf('FVE (common critic)') !== -1 && app.indexOf('CJK frac') !== -1);
-ck('downstream sections renumbered', app.indexOf('6.</span>NLA paper eval-suite reproduction') !== -1
-  && app.indexOf('7.</span>Findings') !== -1 && app.indexOf('11.</span>Caveats') !== -1);
+ck('phase1->eval-suite section ordering', app.indexOf('5.</span>Grounded-rate') !== -1
+  && app.indexOf('8.</span>NLA paper eval-suite reproduction') !== -1);
 ck('phase1 prefix-rent finding rendered', app.indexOf('anti-informative') !== -1
   && app.indexOf('pays rent') !== -1);
 ck('phase1 interpretation note rendered', app.indexOf('deliberately complicate the headline') !== -1);
 ck('phase1 common-critic caveat in finding', app.indexOf('not under a shared one') !== -1);
+
+// Phase-2a judge-free grounded-rate
+ck('grounded_jf data present (4 arms)', D2.grounded_jf && D2.grounded_jf.arms && D2.grounded_jf.arms.length === 4);
+ck('grounded_jf arms have grounded+confab+rent', D2.grounded_jf
+  && D2.grounded_jf.arms.every(a => a.grounded != null && a.confab != null && a.rent_mean != null && a.llm_judge != null));
+ck('grounded_jf section + renumber', app.indexOf('6.</span>Grounded-rate, judge-free') !== -1
+  && app.indexOf('reconstruction rent') !== -1 && app.indexOf('8.</span>NLA paper eval-suite reproduction') !== -1);
+ck('grounded_jf table columns', app.indexOf('grounded (indep AR)') !== -1
+  && app.indexOf('grounded (own critic)') !== -1 && app.indexOf('LLM-judge grounded') !== -1);
+ck('grounded_jf bars + chips', app.indexOf('Per-claim verdicts under the independent AR') !== -1
+  && app.indexOf('pays reconstruction rent') !== -1);
+// Phase-2b counterfactual recall
+ck('cf_recall data present (4 arms)', D2.cf_recall && D2.cf_recall.arms && D2.cf_recall.arms.length === 4);
+ck('cf_recall arms have recall+blind', D2.cf_recall
+  && D2.cf_recall.arms.every(a => a.recall != null && a.blind != null));
+ck('cf_recall section + renumber', app.indexOf('7.</span>Counterfactual recall') !== -1
+  && app.indexOf('minimal pairs') !== -1 && app.indexOf('9.</span>Findings') !== -1);
+ck('cf_recall table + heatmap', app.indexOf('recall (chance .50)') !== -1
+  && app.indexOf('Recall by attribute') !== -1);
+ck('downstream renumbered to 13', app.indexOf('13.</span>Caveats') !== -1
+  && app.indexOf('12.</span>What it means') !== -1 && app.indexOf('10.</span>The examples') !== -1);
 
 console.log(out.join('\n'));
 console.log(out.some(l => l.startsWith('FAIL')) ? '\nRESULT: FAIL' : '\nRESULT: PASS');

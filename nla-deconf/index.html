@@ -530,6 +530,109 @@
       return h;
     }
 
+    // ---- Phase-2a: judge-free grounded-rate (per-claim reconstruction rent) ----
+    function barsRates(rows){
+      var h="";
+      rows.forEach(function(r){
+        function seg(n,c){ return n>0?'<div style="width:'+(n*100)+'%;background:'+c+'"></div>':""; }
+        h+='<div class="barrow"><div class="lab"><span class="swatch" style="background:'+ARMC[r.key]+'"></span>'+esc(ARMLAB[r.key])+'</div>'+
+           '<div class="track">'+seg(r.grounded,"var(--green)")+seg(r.entangled,"var(--amber)")+seg(r.confab,"var(--red)")+'</div>'+
+           '<div class="gr">'+r.grounded.toFixed(3)+'</div></div>';
+      });
+      return h;
+    }
+    function verdictChipStyle(v){
+      if(v==="grounded") return "background:#e9f3ec;border:1px solid #cfe6d6";
+      if(v==="confabulated") return "background:#fbeae6;border:1px solid #efc9bd";
+      return "background:#fcf3e2;border:1px solid #ecd9b3";
+    }
+    function gjExamples(G){
+      var arms=["arm0_control","arm3_evidence"];
+      var n=Math.min(3,(G.examples.arm0_control||[]).length); if(!n) return "";
+      var h='<details class="samples"><summary>per-claim verdicts on held-out examples (arm 0 vs arm 3)</summary>';
+      for(var i=0;i<n;i++){
+        var e0=(G.examples.arm0_control||[])[i]; if(!e0) continue;
+        h+='<div class="exclaims"><div class="alab mono">held-out doc '+esc(e0.doc_id)+' · token '+esc(e0.pos)+'</div>';
+        arms.forEach(function(a){
+          var e=(G.examples[a]||[])[i]; if(!e) return;
+          h+='<div class="exclaim-arm"><div class="alab">'+esc(ARMLAB[a])+'</div>';
+          e.claims.forEach(function(c){
+            h+='<span class="chip" style="'+verdictChipStyle(c.verdict)+'"><span class="sp">'+esc(c.verdict)+
+               (c.rent==null?"":" rent "+Number(c.rent).toFixed(3))+'</span>'+esc(c.text)+'</span>';
+          });
+          h+='</div>';
+        });
+        h+='</div>';
+      }
+      return h+'</details>';
+    }
+    function groundedJFSection(D){
+      var G=D.grounded_jf; if(!G) return "";
+      var h='<p class="sec-sub">'+esc(G.intro)+'</p>';
+      h+='<table><thead><tr><th>Arm</th><th class="num">grounded (indep AR)</th><th class="num">confab (indep)</th><th class="num">grounded (own critic)</th><th class="num">mean rent</th><th class="num">LLM-judge grounded</th></tr></thead><tbody>';
+      G.arms.forEach(function(a){
+        h+='<tr'+(a.key==="arm3_evidence"?' class="hl"':'')+'><td><span class="swatch" style="background:'+ARMC[a.key]+'"></span>'+esc(ARMLAB[a.key])+
+           '</td><td class="num"><b>'+a.grounded.toFixed(3)+'</b></td><td class="num">'+a.confab.toFixed(3)+
+           '</td><td class="num" style="color:var(--faint)">'+a.grounded_own.toFixed(3)+'</td><td class="num">'+a.rent_mean.toFixed(4)+
+           '</td><td class="num" style="color:var(--faint)">'+(a.llm_judge==null?"n/a":a.llm_judge.toFixed(3))+'</td></tr>';
+      });
+      h+='</tbody></table>';
+      h+='<div class="datanote">Claim is grounded if leave-one-out reconstruction rent &gt; '+esc(G.tau_grounded)+', confabulated if &le; '+esc(G.tau_conf)+
+         '. n='+esc(G.n_rows)+' held-out activations, ~'+esc(G.arms[0].n_claims)+' claims/arm. The "own critic" column scores each arm with its own RL critic (flattens the arms); the headline uses the independent mixed AR.</div>';
+      h+='<div class="panel"><div class="plabel">Per-claim verdicts under the independent AR</div><div class="bars">'+barsRates(G.arms)+
+         '<div class="legend-inline"><b style="color:var(--green)">grounded</b> (pays reconstruction rent) &middot; <b style="color:var(--amber)">entangled</b> &middot; <b style="color:var(--red)">confabulated</b> (pays none) &nbsp;|&nbsp; number = grounded-rate</div></div></div>';
+      h+=gjExamples(G);
+      if(G.note) h+='<div class="headline" style="border-left-color:var(--green)">'+esc(G.note)+'</div>';
+      return h;
+    }
+
+    // ---- Phase-2b: counterfactual (CF1) recall ----
+    function cfHeat(C){
+      var h='<table class="evtable"><thead><tr><th>Attribute</th>';
+      ARMORDER.forEach(function(k){ h+='<th class="num">'+shortArm(k)+'</th>'; }); h+='</tr></thead><tbody>';
+      C.attributes.forEach(function(at){
+        h+='<tr><td>'+esc(at)+'</td>';
+        ARMORDER.forEach(function(k){
+          var v=(C.per_attr[at]||{})[k];
+          var bg = v==null?"#fff":"rgba(46,107,79,"+Math.max(0,Math.min(1,(v-0.5)*2)).toFixed(2)+")";
+          h+='<td class="num" style="background:'+bg+'">'+(v==null?"n/a":Number(v).toFixed(2))+'</td>';
+        });
+        h+='</tr>';
+      });
+      return h+'</tbody></table>';
+    }
+    function cfExamples(C){
+      var ex=C.examples||[]; if(!ex.length) return "";
+      var h='<details class="samples"><summary>example minimal pairs (the two conditions, read by each arm)</summary>';
+      ex.forEach(function(b){
+        h+='<div class="exclaims"><div class="alab mono">'+esc(b.attribute)+': &ldquo;'+esc(b.value_v)+'&rdquo; vs &ldquo;'+esc(b.value_v_prime)+'&rdquo; (anchor &ldquo;'+esc(b.anchor)+'&rdquo;)</div>';
+        ARMORDER.forEach(function(k){
+          var a=b.arms[k]; if(!a) return;
+          var tag = a.blind?'<span class="badge unknown">blind</span>':(a.correct?'<span class="badge grounded">recalled</span>':'<span class="badge confabulated">wrong</span>');
+          h+='<div class="exclaim-arm"><div class="alab">'+esc(ARMLAB[k])+' '+tag+'</div>'+
+             '<div style="font-size:.86rem"><b>'+esc(b.value_v)+':</b> '+esc(a.v)+'</div>'+
+             '<div style="font-size:.86rem"><b>'+esc(b.value_v_prime)+':</b> '+esc(a.vp)+'</div></div>';
+        });
+        h+='</div>';
+      });
+      return h+'</details>';
+    }
+    function cfRecallSection(D){
+      var C=D.cf_recall; if(!C) return "";
+      var h='<p class="sec-sub">'+esc(C.intro)+'</p>';
+      h+='<table><thead><tr><th>Arm</th><th class="num">recall (chance .50)</th><th class="num">blind</th><th class="num">wrong</th></tr></thead><tbody>';
+      C.arms.forEach(function(a){
+        h+='<tr'+(a.key==="arm3_evidence"?' class="hl"':'')+'><td><span class="swatch" style="background:'+ARMC[a.key]+'"></span>'+esc(ARMLAB[a.key])+
+           '</td><td class="num"><b>'+a.recall.toFixed(3)+'</b></td><td class="num">'+a.blind.toFixed(3)+'</td><td class="num" style="color:var(--faint)">'+a.wrong.toFixed(3)+'</td></tr>';
+      });
+      h+='</tbody></table>';
+      h+='<div class="datanote">'+esc(C.metric)+' &middot; '+esc(C.n_items)+' authored minimal pairs.</div>';
+      h+='<div class="panel"><div class="plabel">Recall by attribute (green = above the 0.5 chance line)</div>'+cfHeat(C)+'</div>';
+      h+=cfExamples(C);
+      if(C.note) h+='<div class="headline" style="border-left-color:var(--green)">'+esc(C.note)+'</div>';
+      return h;
+    }
+
     function render(){
       var D=window.DECONF;
       var app=document.getElementById("app");
@@ -588,31 +691,40 @@
          '<p class="sec-sub">A 23-agent workflow scored every generation against the real document: 18 independent judges, then one adversarial auditor per arm to catch false-positive and false-negative confabulation flags. n = 18 examples per arm.</p>'+
          '<div class="panel"><div class="bars">'+bars(D)+'</div></div>';
 
+      // phase-2a: judge-free grounded-rate (per-claim reconstruction rent)
+      if(D.grounded_jf){
+        H+='<h2><span class="num">6.</span>Grounded-rate, judge-free: does each claim pay reconstruction rent?</h2>'+groundedJFSection(D);
+      }
+      // phase-2b: counterfactual recall (the precision/recall safety check)
+      if(D.cf_recall){
+        H+='<h2><span class="num">7.</span>Counterfactual recall: does grounding cost recall of a known feature?</h2>'+cfRecallSection(D);
+      }
+
       // eval-suite reproduction
       if(D.eval_suite){
-        H+='<h2><span class="num">6.</span>NLA paper eval-suite reproduction</h2>'+evalSuite(D);
+        H+='<h2><span class="num">8.</span>NLA paper eval-suite reproduction</h2>'+evalSuite(D);
       }
 
       // findings
-      H+='<h2><span class="num">7.</span>Findings</h2>';
+      H+='<h2><span class="num">9.</span>Findings</h2>';
       D.findings.forEach(function(f){ H+='<div class="find"><h3>'+esc(f.title)+'</h3><p>'+esc(f.body)+'</p></div>'; });
 
       // example browser
-      H+='<h2><span class="num">8.</span>The examples</h2>'+
+      H+='<h2><span class="num">10.</span>The examples</h2>'+
          '<p class="sec-sub">Every probe example: the document the model was reading, and all four arms&#39; explanations of the same injected activation, with the audited verdict, the explanation style, the FVE, the verbatim claims flagged as unsupported, and all four sampled generations.</p>'+
          exampleBrowser(D);
 
       // teaching callouts
-      H+='<h2><span class="num">9.</span>Teaching cases</h2><div class="panel"><ul class="clean">'+
+      H+='<h2><span class="num">11.</span>Teaching cases</h2><div class="panel"><ul class="clean">'+
          D.teaching.map(function(t){var lab=(t.set==="heldout"?"HO":"TR")+t.i;
            return '<li><b>'+esc(t.title)+'</b> ('+lab+'): '+esc(t.note)+'</li>';}).join("")+'</ul></div>';
 
       // synthesis
-      H+='<h2><span class="num">10.</span>What it means</h2><div class="panel"><ul class="clean">'+
+      H+='<h2><span class="num">12.</span>What it means</h2><div class="panel"><ul class="clean">'+
          D.synthesis_points.map(function(s){return "<li>"+esc(s)+"</li>";}).join("")+'</ul></div>';
 
       // caveats + next
-      H+='<h2><span class="num">11.</span>Caveats &amp; next steps</h2>'+
+      H+='<h2><span class="num">13.</span>Caveats &amp; next steps</h2>'+
          '<div class="armgrid"><div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Honest caveats</h3><ul class="clean">'+
            D.caveats.map(function(c){return "<li>"+esc(c)+"</li>";}).join("")+'</ul></div>'+
          '<div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Next steps</h3><ul class="clean">'+
