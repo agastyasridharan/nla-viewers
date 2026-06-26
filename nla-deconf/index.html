@@ -446,6 +446,90 @@
       return h;
     }
 
+    // ---- Phase-1: shared y-range + tick helpers ----
+    function p1yrange(P){
+      var vals=[];
+      P.arms.forEach(function(a){ if(a.fve_own!=null) vals.push(a.fve_own);
+        (a.curve||[]).forEach(function(c){ if(c.fve!=null) vals.push(c.fve); }); });
+      if(!vals.length) return {min:0,max:0.5};
+      var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals);
+      var pad=Math.max(0.04,(hi-lo)*0.15);
+      return {min:lo-pad, max:hi+pad};
+    }
+    function ticks(lo,hi,n){ var o=[]; for(var i=0;i<=n;i++) o.push(lo+(hi-lo)*i/n); return o; }
+    function shortArm(k){ return esc(String(ARMLAB[k]||k).replace(/·.*/,"").replace(/·.*/,"").trim()); }
+
+    // ---- Phase-1: FVE-vs-length scatter (one point per arm) ----
+    function fveLenScatter(P,yr){
+      var W=560,H=300,padL=50,padR=18,padT=16,padB=44;
+      var lens=P.arms.map(function(a){return a.length;}).filter(function(v){return v!=null;});
+      var lmin=Math.min.apply(null,lens), lmax=Math.max.apply(null,lens);
+      var span=Math.max(1,lmax-lmin); lmin=Math.max(0,lmin-span*0.35); lmax=lmax+span*0.35;
+      function X(l){ return padL+((l-lmin)/(lmax-lmin))*(W-padL-padR); }
+      function Y(v){ return padT+(1-(v-yr.min)/(yr.max-yr.min))*(H-padT-padB); }
+      var g="";
+      ticks(yr.min,yr.max,5).forEach(function(yv){ var y=Y(yv);
+        g+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#e8e4db"/>';
+        g+='<text x="'+(padL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="11">'+yv.toFixed(2)+'</text>'; });
+      ticks(lmin,lmax,4).forEach(function(lv){ var x=X(lv);
+        g+='<text x="'+x+'" y="'+(H-16)+'" text-anchor="middle" font-size="11">'+Math.round(lv)+'</text>'; });
+      g+='<text x="'+(padL+(W-padL-padR)/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11">explanation length (tokens)</text>';
+      var my=padT+(H-padT-padB)/2;
+      g+='<text x="13" y="'+my+'" text-anchor="middle" font-size="11" transform="rotate(-90 13 '+my+')">held-out FVE</text>';
+      P.arms.forEach(function(a){ if(a.length==null||a.fve_own==null) return;
+        var cx=X(a.length), cy=Y(a.fve_own);
+        g+='<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="6" fill="'+ARMC[a.key]+'" opacity="0.92"/>';
+        g+='<text x="'+(cx+9).toFixed(1)+'" y="'+(cy+4).toFixed(1)+'" font-size="10" fill="'+ARMC[a.key]+'">'+shortArm(a.key)+'</text>'; });
+      return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="FVE versus explanation length">'+g+'</svg>';
+    }
+
+    // ---- Phase-1: truncation curve (FVE vs token-prefix fraction) ----
+    function truncCurve(P,yr){
+      var W=560,H=300,padL=50,padR=18,padT=16,padB=44;
+      function X(f){ return padL+f*(W-padL-padR); }
+      function Y(v){ return padT+(1-(v-yr.min)/(yr.max-yr.min))*(H-padT-padB); }
+      var g="";
+      ticks(yr.min,yr.max,5).forEach(function(yv){ var y=Y(yv);
+        g+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#e8e4db"/>';
+        g+='<text x="'+(padL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="11">'+yv.toFixed(2)+'</text>'; });
+      [0,0.25,0.5,0.75,1.0].forEach(function(xv){ var x=X(xv);
+        g+='<text x="'+x+'" y="'+(H-16)+'" text-anchor="middle" font-size="11">'+Math.round(xv*100)+'%</text>'; });
+      g+='<text x="'+(padL+(W-padL-padR)/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="11">fraction of explanation tokens kept (prefix)</text>';
+      var my=padT+(H-padT-padB)/2;
+      g+='<text x="13" y="'+my+'" text-anchor="middle" font-size="11" transform="rotate(-90 13 '+my+')">FVE</text>';
+      P.arms.forEach(function(a){
+        var pts=(a.curve||[]).filter(function(c){return c.fve!=null;});
+        var d=pts.map(function(c){return X(c.frac).toFixed(1)+","+Y(c.fve).toFixed(1);}).join(" ");
+        g+='<polyline points="'+d+'" fill="none" stroke="'+ARMC[a.key]+'" stroke-width="1.7" opacity="0.92"/>';
+        pts.forEach(function(c){ g+='<circle cx="'+X(c.frac).toFixed(1)+'" cy="'+Y(c.fve).toFixed(1)+'" r="3" fill="'+ARMC[a.key]+'"/>'; });
+      });
+      return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" role="img" aria-label="FVE versus truncation prefix">'+g+'</svg>';
+    }
+
+    function phase1Section(D){
+      var P=D.phase1; if(!P) return "";
+      var yr=p1yrange(P);
+      var h='<p class="sec-sub">'+esc(P.intro)+'</p>';
+      h+='<table><thead><tr><th>Arm</th><th class="num">FVE (own critic)</th><th class="num">FVE (common critic)</th><th class="num">length (tok)</th><th class="num">CJK frac</th></tr></thead><tbody>';
+      P.arms.forEach(function(a){
+        h+='<tr'+(a.key==="arm3_evidence"?' class="hl"':'')+'><td><span class="swatch" style="background:'+ARMC[a.key]+'"></span>'+esc(ARMLAB[a.key])+
+           '</td><td class="num">'+(a.fve_own==null?"n/a":a.fve_own.toFixed(3))+(a.fve_own_std==null?"":' <span class="mono" style="color:var(--faint)">±'+a.fve_own_std.toFixed(3)+'</span>')+
+           '</td><td class="num">'+(a.fve_common==null?"n/a":a.fve_common.toFixed(3))+
+           '</td><td class="num">'+(a.length==null?"n/a":a.length.toFixed(0))+(a.length_std==null?"":' <span class="mono" style="color:var(--faint)">±'+a.length_std.toFixed(0)+'</span>')+
+           '</td><td class="num">'+(a.cjk==null?"n/a":(a.cjk*100).toFixed(2)+'%')+'</td></tr>';
+      });
+      h+='</tbody></table>';
+      h+='<p class="datanote">FVE on the rawvar baseline ('+esc(P.fve_baseline)+'); n = '+esc(P.n)+' held-out activations. The <b>common critic</b> column reconstructs every arm with arm 0&#39;s critic, so the arms are decoded by one fixed reconstructor. CJK fraction is the injection-path smoke test (should stay ~0).</p>';
+      h+='<div class="armgrid">'+
+         '<div class="panel"><div class="plabel">FVE vs explanation length (one point per arm)</div>'+fveLenScatter(P,yr)+
+           '<div class="clegend">'+ARMORDER.map(function(k){return '<span><span class="swatch" style="background:'+ARMC[k]+'"></span>'+esc(ARMLAB[k])+'</span>';}).join("")+'</div></div>'+
+         '<div class="panel"><div class="plabel">Which tokens pay rent: FVE vs explanation prefix</div>'+truncCurve(P,yr)+
+           '<div class="legend-inline">Each line is the mean FVE when only the first X% of the explanation&#39;s tokens reach the critic. A curve that rises then flattens means the late tokens add little reconstruction (they do not pay rent); a steadily-rising curve means every token contributes.</div></div>'+
+         '</div>';
+      if(P.note) h+='<div class="headline" style="border-left-color:var(--green)">'+esc(P.note)+'</div>';
+      return h;
+    }
+
     function render(){
       var D=window.DECONF;
       var app=document.getElementById("app");
@@ -494,36 +578,41 @@
          ARMORDER.map(function(k){return '<span><span class="swatch" style="background:'+ARMC[k]+'"></span>'+esc(ARMLAB[k])+'</span>';}).join("")+
          '</div></div>';
 
+      // phase-1 held-out reconstruction (FVE, length, tradeoff)
+      if(D.phase1){
+        H+='<h2><span class="num">4.</span>Held-out reconstruction: FVE, length, and the shortening tradeoff</h2>'+phase1Section(D);
+      }
+
       // grounded-rate
-      H+='<h2><span class="num">4.</span>Grounded-rate (independently judged + adversarially audited)</h2>'+
+      H+='<h2><span class="num">5.</span>Grounded-rate (independently judged + adversarially audited)</h2>'+
          '<p class="sec-sub">A 23-agent workflow scored every generation against the real document: 18 independent judges, then one adversarial auditor per arm to catch false-positive and false-negative confabulation flags. n = 18 examples per arm.</p>'+
          '<div class="panel"><div class="bars">'+bars(D)+'</div></div>';
 
       // eval-suite reproduction
       if(D.eval_suite){
-        H+='<h2><span class="num">5.</span>NLA paper eval-suite reproduction</h2>'+evalSuite(D);
+        H+='<h2><span class="num">6.</span>NLA paper eval-suite reproduction</h2>'+evalSuite(D);
       }
 
       // findings
-      H+='<h2><span class="num">6.</span>Findings</h2>';
+      H+='<h2><span class="num">7.</span>Findings</h2>';
       D.findings.forEach(function(f){ H+='<div class="find"><h3>'+esc(f.title)+'</h3><p>'+esc(f.body)+'</p></div>'; });
 
       // example browser
-      H+='<h2><span class="num">7.</span>The examples</h2>'+
+      H+='<h2><span class="num">8.</span>The examples</h2>'+
          '<p class="sec-sub">Every probe example: the document the model was reading, and all four arms&#39; explanations of the same injected activation, with the audited verdict, the explanation style, the FVE, the verbatim claims flagged as unsupported, and all four sampled generations.</p>'+
          exampleBrowser(D);
 
       // teaching callouts
-      H+='<h2><span class="num">8.</span>Teaching cases</h2><div class="panel"><ul class="clean">'+
+      H+='<h2><span class="num">9.</span>Teaching cases</h2><div class="panel"><ul class="clean">'+
          D.teaching.map(function(t){var lab=(t.set==="heldout"?"HO":"TR")+t.i;
            return '<li><b>'+esc(t.title)+'</b> ('+lab+'): '+esc(t.note)+'</li>';}).join("")+'</ul></div>';
 
       // synthesis
-      H+='<h2><span class="num">9.</span>What it means</h2><div class="panel"><ul class="clean">'+
+      H+='<h2><span class="num">10.</span>What it means</h2><div class="panel"><ul class="clean">'+
          D.synthesis_points.map(function(s){return "<li>"+esc(s)+"</li>";}).join("")+'</ul></div>';
 
       // caveats + next
-      H+='<h2><span class="num">10.</span>Caveats &amp; next steps</h2>'+
+      H+='<h2><span class="num">11.</span>Caveats &amp; next steps</h2>'+
          '<div class="armgrid"><div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Honest caveats</h3><ul class="clean">'+
            D.caveats.map(function(c){return "<li>"+esc(c)+"</li>";}).join("")+'</ul></div>'+
          '<div class="panel"><h3 style="margin-top:0;font-size:1.1rem">Next steps</h3><ul class="clean">'+

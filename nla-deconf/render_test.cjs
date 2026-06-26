@@ -143,5 +143,24 @@ ck('blackmail case study present', D2.eval_suite.reproduced_hosted.some(r => r.k
 ck('answer-thrashing honest negative present', D2.eval_suite.reproduced_hosted.some(r => r.key === 'answer_thrashing')
   && app.indexOf('honest negative') !== -1);
 
+// Phase-1 held-out FVE / length / shortening-tradeoff section
+ck('phase1 data present (4 arms)', D2.phase1 && D2.phase1.arms && D2.phase1.arms.length === 4);
+ck('phase1 arms have fve_own + length + curve', D2.phase1
+  && D2.phase1.arms.every(a => a.fve_own != null && a.length != null && Array.isArray(a.curve) && a.curve.length >= 3));
+ck('phase1 section heading + renumber', app.indexOf('4.</span>Held-out reconstruction') !== -1
+  && app.indexOf('shortening tradeoff') !== -1 && app.indexOf('5.</span>Grounded-rate') !== -1);
+ck('phase1 FVE-vs-length scatter drawn', app.indexOf('FVE vs explanation length') !== -1
+  && app.indexOf('explanation length (tokens)') !== -1 && app.indexOf('<circle') !== -1);
+ck('phase1 truncation curve drawn', app.indexOf('Which tokens pay rent') !== -1
+  && app.indexOf('fraction of explanation tokens kept') !== -1 && app.indexOf('<polyline') !== -1);
+ck('phase1 table columns present', app.indexOf('FVE (own critic)') !== -1
+  && app.indexOf('FVE (common critic)') !== -1 && app.indexOf('CJK frac') !== -1);
+ck('downstream sections renumbered', app.indexOf('6.</span>NLA paper eval-suite reproduction') !== -1
+  && app.indexOf('7.</span>Findings') !== -1 && app.indexOf('11.</span>Caveats') !== -1);
+ck('phase1 prefix-rent finding rendered', app.indexOf('anti-informative') !== -1
+  && app.indexOf('pays rent') !== -1);
+ck('phase1 interpretation note rendered', app.indexOf('deliberately complicate the headline') !== -1);
+ck('phase1 common-critic caveat in finding', app.indexOf('not under a shared one') !== -1);
+
 console.log(out.join('\n'));
 console.log(out.some(l => l.startsWith('FAIL')) ? '\nRESULT: FAIL' : '\nRESULT: PASS');

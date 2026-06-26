@@ -2697,8 +2697,12 @@ window.DECONF = {
    "body": "arm2 keeps the features that most 'pay rent' (are most reconstructable). But reconstructability IS the confabulation-pays-rent signal, so the filter selects FOR confident fabrication: 0.389 grounded-rate, 6× the control's confabulation rate."
   },
   {
-   "title": "FVE is a near-tie, which is the point",
-   "body": "Held-out own-critic FVE: control .408, prompt .408, filter .369, evidence .378 (n=12, within noise). arm3 reaches comparable reconstruction with a far more faithful explanation. That is the plan's actual win condition: raise grounded-rate while holding FVE."
+   "title": "FVE is a near-tie under each arm's own critic, but not under a shared one",
+   "body": "Robust held-out own-critic FVE (n=128, section 4): control .498, prompt .515, filter .518, evidence .464, within a ±0.29 spread. Under each arm's own co-trained critic the plan's win condition holds: the evidence arm reaches comparable reconstruction with a far more faithful explanation. But a COMMON decoder (arm 0's critic) inverts the evidence arm to only .293 while leaving the others near .50, because the evidence arm's token-level readout is a representational language only its own critic learned to invert. The honest reading: groundedness is not free in reconstruction terms, and an independent eval AR is needed to price it."
+  },
+  {
+   "title": "The confident arms' opening tokens are anti-informative",
+   "body": "Truncating each explanation to a token prefix and reconstructing from it (the 'which tokens pay rent' curve, n=128) splits the arms by shape. The evidence arm's FVE climbs monotonically from ~0 at the first 13 tokens: every prefix pays rent. The three confident arms instead post NEGATIVE FVE through their first half (around -0.4 at 10-25% of tokens, worse than guessing the mean activation); reconstruction is rescued only by the final quarter of tokens. Their opening tokens push the reconstruction away from the true activation before later tokens pull it back, independent and judge-free evidence that the front-loaded specifics are generated rather than read."
   },
   {
    "title": "Same activation, three different fabrications",
@@ -2753,7 +2757,7 @@ window.DECONF = {
  "nextsteps": [
   "Grounded-rate vs RL step across the saved checkpoints (iter_050…500) to show WHEN arm1 decayed and confirm arm3 never did.",
   "Counterfactual CF1 recall: arm3 must not have bought groundedness by going blind to rare injected features (the auditing use case). This is the remaining gate.",
-  "An independent held-out eval AR (decoupled from every arm's curation) for an unbiased cross-arm FVE.",
+  "An independent held-out eval AR (decoupled from every arm's curation): the common-critic FVE (evidence arm .293 under arm 0's critic vs .464 under its own) shows own-critic FVE flatters every arm, so an unbiased cross-arm number needs a decoder co-trained on none of them.",
   "If recall holds, adopt arm3's evidence-conditioned warm-start as the replacement for the paper's open recipe."
  ],
  "eval_suite": {
@@ -4773,6 +4777,151 @@ window.DECONF = {
     ]
    }
   ]
+ },
+ "phase1": {
+  "n": 128,
+  "fve_baseline": 0.5747,
+  "fracs": [
+   0.1,
+   0.25,
+   0.5,
+   0.75,
+   1.0
+  ],
+  "skip_rows": 30000,
+  "intro": "The simple, intuitive metrics in the spirit of the LessWrong shortening result: one number (FVE on the rawvar baseline; 0 = guessing the mean activation, 1 = perfect reconstruction) and one plot (FVE versus explanation length). Computed on 128 held-out activations (rows 30000+ of the shuffled RL split, unseen by every arm) — the robust successor to the n=12 probe number in section 3. Each arm's explanation is reconstructed by its OWN co-trained critic (the per-arm tradeoff) and by a COMMON reference critic (arm0's), so the arms can also be compared on one fixed decoder.",
+  "arms": [
+   {
+    "key": "arm0_control",
+    "label": "Arm 0 control",
+    "fve_own": 0.498,
+    "fve_own_std": 0.2876,
+    "fve_common": 0.4982,
+    "length": 119.6,
+    "length_std": 8.5,
+    "cjk": 0.0,
+    "curve": [
+     {
+      "frac": 0.1,
+      "fve": -0.429
+     },
+     {
+      "frac": 0.25,
+      "fve": -0.3253
+     },
+     {
+      "frac": 0.5,
+      "fve": 0.1667
+     },
+     {
+      "frac": 0.75,
+      "fve": 0.4693
+     },
+     {
+      "frac": 1.0,
+      "fve": 0.498
+     }
+    ]
+   },
+   {
+    "key": "arm1_prompt",
+    "label": "Arm 1 prompt",
+    "fve_own": 0.5146,
+    "fve_own_std": 0.3007,
+    "fve_common": 0.5059,
+    "length": 107.5,
+    "length_std": 12.1,
+    "cjk": 0.0,
+    "curve": [
+     {
+      "frac": 0.1,
+      "fve": -0.4458
+     },
+     {
+      "frac": 0.25,
+      "fve": -0.323
+     },
+     {
+      "frac": 0.5,
+      "fve": -0.0988
+     },
+     {
+      "frac": 0.75,
+      "fve": 0.4728
+     },
+     {
+      "frac": 1.0,
+      "fve": 0.5146
+     }
+    ]
+   },
+   {
+    "key": "arm2_filter",
+    "label": "Arm 2 filter",
+    "fve_own": 0.5184,
+    "fve_own_std": 0.2813,
+    "fve_common": 0.5009,
+    "length": 107.4,
+    "length_std": 9.0,
+    "cjk": 0.0,
+    "curve": [
+     {
+      "frac": 0.1,
+      "fve": -0.4784
+     },
+     {
+      "frac": 0.25,
+      "fve": -0.387
+     },
+     {
+      "frac": 0.5,
+      "fve": 0.3099
+     },
+     {
+      "frac": 0.75,
+      "fve": 0.4855
+     },
+     {
+      "frac": 1.0,
+      "fve": 0.5184
+     }
+    ]
+   },
+   {
+    "key": "arm3_evidence",
+    "label": "Arm 3 evidence",
+    "fve_own": 0.4643,
+    "fve_own_std": 0.2576,
+    "fve_common": 0.2929,
+    "length": 131.3,
+    "length_std": 5.2,
+    "cjk": 0.0,
+    "curve": [
+     {
+      "frac": 0.1,
+      "fve": 0.0041
+     },
+     {
+      "frac": 0.25,
+      "fve": 0.2643
+     },
+     {
+      "frac": 0.5,
+      "fve": 0.3945
+     },
+     {
+      "frac": 0.75,
+      "fve": 0.44
+     },
+     {
+      "frac": 1.0,
+      "fve": 0.4643
+     }
+    ]
+   }
+  ],
+  "fve_note": "own = arm's RL-cotrained AR critic (per-arm tradeoff); common = arm0's critic on every arm (fair cross-arm comparison)",
+  "note": "The simple metrics deliberately complicate the headline. Own-critic FVE is a near-tie (0.46-0.52, within a ±0.29 spread), and the LessWrong 'shorter at no FVE cost' signature is won by the cosmetic arms, not the evidence one: the prompt and filter arms cut ~12 tokens off the control at equal-or-higher FVE, while the evidence arm is the most verbose. A COMMON decoder (arm 0's critic) inverts the evidence arm far worse than its own critic does (0.293 vs 0.464), because its token-level readout is a representational language only its co-trained critic learned to invert. The one place the evidence arm clearly wins is the truncation curve: every prefix of its explanation pays rent (FVE climbs monotonically from ~0), whereas the confident arms' first half is anti-informative (FVE around -0.4, worse than guessing the mean activation) and reconstruction is rescued only by the final quarter of tokens. That the confident arms' opening tokens push reconstruction away from the true activation is independent, judge-free evidence that their specifics are generated rather than read."
  },
  "examples": [
   {
