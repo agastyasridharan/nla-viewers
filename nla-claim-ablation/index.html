@@ -1,0 +1,1411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claim-Ablation Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf6f1; --panel:#fffdf9; --panel2:#f5f0e8; --ink:#2c2416; --ink2:#1a1408;
+    --mut:#6b5d4d; --line:#e8e0d4; --line2:#ddd5c8;
+    --green:#4a7c59; --green-d:#3d6648; --amber:#b45309; --red:#a65d57; --red-d:#8b4d48;
+    --blue:#3f6f8f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); padding:22px 28px;
+    font-family:'EB Garamond',Georgia,'Times New Roman',serif; font-size:15px; line-height:1.5;}
+  .container{max-width:1280px; margin:0 auto;}
+  header.top{margin-bottom:18px; display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap;}
+  header.top h1{font-size:1.7rem; font-weight:500; letter-spacing:-0.02em; color:var(--ink2); margin:0 0 2px;}
+  header.top .sub{color:var(--mut); font-style:italic; font-size:0.95rem;}
+  .crumbs{font-size:0.9rem; color:var(--mut);}
+  .crumbs a{color:var(--green); text-decoration:none;} .crumbs a:hover{text-decoration:underline;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:16px;
+    box-shadow:0 2px 6px rgba(44,36,22,.05); margin-bottom:16px;}
+  .panel h2{font-size:1.1rem; font-weight:600; color:var(--ink); margin:0 0 12px;
+    display:flex; align-items:baseline; gap:8px;}
+  .panel h2 .num{color:var(--green); font-weight:600;}
+  .panel h2 .sub2{color:var(--mut); font-weight:400; font-style:italic; font-size:0.85rem;}
+
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .muted{color:var(--mut);} .sep{height:1px; background:var(--line); margin:16px 0;}
+  a{color:var(--green);}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.82em;
+    background:var(--panel2); padding:1px 5px; border-radius:3px;}
+  button{cursor:pointer; padding:6px 14px; border:1px solid var(--line2); border-radius:4px;
+    background:var(--panel); color:var(--ink); font-family:inherit; font-size:0.9rem; font-weight:500; transition:all .2s;}
+  button:hover:not(:disabled){background:var(--panel2); border-color:#a89880;}
+  button.primary{background:var(--green); color:#fff; border-color:var(--green-d);}
+  button.sm{padding:3px 9px; font-size:0.8rem;}
+
+  .kv{display:flex; gap:16px; flex-wrap:wrap; font-size:0.85rem; color:var(--mut); margin-top:10px;}
+  .kv b{color:var(--ink); font-weight:600;}
+  .kv .k{display:flex; flex-direction:column; gap:1px;}
+  .kv .k small{font-size:0.72rem; font-style:italic;}
+
+  .pill{display:inline-block; padding:3px 11px; border-radius:999px; font-size:0.8rem;
+    border:1px solid var(--line2); color:var(--mut); background:var(--panel2); font-weight:600;}
+  .pill.run{color:#fff; background:var(--blue); border-color:#345b75;}
+  .pill.done{color:#fff; background:var(--green); border-color:var(--green-d);}
+  .pill.failed{color:#fff; background:var(--red); border-color:var(--red-d);}
+  .pill.mock{color:var(--amber); background:#fdf0e6; border-color:#f0d8c0;}
+
+  /* metrics */
+  .scoregrid{display:flex; gap:30px; align-items:flex-end; margin-top:4px; flex-wrap:wrap;}
+  .metric{font-size:2.1rem; font-weight:600; color:var(--ink2); line-height:1; font-variant-numeric:tabular-nums;}
+  .metric small{display:block; font-size:0.7rem; color:var(--mut); font-weight:400; font-style:italic;
+    font-variant-numeric:normal; margin-top:4px;}
+  .metric.green{color:var(--green-d);} .metric.red{color:var(--red-d);} .metric.blue{color:var(--blue);}
+
+  /* progress */
+  .bar{height:10px; background:var(--panel2); border:1px solid var(--line2); border-radius:999px; overflow:hidden;}
+  .bar > div{height:100%; background:var(--green); transition:width .4s;}
+  .bar.run > div{background:var(--blue);}
+
+  /* run cards (experimental map) */
+  .runs{display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:13px;}
+  .runcard{display:block; text-decoration:none; color:inherit; background:var(--panel);
+    border:1px solid var(--line); border-radius:7px; padding:14px 15px; transition:all .15s;}
+  .runcard:hover{border-color:var(--green); box-shadow:0 3px 10px rgba(44,36,22,.08);}
+  .runcard .h{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .runcard .title{font-weight:600; color:var(--ink2); font-size:1.02rem;}
+  .runcard .id{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.7rem; color:var(--mut); word-break:break-all;}
+  .runcard .big{font-size:1.7rem; font-weight:600; color:var(--green-d); font-variant-numeric:tabular-nums; margin-top:8px;}
+  .runcard .big small{font-size:0.66rem; color:var(--mut); font-style:italic; font-weight:400;}
+
+  /* activation grid */
+  .acts{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px;}
+  .actcard{text-decoration:none; color:inherit; background:var(--panel); border:1px solid var(--line);
+    border-radius:6px; padding:11px 12px; transition:all .15s;}
+  .actcard:hover{border-color:var(--green); box-shadow:0 2px 8px rgba(44,36,22,.07);}
+  .actcard .top{display:flex; justify-content:space-between; font-size:0.78rem; color:var(--mut);}
+  .actcard .tok{font-family:ui-monospace,Menlo,Consolas,monospace; background:var(--panel2);
+    padding:1px 5px; border-radius:3px; color:var(--ink2);}
+  .actcard .chips{display:flex; gap:3px; margin-top:8px; flex-wrap:wrap;}
+  .chip{width:13px; height:13px; border-radius:3px; display:inline-block;}
+  .chip.g{background:var(--green);} .chip.e{background:var(--amber);} .chip.c{background:var(--red);} .chip.u{background:var(--line2);}
+  .actcard .ex{font-size:0.82rem; color:var(--ink); margin-top:8px; line-height:1.4;
+    max-height:3.3em; overflow:hidden;}
+
+  /* snippet verdict blocks */
+  .snip{border:1px solid var(--line); border-radius:7px; padding:14px 16px; margin:12px 0; background:var(--panel);}
+  .snip.grounded{border-left:4px solid var(--green);}
+  .snip.entangled{border-left:4px solid var(--amber);}
+  .snip.confabulated{border-left:4px solid var(--red);}
+  .snip.unlocated{border-left:4px solid var(--line2);}
+  .snip .claim{font-size:1.04rem; color:var(--ink2); margin:0 0 4px;}
+  .vbadge{padding:3px 11px; border-radius:999px; font-size:0.76rem; font-weight:700; white-space:nowrap;}
+  .vbadge.grounded{background:var(--green); color:#fff;}
+  .vbadge.entangled{background:var(--amber); color:#fff;}
+  .vbadge.confabulated{background:var(--red); color:#fff;}
+  .vbadge.unlocated{background:var(--panel2); color:var(--mut); border:1px solid var(--line2);}
+  .interp{font-size:0.93rem; color:var(--ink); margin:8px 0; max-width:80ch; font-style:italic;}
+  .statline{display:flex; gap:20px; flex-wrap:wrap; font-size:0.82rem; color:var(--mut); margin-top:6px; font-variant-numeric:tabular-nums;}
+  .statline b{color:var(--ink2); font-weight:600;}
+
+  /* explanation prose with colored snippets */
+  .out{white-space:pre-wrap; font-family:inherit; font-size:0.98rem; line-height:1.65;
+    background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:13px 15px; margin-top:10px;}
+  .mark-g{background:#e2efe2; border-bottom:2px solid var(--green); border-radius:2px; padding:0 2px;}
+  .mark-e{background:#fbeed9; border-bottom:2px solid var(--amber); border-radius:2px; padding:0 2px;}
+  .mark-c{background:#f6e3e1; border-bottom:2px solid var(--red); border-radius:2px; padding:0 2px;}
+  .mark-u{background:var(--panel); border-bottom:2px dotted var(--line2); padding:0 2px;}
+
+  /* source text */
+  .src{font-size:0.92rem; line-height:1.6; background:var(--panel2); border:1px solid var(--line);
+    border-radius:6px; padding:13px 15px; max-height:230px; overflow:auto; white-space:pre-wrap;}
+  .readtok{background:var(--green); color:#fff; padding:0 4px; border-radius:3px; font-weight:600;}
+
+  svg{display:block;} .chartwrap{margin:8px 0;}
+  .axis{stroke:var(--line2); stroke-width:1;} .axislbl{fill:var(--mut); font-size:9px;}
+  .gridln{stroke:var(--line); stroke-width:1;}
+
+  table.mat{border-collapse:collapse; font-size:0.74rem;} table.mat td{border:1px solid var(--line);
+    width:30px; height:26px; text-align:center; font-variant-numeric:tabular-nums; color:var(--ink2);}
+  table.mat th{font-size:0.68rem; color:var(--mut); font-weight:600; padding:2px 4px;}
+
+  /* docs */
+  .docs{margin-top:26px; border-top:2px solid var(--line2); padding-top:6px;}
+  .docs h2.section{font-size:1.4rem; font-weight:600; color:var(--ink2); letter-spacing:-0.02em; margin:24px 0 4px;}
+  .docs h3{font-size:1.1rem; font-weight:600; color:var(--ink); margin:20px 0 8px; padding-bottom:5px; border-bottom:1px solid var(--line);}
+  .docs p{margin:9px 0; color:var(--ink);}
+  .docs p.lead{font-size:1.05rem; color:var(--ink2);}
+  .docs ul{margin:8px 0 12px; padding-left:22px;} .docs li{margin:5px 0;}
+  .docs b{color:var(--ink2);} .docs em{color:var(--ink2);}
+  .formula{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.83rem; background:var(--panel2);
+    border:1px solid var(--line); border-left:3px solid var(--green); border-radius:4px;
+    padding:11px 14px; margin:11px 0; line-height:1.8; overflow-x:auto; color:var(--ink2); max-width:82ch;
+    white-space:pre; tab-size:2;}
+  .exclaims{list-style:none; margin:10px 0; padding:0; max-width:86ch;}
+  .exclaims li{margin:7px 0; padding-left:2px; line-height:1.5;}
+  .exclaims .vbadge{margin-right:8px;}
+  .note{background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--amber);
+    border-radius:4px; padding:11px 14px; margin:14px 0; font-size:0.9rem; max-width:82ch;}
+  .steps{margin:14px 0;} .step{position:relative; padding:11px 15px 11px 50px; margin:9px 0;
+    background:var(--panel); border:1px solid var(--line); border-radius:6px; counter-increment:step;}
+  .steps{counter-reset:step;}
+  .step::before{content:counter(step); position:absolute; left:12px; top:11px; width:26px; height:26px;
+    background:var(--green); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.85rem; font-weight:600;}
+  .step h4{margin:0 0 3px; color:var(--ink2);} .step.halt{border-left:3px solid var(--red);}
+  .docs h4.docsub{font-size:1rem; font-weight:600; color:var(--ink2); margin:22px 0 4px;
+    letter-spacing:-0.01em; padding-bottom:3px; border-bottom:1px dashed var(--line);}
+  .step .ex{display:block; margin-top:6px; padding:6px 10px; border-left:2px solid var(--line2);
+    background:var(--panel2); border-radius:0 4px 4px 0; color:var(--ink); font-style:italic;}
+  .step .ex code{font-style:normal;}
+  .pipe{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:14px 0; font-size:0.82rem;}
+  .pipe .box{background:var(--panel); border:1px solid var(--line2); border-radius:6px; padding:7px 11px; text-align:center;}
+  .pipe .box b{display:block; color:var(--green-d);}
+  .pipe .arr{color:var(--mut);}
+  .empty{padding:40px; text-align:center; color:var(--mut); font-style:italic;}
+  .legend{font-size:0.8rem; color:var(--mut); display:flex; gap:16px; flex-wrap:wrap; margin-top:6px;}
+  .legend i{width:11px; height:11px; border-radius:2px; display:inline-block; margin-right:4px; vertical-align:-1px;}
+
+  /* ── navigation + help additions ───────────────────────────────────────── */
+  header.top.sticky{position:sticky; top:0; z-index:50; background:var(--bg);
+    padding-top:6px; margin-bottom:14px; border-bottom:1px solid var(--line);}
+  .topnav{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:9px;}
+  .topnav a{font-size:0.85rem; color:var(--ink); text-decoration:none; padding:4px 12px;
+    border:1px solid var(--line2); border-radius:999px; background:var(--panel); transition:all .15s;}
+  .topnav a:hover{border-color:var(--green); color:var(--green-d); background:#eef3ec;}
+  .topnav a.home{font-weight:600; border-color:#cfe0cf; background:#eef3ec; color:var(--green-d);}
+
+  .fab{position:fixed; right:20px; bottom:20px; z-index:60; width:42px; height:42px;
+    border-radius:50%; background:var(--green); color:#fff; border:none; font-size:1.15rem;
+    box-shadow:0 3px 10px rgba(44,36,22,.25); cursor:pointer; display:none;}
+  .fab.show{display:block;} .fab:hover{background:var(--green-d);}
+
+  .howto{margin:10px 0 4px;}
+  .howto > summary{cursor:pointer; color:var(--green-d); font-weight:600; font-size:0.84rem;
+    list-style:none; display:inline-flex; align-items:center; gap:5px;
+    border:1px solid #cfe0cf; background:#eef3ec; padding:4px 12px; border-radius:999px;}
+  .howto > summary::-webkit-details-marker{display:none;}
+  .howto[open] > summary{margin-bottom:9px;}
+  .howto .body{background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--green);
+    border-radius:4px; padding:11px 15px; max-width:86ch; font-size:0.92rem;}
+  .howto .body p{margin:7px 0;} .howto .body b{color:var(--ink2);}
+  .howto .body ul{margin:7px 0; padding-left:20px;} .howto .body li{margin:4px 0;}
+
+  .navbtns{display:flex; gap:8px; align-items:center; justify-content:space-between;
+    margin-bottom:14px; flex-wrap:wrap;}
+  .navbtns .grp{display:flex; gap:8px; align-items:center;}
+  .navbtns a, .navbtns span.dis{font-size:0.85rem; padding:6px 13px; border:1px solid var(--line2);
+    border-radius:5px; text-decoration:none; color:var(--ink); background:var(--panel);}
+  .navbtns a:hover{border-color:var(--green); color:var(--green-d);}
+  .navbtns span.dis{opacity:.4;} .navbtns .ctr{color:var(--mut); font-size:0.85rem;}
+
+  .filterbar{display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-bottom:13px;
+    font-size:0.85rem; color:var(--mut);}
+  .filterbar select{background:#fffefb; border:1px solid var(--line2); border-radius:4px;
+    padding:5px 8px; font-family:inherit; font-size:0.85rem; color:var(--ink);}
+  .filterbar .count{margin-left:auto; font-style:italic;}
+
+  .gtable{width:100%; border-collapse:collapse; margin:10px 0; font-size:0.9rem; max-width:92ch;}
+  .gtable th{text-align:left; padding:6px 10px; color:var(--mut); font-size:0.72rem;
+    text-transform:uppercase; letter-spacing:0.04em; border-bottom:2px solid var(--line2);}
+  .gtable td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .gtable td:first-child{white-space:nowrap; font-weight:600; color:var(--ink2);}
+  .gtable tr.grp td{background:var(--panel2); font-weight:700; color:var(--green-d);
+    font-size:0.82rem; text-transform:uppercase; letter-spacing:0.03em;}
+  .gloss-where{color:var(--mut); font-style:italic; font-size:0.82rem;}
+
+  .toc{display:flex; gap:9px; flex-wrap:wrap; margin:10px 0 4px; font-size:0.87rem;}
+  .toc a{color:var(--green-d); text-decoration:none; padding:3px 11px; border:1px solid #cfe0cf;
+    background:#eef3ec; border-radius:999px;}
+  .toc a:hover{background:#dfeadf;}
+  /* help page tabs */
+  .tabbar{display:flex; gap:4px; flex-wrap:wrap; border-bottom:2px solid var(--line2);
+    margin:2px 0 16px;}
+  .tabbar .tab{font-size:0.92rem; color:var(--mut); text-decoration:none; padding:9px 18px;
+    border:1px solid transparent; border-bottom:none; border-radius:7px 7px 0 0; margin-bottom:-2px;
+    position:relative;}
+  .tabbar .tab:hover{color:var(--green-d); background:#eef3ec;}
+  .tabbar .tab.on{color:var(--green-d); font-weight:600; background:var(--panel);
+    border-color:var(--line2); border-bottom:2px solid var(--panel);}
+  .tabbody{animation:fadein .12s ease-in;}
+  /* help/docs read as a full-width article: text reaches the same right edge as the
+     section headings (the dashboards keep their narrower reading caps). */
+  .tabbody .formula, .tabbody .note, .tabbody .exclaims, .tabbody .wex,
+  .tabbody .gtable, .tabbody .interp{max-width:none;}
+  /* watch it score (animated scoring walkthrough) */
+  .walk .lead2{color:var(--ink2); font-size:1.02rem;}
+  .walk .sel{display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 4px;}
+  .walk .sel button.on{background:var(--green); color:#fff; border-color:var(--green-d);}
+  .walk .claimline{font-size:1.05rem; color:var(--ink2); background:var(--panel2); border:1px solid var(--line);
+    border-left:3px solid var(--green); border-radius:4px; padding:9px 12px; margin:8px 0;}
+  .walk .counters{display:flex; gap:28px; flex-wrap:wrap; margin:14px 0 2px; align-items:flex-end;}
+  .walk .ctr small{display:block; font-size:0.7rem; color:var(--mut); font-style:italic; margin-bottom:3px;}
+  .walk .ctr b{font-size:1.75rem; font-variant-numeric:tabular-nums; line-height:1; color:var(--ink2);}
+  .walk .ctr.h b{color:var(--green-d);} .walk .ctr.a b{color:var(--red-d);} .walk .ctr.d b{color:var(--blue);}
+  .walk .bars{display:flex; align-items:flex-end; gap:3px; height:160px; margin:14px 0 2px;
+    border-bottom:1px solid var(--line2); overflow-x:auto;}
+  .walk .bcol{display:flex; flex-direction:column; justify-content:flex-end; align-items:center; min-width:16px; height:100%;}
+  .walk .bcol .cap{font-size:0.62rem; color:var(--green-d); font-weight:700; margin-bottom:2px; white-space:nowrap;}
+  .walk .bar{width:16px; background:var(--green); border-radius:2px 2px 0 0; height:0; opacity:.16;
+    transition:height .18s ease, opacity .18s;}
+  .walk .bar.neg{background:var(--amber);} .walk .bar.zero{background:var(--line2);}
+  .walk .bcol.seen .bar{opacity:.9;}
+  .walk .bcol.on .bar{opacity:1; outline:2px solid var(--ink2); outline-offset:1px;}
+  .walk .readout{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.85rem; background:var(--panel2);
+    border:1px solid var(--line); border-radius:4px; padding:9px 12px; margin:9px 0; min-height:1.1em;}
+  .walk .controls{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:12px 0;}
+  .walk .controls select{font-family:inherit; padding:4px 8px; border:1px solid var(--line2); border-radius:4px; background:var(--panel);}
+  .walk .verdict{border:1px solid var(--line); border-left:3px solid var(--green); background:var(--panel2);
+    border-radius:4px; padding:12px 14px; margin:14px 0; opacity:0; transition:opacity .3s;}
+  .walk .verdict.show{opacity:1;}
+  .walk .verdict .big{font-size:1.4rem; color:var(--green-d); font-weight:600; font-variant-numeric:tabular-nums; margin:5px 0;}
+  .walk .verdict .recon{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.82rem; color:var(--ink); margin:3px 0;}
+  .walk .claims{display:flex; flex-direction:column; gap:7px; margin:10px 0;}
+  .walk .cblock{border:1px solid var(--line); border-left:4px solid var(--line2); border-radius:5px;
+    padding:8px 12px; background:var(--panel); font-size:0.95rem; color:var(--ink);}
+  .walk .cblock.grounded{border-left-color:var(--green);}
+  .walk .cblock.entangled{border-left-color:var(--amber);}
+  .walk .cblock.confabulated{border-left-color:var(--red);}
+  .walk .cblock.audit{background:var(--panel2); box-shadow:0 0 0 2px var(--ink2) inset;}
+  .walk .cblock .lbl{font-weight:700; color:var(--ink2); margin-right:8px; font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .walk table.emat{border-collapse:collapse; font-size:0.82rem; margin:10px 0; font-variant-numeric:tabular-nums; overflow-x:auto;}
+  .walk table.emat td, .walk table.emat th{border:1px solid var(--line); padding:5px 10px; text-align:center; color:var(--ink2);}
+  .walk table.emat th{color:var(--mut); font-weight:600; font-size:0.74rem; background:var(--panel);}
+  .walk table.emat th.rl{text-align:right; font-family:ui-monospace,Menlo,Consolas,monospace; color:var(--ink);}
+  .walk table.emat td.col{background:#eef3ec;}
+  .walk table.emat td.diag{outline:2px solid var(--ink2); font-weight:700;}
+  @keyframes fadein{from{opacity:0;}to{opacity:1;}}
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:14px 0;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:12px 14px;}
+  .card h4{margin:0 0 5px; color:var(--green-d);} .card p{margin:5px 0; font-size:0.9rem;}
+  .wex{background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:2px 16px; margin:12px 0; max-width:88ch;}
+  .wex .sl{display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px dashed var(--line);}
+  .wex .sl:last-child{border-bottom:none;}
+  .wex .n{flex:0 0 24px; height:24px; border-radius:50%; background:var(--green); color:#fff;
+    display:inline-flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:600; margin-top:1px;}
+  .wex .tx{flex:1;} .wex .tx b{color:var(--ink2);}
+  .wex .num{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.82rem; color:var(--ink2);
+    background:var(--panel2); padding:1px 5px; border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="top sticky">
+    <div>
+      <h1>Claim-Ablation Studio</h1>
+      <div class="sub">does the NLA actually <em>read</em> each claim from the activation? &middot; a judge-free, ground-truth-free faithfulness audit</div>
+      <nav class="topnav">
+        <a class="home" href="#/">⌂ Map</a>
+        <a href="#/help">Help</a>
+      </nav>
+    </div>
+    <div class="crumbs" id="crumbs"></div>
+  </header>
+  <div id="app"><div class="empty">loading…</div></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+//  small helpers
+// ─────────────────────────────────────────────────────────────────────────────
+const $ = (h) => { const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstChild; };
+const esc = (s) => (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = (x,d=2) => (x==null||Number.isNaN(x))?'–':Number(x).toFixed(d);
+const pct = (x,d=1) => (x==null||Number.isNaN(x))?'–':(100*x).toFixed(d)+'%';
+const nats = (x) => (x==null)?'–':(x>=0?'+':'')+Number(x).toFixed(2);
+// fragility / null-normalized-signal helpers (computed client-side from saved nulls)
+function _pctl(arr,p){ if(!arr||!arr.length) return NaN; const a=[...arr].sort((x,y)=>x-y);
+  const idx=(p/100)*(a.length-1), lo=Math.floor(idx), hi=Math.ceil(idx);
+  return lo===hi?a[lo]:a[lo]+(a[hi]-a[lo])*(idx-lo); }
+const _median = (a)=>_pctl(a,50);
+// zeta = Δlogp in robust-SD units of THIS claim's own random-ablation noise (comparable across models)
+function snipZeta(s){ if(!s||!s.null_dlogps||!s.null_dlogps.length||s.dlogp==null) return null;
+  const med=_median(s.null_dlogps), mad=_median(s.null_dlogps.map(x=>Math.abs(x-med)));
+  return (s.dlogp-med)/(1.4826*mad+1e-6); }
+// activation fragility = 95th pct of all random-ablation effects on its located claims
+function actNull95(rec){ const pool=[]; (rec.snippet_results||[]).forEach(s=>{
+    if(s.located&&s.null_dlogps) pool.push(...s.null_dlogps); }); return pool.length?_pctl(pool,95):null; }
+const __CACHE={};
+async function __getJSON(f){
+  if(Object.prototype.hasOwnProperty.call(__CACHE,f)){ if(__CACHE[f]===null) throw new Error('404 '+f); return __CACHE[f]; }
+  let r; try{ r=await fetch(f); }catch(e){ __CACHE[f]=null; throw e; }
+  if(!r.ok){ __CACHE[f]=null; throw new Error(r.status+' '+f); }
+  const j=await r.json(); __CACHE[f]=j; return j;
+}
+// static snapshot: map the live JSON API onto pre-rendered files under data/
+async function api(path){
+  const p=path.split('?')[0];
+  if(p==='/api/runs') return __getJSON('data/runs.json');
+  const m=p.match(/^\/api\/run\/([^/]+)(?:\/(.*))?$/);
+  if(m){
+    const id=m[1], rest=m[2]||'';
+    if(rest==='') return __getJSON('data/run/'+id+'/meta.json');
+    if(rest==='records') return __getJSON('data/run/'+id+'/records.json');
+    let mm;
+    if(mm=rest.match(/^record\/(\d+)$/)){
+      const recs=(await __getJSON('data/run/'+id+'/records.json')).records||[];
+      const rec=recs.find(r=>String(r.idx)===mm[1]);
+      if(rec) return rec; throw new Error('no record');
+    }
+    if(mm=rest.match(/^vectors\/(\d+)$/)){
+      let vs=null; try{ vs=await __getJSON('data/run/'+id+'/vectors.json'); }catch(e){ vs=null; }
+      const v = vs ? vs[mm[1]] : null;
+      if(v) return v; throw new Error('no vectors');
+    }
+  }
+  throw new Error('not found: '+path);
+}
+function clearTimer(){ if(window.__t){clearInterval(window.__t); window.__t=null;} }
+function setCrumbs(html){ document.getElementById('crumbs').innerHTML = html; }
+function svg(tag,attrs){ const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const k in attrs) e.setAttribute(k,attrs[k]); return e; }
+function relTime(ts){ if(!ts) return ''; const s=(Date.now()/1000)-ts;
+  if(s<60) return Math.round(s)+'s ago'; if(s<3600) return Math.round(s/60)+'m ago';
+  if(s<86400) return Math.round(s/3600)+'h ago'; return Math.round(s/86400)+'d ago'; }
+function dur(s){ if(s==null) return '–'; s=Math.round(s); if(s<90) return s+'s';
+  if(s<5400) return Math.round(s/60)+'m'; return (s/3600).toFixed(1)+'h'; }
+
+// open the help page at a given tab (overview|example|glossary|method)
+function navHelp(tab){ location.hash = '#/help' + (tab?'/'+tab:''); }
+// reusable inline "how to read this panel" disclosure
+function howto(html){ return $(`<details class="howto"><summary>&#9432; How to read this</summary><div class="body">${html}</div></details>`); }
+
+const VCOLOR = {grounded:'#4a7c59', entangled:'#b45309', confabulated:'#a65d57', unlocated:'#c9bfb0'};
+const VLETTER = {grounded:'g', entangled:'e', confabulated:'c', unlocated:'u'};
+const VMARK = {grounded:'mark-g', entangled:'mark-e', confabulated:'mark-c', unlocated:'mark-u'};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  router
+// ─────────────────────────────────────────────────────────────────────────────
+window.addEventListener('hashchange', route);
+window.addEventListener('load', route);
+function route(){
+  clearTimer();
+  const h = location.hash.replace(/^#\/?/, '');
+  const parts = h.split('/').filter(Boolean);
+  if(parts[0]==='help') return viewHelp(parts[1]);
+  if(parts[0]==='run' && parts[1] && parts[2]==='act' && parts[3]!=null) return viewActivation(parts[1], parts[3]);
+  if(parts[0]==='run' && parts[1]) return viewRun(parts[1]);
+  return viewMap();
+}
+const app = () => document.getElementById('app');
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  VIEW 1 - experimental map
+// ─────────────────────────────────────────────────────────────────────────────
+async function viewMap(){
+  setCrumbs('experimental map');
+  app().innerHTML='';
+  app().appendChild(mapIntro());
+  const wrap = $(`<section class="panel"><h2><span class="num">▸</span> Runs <span class="sub2">each run audits one model's NLA over a corpus of activations</span></h2><div id="runs"><div class="empty">loading runs…</div></div></section>`);
+  app().appendChild(wrap);
+  async function refresh(){
+    try{
+      const {runs, runs_dir} = await api('/api/runs');
+      const host = wrap.querySelector('#runs');
+      if(!runs.length){ host.innerHTML = `<div class="empty">No runs yet in <code>${esc(runs_dir)}</code>.<br>Create one: <code>python repl/run_claim_ablation.py qwen7b --mock --slow 0.6</code> (synthetic) or a real run on the GPU box.</div>`; return; }
+      host.innerHTML=''; const grid=$(`<div class="runs"></div>`);
+      runs.forEach(r=>grid.appendChild(runCard(r))); host.appendChild(grid);
+    }catch(e){ wrap.querySelector('#runs').innerHTML=`<div class="empty">error: ${esc(e.message)}</div>`; }
+  }
+  await refresh();
+  window.__t = null;  /* static snapshot: no live polling */   // experimental map auto-updates
+  // cross-model comparison (computed once, client-side from saved nulls)
+  const cmp = $(`<div id="cmp"></div>`); app().appendChild(cmp);
+  try{ const {runs} = await api('/api/runs'); const panel = await comparePanel(runs); if(panel) cmp.appendChild(panel); }
+  catch(e){ /* comparison is best-effort */ }
+}
+
+// build the fragility-controlled cross-model comparison (the fair confab comparison)
+async function comparePanel(runs){
+  const real = (runs||[]).filter(r=>!r.mock && r.status==='done' && (r.n_done||0)>0).slice(0,3);
+  if(real.length<2) return null;
+  const bins=[[0,0.5],[0.5,2],[2,10],[10,1e15]], binLab=['&lt;0.5','0.5–2','2–10','≥10'];
+  const stats=[];
+  for(const r of real){
+    let recs; try{ recs=(await api('/api/run/'+encodeURIComponent(r.run_id)+'/records')).records; }catch(e){ continue; }
+    const snips=[], a95=[];
+    recs.forEach(rec=>{ if(rec.status!=='ok') return; const f=actNull95(rec);
+      if(f!=null && !isNaN(f)) a95.push(f);
+      (rec.snippet_results||[]).forEach(s=>{ if(s.located) snips.push({v:s.verdict,f:f}); }); });
+    if(!snips.length) continue;
+    const rate=(v)=>snips.filter(x=>x.v===v).length/snips.length;
+    const binConfab=bins.map(([lo,hi])=>{ const sub=snips.filter(x=>x.f!=null&&!isNaN(x.f)&&x.f>=lo&&x.f<hi);
+      const c=sub.filter(x=>x.v==='confabulated').length; return {n:sub.length, rate:sub.length?c/sub.length:null}; });
+    stats.push({ name:r.model_label||r.run_id, n:snips.length, confab:rate('confabulated'),
+      grounded:rate('grounded'), med95:_median(a95), binConfab });
+  }
+  if(stats.length<2) return null;
+  const cols = stats.map(s=>`<th>${esc(s.name)}<br><span class="muted" style="font-weight:400">n=${s.n}</span></th>`).join('');
+  let body=`<tr><td>activation fragility (median null 95th)</td>${stats.map(s=>`<td><b>${fmt(s.med95,2)}</b> nats</td>`).join('')}</tr>`;
+  body+=`<tr><td>raw confabulated rate</td>${stats.map(s=>`<td>${pct(s.confab,1)}</td>`).join('')}</tr>`;
+  body+=`<tr><td>raw grounded rate</td>${stats.map(s=>`<td>${pct(s.grounded,1)}</td>`).join('')}</tr>`;
+  body+=`<tr class="grp"><td colspan="${stats.length+1}">confab rate within a matched fragility bin (the fair comparison)</td></tr>`;
+  binLab.forEach((lab,bi)=>{ body+=`<tr><td>null95 ${lab} nats</td>${stats.map(s=>{ const b=s.binConfab[bi];
+    return `<td>${b.n? '<b>'+pct(b.rate,1)+'</b> <span class="muted">(n='+b.n+')</span>':'<span class="muted">–</span>'}</td>`; }).join('')}</tr>`; });
+  const p=$(`<section class="panel"><h2><span class="num">▸</span> Cross-model comparison <span class="sub2">fragility-controlled: raw confab rates are NOT comparable across models</span></h2>
+    <table class="gtable"><thead><tr><th>metric</th>${cols}</tr></thead><tbody>${body}</tbody></table></section>`);
+  p.appendChild(howto(`
+    <p>A model whose injected activation is <b>fragile</b> (a large random-direction null) has a high bar for "grounded," so more claims fall below it as <b>confabulated</b> even if the verbalizer did not invent more. So the <b>raw confab rate is not comparable across models</b>.</p>
+    <p>The fix: bin every activation by its <b>fragility</b> (null 95th) and compare the confab rate <em>within the same bin</em>. The bin where both models have activations is the fair test. If one model still confabulates more there, the gap is real; if it only confabulates more in its high-fragility bins, that is low test power, not more confabulation.</p>
+    <p>Per claim, the activation page now also shows <b>signal ζ</b> = Δlogp in robust-SD units of that claim's own null, which is directly comparable across models.</p>`));
+  return p;
+}
+
+function runCard(r){
+  const prog = r.n_target ? (r.n_done||0)/r.n_target : 0;
+  const statusCls = r.status==='running'?'run':r.status==='failed'?'failed':r.status==='done'?'done':'';
+  const gr = r.grounded_rate;
+  const c = $(`<a class="runcard" href="#/run/${encodeURIComponent(r.run_id)}">
+    <div class="h"><span class="title">${esc(r.model_label||r.key||'run')}</span>
+      <span class="pill ${statusCls}">${esc(r.status||'?')}</span></div>
+    <div class="id">${esc(r.run_id)}</div>
+    ${r.mock?'<span class="pill mock" style="margin-top:6px">synthetic / mock</span>':''}
+    <div class="big">${gr==null?'–':pct(gr,1)} <small>causally-grounded-claim rate${r.snippets_located?` · ${r.snippets_grounded}/${r.snippets_located} claims`:''}</small></div>
+    <div style="margin:10px 0 4px" class="bar ${statusCls==='run'?'run':''}"><div style="width:${(100*prog).toFixed(1)}%"></div></div>
+    <div class="kv" style="margin-top:6px">
+      <span>${r.n_done||0}/${r.n_target||'?'} activations</span>
+      ${r.status==='running'&&r.eta_s!=null?`<span>ETA ${dur(r.eta_s)}</span>`:''}
+      <span>${esc(relTime(r.updated_ts))}</span>
+    </div>
+    ${r.status==='failed'?`<div class="kv" style="color:var(--red-d)">${esc((r.error||'').slice(0,120))}</div>`:''}
+  </a>`);
+  return c;
+}
+
+function mapIntro(){
+  return $(`<section class="panel">
+    <p class="lead" style="margin-top:0">An NLA explains an activation vector <code>h</code> with a few short claims. This studio asks, for each claim, a causal question: <b>was it actually read out of <code>h</code>, or would the verbalizer have said it anyway?</b></p>
+    <div class="pipe">
+      <div class="box"><b>h</b>activation<br>(model internal)</div><span class="arr">→</span>
+      <div class="box"><b>AV</b>verbalizer<br>h → claims</div><span class="arr">→</span>
+      <div class="box"><b>AR</b>reconstructor<br>claim → direction Δ</div><span class="arr">→</span>
+      <div class="box"><b>ablate</b>remove Δ<br>from h → h'</div><span class="arr">→</span>
+      <div class="box"><b>re-read</b>teacher-force<br>logP(claim|h) vs logP(claim|h')</div>
+    </div>
+    <p>If removing a claim's direction from <code>h</code> makes the verbalizer much less likely to repeat that claim - more than a <em>random</em> direction would - the claim was <b>grounded</b> in the activation. If not, it was <b>confabulated</b>: produced from the verbalizer's prior, true or not. This measures faithfulness-to-activation, the gap the NLA paper's heuristics cannot close.</p>
+    <p class="muted" style="margin-top:4px">New here? The <a href="#/help">Help</a> page has a plain-English overview, a worked example with real numbers, a glossary of every number, and the full method.</p>
+  </section>`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  VIEW 2 - run detail (live)
+// ─────────────────────────────────────────────────────────────────────────────
+async function viewRun(id){
+  setCrumbs(`<a href="#/">map</a> &rsaquo; ${esc(id)}`);
+  app().innerHTML = `<div class="empty">loading run…</div>`;
+  async function refresh(){
+    let data, recs;
+    try{ data = await api('/api/run/'+encodeURIComponent(id));
+         recs = (await api('/api/run/'+encodeURIComponent(id)+'/records')).records; }
+    catch(e){ app().innerHTML=`<div class="empty">error: ${esc(e.message)}</div>`; clearTimer(); return; }
+    renderRun(id, data.run, data.summary, recs);
+    if(data.run.status!=='running'){ clearTimer(); }
+  }
+  await refresh();
+  /* static snapshot: no live polling */  // live updates while running
+}
+
+function renderRun(id, run, summary, recs){
+  const a = app(); a.innerHTML='';
+  // ── status / progress ──
+  const prog = run.n_target ? (run.n_done||0)/run.n_target : 0;
+  const statusCls = run.status==='running'?'run':run.status==='failed'?'failed':'done';
+  a.appendChild($(`<section class="panel">
+    <h2><span class="num">▸</span> ${esc(run.model_label||run.key)} <span class="pill ${statusCls}">${esc(run.status)}</span>
+      ${run.mock?'<span class="pill mock">synthetic</span>':''}
+      <span class="sub2">${esc(run.phase||'')}</span></h2>
+    <div class="bar ${statusCls==='run'?'run':''}"><div style="width:${(100*prog).toFixed(1)}%"></div></div>
+    <div class="kv" style="margin-top:10px">
+      <span class="k"><b>${run.n_done||0}/${run.n_target||'?'}</b><small>activations audited</small></span>
+      <span class="k"><b>${run.n_ok||0}</b><small>usable · ${run.n_skip||0} skipped · ${run.n_cjk||0} CJK</small></span>
+      <span class="k"><b>${dur(run.elapsed_s)}</b><small>elapsed${run.status==='running'&&run.eta_s!=null?` · ETA ${dur(run.eta_s)}`:''}</small></span>
+      <span class="k"><b>${esc(relTime(run.updated_ts))}</b><small>last update</small></span>
+    </div>
+    ${run.status==='running'&&run.last_text?`<div class="out" style="margin-top:10px"><span class="muted">latest read:</span> ${esc(run.last_text)}</div>`:''}
+    ${run.error?`<div class="note" style="border-left-color:var(--red)">${esc(run.error)}</div>`:''}
+    <div class="kv" style="margin-top:10px; font-size:0.78rem">
+      <span>AV <code>${esc(run.av||'')}</code></span><span>AR <code>${esc(run.ar||'')}</code></span>
+      <span>layer K=${run.layer}</span><span>d=${run.d_model}</span>
+      <span>R=${run.R} · α=${run.alpha} · null pct=${run.null_pct}</span>
+      ${run.injection_scale!=null?`<span>inj_scale ${fmt(run.injection_scale,1)}</span>`:''}
+      ${run.dataset?`<span>corpus ${esc(run.dataset)}</span>`:''}
+    </div>
+  </section>`));
+
+  // ── corpus summary ──
+  a.appendChild(summaryPanel(summary));
+  const catP = atomCategoryPanel(summary); if(catP) a.appendChild(catP);
+
+  // ── activations grid (with filter + sort) ──
+  const ok = recs.filter(r=>r.status==='ok');
+  const skipped = recs.filter(r=>r.status!=='ok');
+  window.__actFilter = window.__actFilter || 'all';
+  window.__actSort = window.__actSort || 'idx';
+  const panel = $(`<section class="panel"><h2><span class="num">▸</span> Activations <span class="sub2">click one to see every claim's causal test</span></h2></section>`);
+  panel.appendChild(howto(`
+    <p>Each card is one audited activation. The coloured squares are its claims
+    (<b style="color:${VCOLOR.grounded}">■</b> grounded, <b style="color:${VCOLOR.entangled}">■</b> entangled,
+     <b style="color:${VCOLOR.confabulated}">■</b> confabulated). The text is the verbalizer's explanation;
+     <code>|h|</code> is the activation's vector norm; <code>X/Y grounded</code> is grounded-over-located claims.</p>
+    <p>Use <b>show</b> to filter (e.g. only activations that contain a confabulated claim) and <b>sort by</b> to
+    surface the most or least grounded. Click any card for its full per-claim causal test.</p>`));
+  const bar = $(`<div class="filterbar">
+    <label>show <select id="fFilter">
+      <option value="all">all activations</option>
+      <option value="has-confab">contains a confabulated claim</option>
+      <option value="has-entangled">contains an entangled claim</option>
+      <option value="all-grounded">all claims grounded</option>
+      <option value="has-unlocated">contains an unlocated claim</option>
+    </select></label>
+    <label>sort by <select id="fSort">
+      <option value="idx">index</option>
+      <option value="most-grounded">most grounded claims</option>
+      <option value="most-confab">most confabulated claims</option>
+      <option value="least-grounded">fewest grounded claims</option>
+      <option value="hnorm">highest &#8214;h&#8214;</option>
+    </select></label>
+    <span class="count" id="actCount"></span>
+  </div>`);
+  panel.appendChild(bar);
+  const host = $(`<div class="acts" id="actgrid"></div>`); panel.appendChild(host);
+  if(skipped.length) panel.appendChild($(`<p class="muted" style="margin-top:12px">${skipped.length} skipped (fewer than 2 snippets, or CJK injection-failure smell): ${skipped.slice(0,12).map(r=>`#${r.idx}`).join(', ')}${skipped.length>12?'…':''}</p>`));
+  a.appendChild(panel);
+  const fSel=bar.querySelector('#fFilter'), sSel=bar.querySelector('#fSort');
+  fSel.value=window.__actFilter; sSel.value=window.__actSort;
+  fSel.onchange=()=>{ window.__actFilter=fSel.value; fillActGrid(id, ok, host, bar); };
+  sSel.onchange=()=>{ window.__actSort=sSel.value; fillActGrid(id, ok, host, bar); };
+  fillActGrid(id, ok, host, bar);
+}
+
+function fillActGrid(id, ok, host, bar){
+  const f=window.__actFilter, srt=window.__actSort;
+  const has=(r,v)=>(r.snippet_results||[]).some(s=>s.verdict===v);
+  const cc=r=>(r.snippet_results||[]).filter(s=>s.verdict==='confabulated').length;
+  let list=ok.filter(r=>{
+    if(f==='has-confab') return has(r,'confabulated');
+    if(f==='has-entangled') return has(r,'entangled');
+    if(f==='has-unlocated') return has(r,'unlocated');
+    if(f==='all-grounded') return r.located_count>0 && r.grounded_count===r.located_count;
+    return true;
+  });
+  list.sort((a,b)=>{
+    if(srt==='most-grounded') return (b.grounded_count||0)-(a.grounded_count||0);
+    if(srt==='most-confab') return cc(b)-cc(a);
+    if(srt==='least-grounded') return (a.grounded_count||0)-(b.grounded_count||0);
+    if(srt==='hnorm') return (b.h_norm||0)-(a.h_norm||0);
+    return a.idx-b.idx;
+  });
+  host.innerHTML='';
+  if(!list.length) host.innerHTML='<div class="empty">no activations match this filter…</div>';
+  else list.forEach(r=> host.appendChild(actCard(id, r)));
+  const cnt=bar.querySelector('#actCount'); if(cnt) cnt.textContent=`${list.length} of ${ok.length} shown`;
+}
+
+function summaryPanel(s){
+  if(!s || !s.n_activations) return $(`<section class="panel"><h2><span class="num">▸</span> Corpus result</h2><div class="empty">waiting for results…</div></section>`);
+  const p = $(`<section class="panel"><h2><span class="num">▸</span> Corpus result <span class="sub2">aggregated over every audited claim</span></h2></section>`);
+  p.appendChild($(`<div class="scoregrid">
+    <div class="metric green">${pct(s.grounded_rate,1)}<small>grounded rate (${s.n_grounded}/${s.n_located})</small></div>
+    <div class="metric" style="color:var(--amber)">${pct(s.entangled_rate,1)}<small>entangled (${s.n_entangled||0})</small></div>
+    <div class="metric red">${pct(s.confab_rate,1)}<small>confabulated (${s.n_confab||0})</small></div>
+    <div class="metric">${s.n_activations}<small>activations · ${s.n_located} claims</small></div>
+    <div class="metric green">${nats(s.dlogp_grounded_mean)}<small>mean Δlogp · grounded</small></div>
+    <div class="metric blue">${fmt(s.dlogp_dmse_pearson,2)}<small>Δlogp ↔ ΔMSE corr.</small></div>
+  </div>`));
+  p.appendChild(howto(`
+    <p>Every <b>claim</b> from every activation gets one of three verdicts. These are the corpus-wide rates:</p>
+    <ul>
+      <li><b>grounded rate</b> - the headline. Fraction of claims the verbalizer genuinely read out of the activation (it depends on <code>h</code> <em>and</em> the dependence is specific to that claim). Higher is a more faithful NLA.</li>
+      <li><b>entangled</b> - claims that do depend on <code>h</code> but whose direction overlaps a neighbouring claim, so credit can't be cleanly assigned. Honest middle ground, not a failure.</li>
+      <li><b>confabulated</b> - claims the verbalizer would produce regardless of <code>h</code> (true or not). This is the confabulation rate the paper's heuristics can't isolate.</li>
+    </ul>
+    <p><b>mean Δlogp · grounded</b> is how many nats of probability a grounded claim loses when its own direction is removed (bigger = stronger dependence). <b>Δlogp ↔ ΔMSE corr.</b> is the agreement between our causal test and the AR's independent "removing a true claim hurts reconstruction" signal; near +1 means two unrelated methods point the same way.</p>
+    <p>The two charts below plot the same numbers across all claims. Hover any metric tile to see the raw counts.</p>`));
+  const charts = $(`<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:16px"></div>`);
+  charts.appendChild(wrapChart('Distribution of Δlogp (nats)', 'how much each claim weakens when its own direction is ablated; confabulated claims pile up near 0', histogramSVG(s.dlogp_hist)));
+  charts.appendChild(wrapChart('Δlogp vs AR ΔMSE (free cross-check)', 'paper says removing a true claim hurts AR reconstruction (ΔMSE>0); our causal Δlogp should agree', scatterSVG(s.scatter, s.dlogp_dmse_pearson)));
+  p.appendChild(charts);
+  if(s.spec_offdiag_mean!=null) p.appendChild($(`<p class="muted" style="margin-top:12px">Mean off-target effect (specificity control): <b>${nats(s.spec_offdiag_mean)} nats</b> - ablating one claim should barely move the others; a value near 0 means the test is specific.</p>`));
+  return p;
+}
+
+// ── atom mode: verdict-by-category (the headline science; gist read vs position confabulated) ──
+function verdictBar(d){
+  const loc=d.located||0;
+  const wrap=$(`<div style="display:flex;height:15px;border-radius:4px;overflow:hidden;background:#efe9e0;flex:1;min-width:120px"></div>`);
+  if(loc) [['grounded',VCOLOR.grounded],['entangled',VCOLOR.entangled],['confabulated',VCOLOR.confabulated]].forEach(([v,c])=>{
+    const w=100*(d[v]||0)/loc; if(w>0) wrap.appendChild($(`<span style="width:${w}%;background:${c}" title="${v}: ${d[v]} (${w.toFixed(0)}%)"></span>`)); });
+  return wrap;
+}
+function catRow(label, d){
+  const r=$(`<div class="catrow" style="display:flex;align-items:center;gap:12px;margin:5px 0"></div>`);
+  r.appendChild($(`<div style="width:236px;font-size:0.84rem">${esc(label)} <span class="muted">n=${d.located||0}</span></div>`));
+  r.appendChild(verdictBar(d));
+  const ci=(d.grounded_ci&&d.grounded_ci[0]!=null)?` <span class="muted">[${pct(d.grounded_ci[0],0)}–${pct(d.grounded_ci[1],0)}]</span>`:'';
+  r.appendChild($(`<div style="width:158px;font-size:0.84rem;text-align:right"><b style="color:${VCOLOR.grounded}">${pct(d.grounded_rate,0)}</b> grounded${ci}</div>`));
+  return r;
+}
+function atomCategoryPanel(s){
+  if(!s || !s.by_bucket) return null;   // block-mode runs have no typed claims
+  const p = $(`<section class="panel atomcat"><h2><span class="num">▸</span> What kinds of claims get grounded <span class="sub2">verdict split by the claim's semantic category - atom mode</span></h2></section>`);
+  p.appendChild(howto(`
+    <p>Every content claim is bucketed by what it is <em>about</em>. Each bar is that bucket's verdict mix
+       (<b style="color:${VCOLOR.grounded}">grounded</b> / <b style="color:${VCOLOR.entangled}">entangled</b> /
+        <b style="color:${VCOLOR.confabulated}">confabulated</b>) over its located claims; the number at right is the grounded rate with a 95% Wilson interval.</p>
+    <p>The semantic category predicts groundedness far better than the coarse type or role. The recurring finding: <b>GIST</b> (what the text is about) is read from the activation, while <b>POSITION / STRUCTURE</b> (where the token sits, what comes next) is confabulated from the prior.</p>`));
+  const BK=[['gist','GIST - genre / topic / tone / style'],['quote','QUOTE - verbatim span'],
+            ['position','POSITION / STRUCTURE'],['prediction','PREDICTION - what comes next']];
+  BK.forEach(([k,lab])=>{ const d=s.by_bucket[k]; if(d&&d.n) p.appendChild(catRow(lab,d)); });
+  const g=s.by_bucket.gist, po=s.by_bucket.position;
+  if(g&&po&&g.grounded_rate!=null&&po.grounded_rate!=null)
+    p.appendChild($(`<p class="muted" style="margin-top:10px">GIST grounds <b style="color:${VCOLOR.grounded}">${pct(g.grounded_rate,0)}</b> vs POSITION <b>${pct(po.grounded_rate,0)}</b> (gap ${nats((g.grounded_rate-po.grounded_rate)*100).replace('+','+')} pts). The NLA reads the semantic gist and confabulates positional/structural claims.</p>`));
+  if(s.by_type && (s.by_type.theme||s.by_type.detail)){
+    p.appendChild($(`<h3 style="margin:16px 0 4px; font-size:0.9rem; color:var(--ink2)">By partition type</h3>`));
+    ['theme','detail'].forEach(t=>{ const d=s.by_type[t]; if(d&&d.n) p.appendChild(catRow(t,d)); });
+  }
+  if(s.hedged && (s.hedged.hedged||s.hedged.confident)){
+    p.appendChild($(`<h3 style="margin:16px 0 4px; font-size:0.9rem; color:var(--ink2)">Hedged vs confident <span class="muted" style="font-weight:400">(is the AV's hedging calibrated to groundedness?)</span></h3>`));
+    ['hedged','confident'].forEach(t=>{ const d=s.hedged[t]; if(d&&d.n) p.appendChild(catRow(t,d)); });
+  }
+  return p;
+}
+
+function actCard(id, r){
+  const chips = (r.snippet_results||[]).map(s=>`<span class="chip ${VLETTER[s.verdict]||'u'}" title="${esc(s.verdict)}"></span>`).join('');
+  return $(`<a class="actcard" href="#/run/${encodeURIComponent(id)}/act/${r.idx}">
+    <div class="top"><span>#${r.idx}</span><span class="tok">${esc((r.read_token||'').replace(/\n/g,'⏎'))}</span></div>
+    <div class="chips">${chips}</div>
+    <div class="ex">${esc((r.z_inner||'').slice(0,150))}</div>
+    <div class="top" style="margin-top:8px"><span>${r.grounded_count||0}/${r.located_count||0} grounded</span><span>|h|=${fmt(r.h_norm,0)}</span></div>
+  </a>`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  VIEW 3 - activation detail
+// ─────────────────────────────────────────────────────────────────────────────
+async function viewActivation(id, idx){
+  setCrumbs(`<a href="#/">map</a> &rsaquo; <a href="#/run/${encodeURIComponent(id)}">${esc(id)}</a> &rsaquo; activation #${esc(idx)}`);
+  app().innerHTML = `<div class="empty">loading activation…</div>`;
+  let rec, vec, idxs=[];
+  try{
+    rec = await api(`/api/run/${encodeURIComponent(id)}/record/${idx}`);
+    try{ vec = await api(`/api/run/${encodeURIComponent(id)}/vectors/${idx}`); }catch(e){ vec=null; }
+    try{ idxs = (await api(`/api/run/${encodeURIComponent(id)}/records`)).records
+                 .filter(r=>r.status==='ok').map(r=>r.idx); }catch(e){ idxs=[]; }
+  }catch(e){ app().innerHTML=`<div class="empty">error: ${esc(e.message)}</div>`; return; }
+  renderActivation(id, rec, vec, idxs);
+}
+
+function renderActivation(id, r, vec, idxs){
+  const a = app(); a.innerHTML='';
+  // prev / next / back navigation among the run's usable activations
+  idxs = idxs||[];
+  const cur = idxs.indexOf(r.idx);
+  const prev = cur>0 ? idxs[cur-1] : null;
+  const next = (cur>=0 && cur<idxs.length-1) ? idxs[cur+1] : null;
+  const lnk = (i,lbl)=> i==null ? `<span class="dis">${lbl}</span>`
+      : `<a href="#/run/${encodeURIComponent(id)}/act/${i}">${lbl}</a>`;
+  a.appendChild($(`<div class="navbtns">
+    <div class="grp">${lnk(prev,'← prev')}${lnk(next,'next →')}</div>
+    <span class="ctr">${cur>=0?`activation ${cur+1} of ${idxs.length}`:''}</span>
+    <div class="grp"><a href="#/run/${encodeURIComponent(id)}">↑ back to run</a><a href="#/help/glossary">glossary</a></div>
+  </div>`));
+  // header metrics
+  const hdr = $(`<section class="panel">
+    <h2><span class="num">▸</span> Activation #${r.idx} <span class="sub2">${esc(r.doc_id||'')} · position ${r.position} of ${r.n_tokens} tokens</span></h2>
+    <div class="scoregrid">
+      <div class="metric green">${r.grounded_count}/${r.located_count}<small>grounded claims</small></div>
+      <div class="metric">${fmt(r.h_norm,1)}<small>‖h‖ activation norm</small></div>
+      <div class="metric">${(()=>{const f=actNull95(r);return f==null?'–':fmt(f,2);})()}<small>fragility (null 95th, nats)</small></div>
+      <div class="metric">${fmt(r.cos_full,3)}<small>cos(AR(z), h) full reconstruction</small></div>
+      <div class="metric">${fmt(r.mse_full,3)}<small>AR MSE(z, h)</small></div>
+    </div>
+  </section>`);
+  hdr.appendChild(howto(`
+    <p>This is one activation vector <code>h</code> taken from the base model at one token position, now under audit.</p>
+    <ul>
+      <li><b>grounded claims</b> - how many of this activation's located claims passed the full causal test (grounded / located).</li>
+      <li><b>‖h‖</b> - the length of the activation vector. Only its <em>direction</em> matters for injection (it is rescaled), but the norm is stored for reference.</li>
+      <li><b>fragility (null 95th)</b> - how much a <em>random</em> direction ablation moves this activation's claims (95th-pct nat). Near 0 = robust (only claim-specific ablations matter, the test has full power); large = fragile (any perturbation disrupts the read, so the bar for "grounded" is high and the test loses power). This is the key quantity for fair cross-model comparison: the per-claim <b>signal ζ</b> below is Δlogp measured in units of this noise.</li>
+      <li><b>cos(AR(z), h)</b> - how well the reconstructor maps the verbalizer's whole explanation back to this activation. Near 1 = the explanation as a whole captures <code>h</code>; this whole-explanation fidelity is what the NLA paper reports.</li>
+      <li><b>AR MSE(z, h)</b> - the same thing as a distance: MSE = 2(1 − cos), so 0 is perfect and 2 is orthogonal.</li>
+    </ul>`));
+  a.appendChild(hdr);
+
+  // source text + read token
+  const src = $(`<section class="panel"><h2><span class="num">▸</span> What the model was reading <span class="sub2">the activation was taken at the highlighted token</span></h2></section>`);
+  const ctxL = esc(r.context_left||''), ctxR = esc(r.context_right||''), tok = esc((r.read_token||'').replace(/\n/g,'⏎'));
+  if(r.context_left||r.context_right){
+    src.appendChild($(`<div class="src">…${ctxL}<span class="readtok">${tok}</span>${ctxR}…</div>`));
+  } else {
+    src.appendChild($(`<div class="src muted">no stored context</div>`));
+  }
+  if(r.source_text) src.appendChild($(`<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">full source document</summary><div class="src" style="margin-top:6px; max-height:320px">${esc(r.source_text)}</div></details>`));
+  a.appendChild(src);
+
+  // explanation with colored snippets
+  const expl = $(`<section class="panel"><h2><span class="num">▸</span> The verbalizer's explanation <span class="sub2">each claim color-coded by verdict</span></h2></section>`);
+  expl.appendChild(coloredExplanation(r));
+  expl.appendChild($(`<div class="legend"><span><i style="background:${VCOLOR.grounded}"></i>grounded - read from h via its own direction</span><span><i style="background:${VCOLOR.entangled}"></i>entangled - depends on h but overlaps a sibling claim</span><span><i style="background:${VCOLOR.confabulated}"></i>confabulated - not dependent on h</span><span><i style="background:${VCOLOR.unlocated}"></i>could not locate tokens</span></div>`));
+  a.appendChild(expl);
+
+  // per-snippet causal tests
+  const tests = $(`<section class="panel"><h2><span class="num">▸</span> Per-claim causal test <span class="sub2">Δlogp vs the random-direction null</span></h2></section>`);
+  tests.appendChild(howto(`
+    <p>One block per claim. For each, we removed that claim's direction from <code>h</code> and re-measured how likely the verbalizer is to still say it.</p>
+    <ul>
+      <li>The <b>bar</b> shows <b>Δlogp</b> (how many nats the claim weakened) against the <b>null band</b> - the grey strip and dashed line are what <em>random</em> directions achieve. A bar far past the dashed line means a real effect.</li>
+      <li>The numbers under it: <b>own vs rival</b> is the key specificity ratio (own ablation effect ÷ the strongest other-claim ablation; must clear the margin to be grounded); <b>collateral</b> is how much ablating this claim disturbed the others; <b>ΔMSE</b> is the AR's independent agreement; <b>‖Δ‖</b> / <b>h·Δ̂</b> describe the direction's size and overlap with <code>h</code>.</li>
+      <li>The small <b>per-token chart</b> shows exactly where in the claim's words the probability dropped (green = under <code>h</code>, red = under the ablated <code>h′</code>).</li>
+    </ul>
+    <p>Full definitions are in the <a href="#/help/glossary">glossary</a>.</p>`));
+  (r.snippet_results||[]).forEach((s,i)=> tests.appendChild(snippetBlock(s, vec, i)));
+  a.appendChild(tests);
+
+  // specificity matrix + vector panel
+  if((r.snippet_results||[]).length>=2) a.appendChild(specificityPanel(r));
+  if(vec) a.appendChild(vectorPanel(r, vec));
+}
+
+function coloredExplanation(r){
+  // rebuild the inner text, wrapping each snippet in a colored span
+  const inner = r.z_inner||''; let html = esc(inner);
+  (r.snippet_results||[]).forEach(s=>{
+    const cls = VMARK[s.verdict]||'mark-u';
+    const safe = esc(s.text);
+    const meta = s.type ? ` · ${esc(s.type)}${s.role?'/'+esc(s.role):''}` : '';
+    html = html.replace(safe, `<span class="${cls}" title="${esc(s.verdict)}${meta} · Δlogp ${nats(s.dlogp)}">${safe}</span>`);
+  });
+  return $(`<div class="out">${html.replace(/\n/g,'<br>')}</div>`);
+}
+
+function interpret(s){
+  if(!s.located) return `The verbalizer's tokens for this claim could not be located in the teacher-forced sequence, so it was not scored.`;
+  const d = s.dlogp, thr = s.null_thr, cm = s.col_off_max, ratio = s.spec_ratio;
+  if(s.verdict==='confabulated'){
+    return `Ablating this claim's direction changed the verbalizer's probability of repeating it by only ${nats(d)} nats, within the random-direction null (${fmt(thr,2)}). The activation does not causally support it; the verbalizer would likely produce it regardless. Verdict: confabulated.`;
+  }
+  if(s.verdict==='entangled'){
+    return `Removing this claim's direction weakened it by ${fmt(d,2)} nats, well above the ${fmt(thr,2)}-nat null, so it does depend on the activation. But ablating a different claim's direction weakened it almost as much (${fmt(cm,2)} nats), so the drop cannot be attributed to this claim's own direction; its direction overlaps a sibling claim. Verdict: entangled.`;
+  }
+  const tail = (ratio==null)
+    ? `and no other claim's ablation affected it`
+    : `and ${fmt(ratio,1)}× more than the strongest other-claim ablation (${fmt(cm,2)} nats)`;
+  return `Removing this claim's direction weakened it by ${fmt(d,2)} nats, far above the ${fmt(thr,2)}-nat random-direction null, ${tail}. The drop is specific to this claim's own direction. Verdict: grounded.`;
+}
+
+function snippetBlock(s, vec, i){
+  const b = $(`<div class="snip ${s.verdict}"></div>`);
+  b.appendChild($(`<div class="row" style="justify-content:space-between; align-items:flex-start">
+      <p class="claim" style="flex:1; min-width:60%">${esc(s.text)}</p>
+      <span class="vbadge ${s.verdict}">${esc(s.verdict)}</span></div>`));
+  if(s.type){   // atom mode: typed claim metadata (from the two-layer decomposition)
+    const tag=(t,bg)=>`<span style="display:inline-block;font-size:0.68rem;padding:1px 6px;border-radius:8px;background:${bg||'#ece4d8'};color:#4a3f2f;margin-right:4px">${esc(t)}</span>`;
+    b.appendChild($(`<div class="typedchips" style="margin:-2px 0 6px">${tag(s.type)}${s.role?tag(s.role):''}${s.subtype?tag(s.subtype):''}${(s.hedged&&s.hedged.length)?tag('hedged: '+s.hedged.join(', '),'#e7ddf0'):''}</div>`));
+  }
+  b.appendChild($(`<p class="interp">${interpret(s)}</p>`));
+  // dlogp vs null bar
+  b.appendChild(nullBarSVG(s));
+  const _z = snipZeta(s);
+  b.appendChild($(`<div class="statline">
+    <span><b>${nats(s.dlogp)}</b> Δlogp (nats)</span>
+    <span>null thr <b>${fmt(s.null_thr,2)}</b></span>
+    <span title="Δlogp in robust-SD units of this claim's own random-ablation noise; comparable across models">signal ζ <b>${_z==null?'–':fmt(_z,1)}</b></span>
+    <span>own vs rival <b>${s.spec_ratio==null?'∞':fmt(s.spec_ratio,2)+'×'}</b> (rival ${fmt(s.col_off_max,2)})</span>
+    <span>collateral <b>${nats(s.spec_offdiag)}</b></span>
+    <span>ΔMSE <b>${nats(s.dmse)}</b></span>
+    <span>‖Δ‖ <b>${fmt(s.delta_norm,2)}</b></span>
+    <span>h·Δ̂ <b>${fmt(s.proj_mag,2)}</b> (cos ${fmt(s.proj_cos,3)})</span>
+    <span>span <b>${s.n_span_tokens}</b> tok</span>
+  </div>`));
+  // per-token logp where the claim's probability dropped
+  if(vec && vec.tok_logp_h && vec.tok_logp_ablate && vec.tok_logp_ablate[i] && s.token_span){
+    b.appendChild(wrapChart('Per-token log-prob across the claim span',
+      'green = under h, red = under the ablated h′; the gap is where the claim lost support',
+      tokLogpSVG(vec.tok_logp_h, vec.tok_logp_ablate[i], s.token_span)));
+  }
+  return b;
+}
+
+// ── specificity matrix ──
+// SVG heatmap - scales to the dozens of claims an atom-mode activation can have (the n×n
+// HTML table below is unreadable past ~8 claims).
+function specificityHeatmapSVG(r){
+  const sr = r.snippet_results, n = sr.length;
+  let max = 0.5; sr.forEach(s=> (s.spec_row||[]).forEach(v=>{ if(v!=null) max=Math.max(max, Math.abs(v)); }));
+  const cell = Math.max(7, Math.min(22, Math.floor(560/n))), lab = 16, pad = 4;
+  const W = lab + n*cell + pad, H = lab + n*cell + pad;
+  const s = svg('svg',{viewBox:`0 0 ${W} ${H}`, width:'100%', style:`max-width:${Math.max(W,240)}px`, class:'specheat'});
+  for(let j=0;j<n;j++)   // verdict tick above each column (which claim it is)
+    s.appendChild(svg('rect',{x:lab+j*cell, y:lab-5, width:cell-1, height:3, fill:VCOLOR[sr[j].verdict]||'#ccc'}));
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){
+    const v = (sr[i].spec_row||[])[j];
+    const inten = v==null?0:Math.min(1, Math.abs(v)/max);
+    const col = v==null?'#f4efe7':(v>=0?`rgba(74,124,89,${inten})`:`rgba(166,93,87,${inten})`);
+    const rect = svg('rect',{x:lab+j*cell, y:lab+i*cell, width:cell-1, height:cell-1, fill:col, rx:1});
+    if(i===j){ rect.setAttribute('stroke','#2c2416'); rect.setAttribute('stroke-width','1'); }
+    const t = svg('title',{}); t.textContent = `ablate C${i} → C${j}: ${nats(v)} nats (C${j} ${sr[j].verdict||''})`;
+    rect.appendChild(t); s.appendChild(rect);
+  }
+  return s;
+}
+function specificityPanel(r){
+  const sr = r.snippet_results; const n = sr.length;
+  const p = $(`<section class="panel"><h2><span class="num">▸</span> Specificity matrix <span class="sub2">effect on claim j (columns) of ablating claim i (rows) - should be diagonal</span></h2></section>`);
+  p.appendChild(howto(`
+    <p>Cell (row <code>i</code>, column <code>j</code>) = how many nats claim <code>j</code> weakened when we ablated claim <code>i</code>'s direction. Greener = bigger drop.</p>
+    <ul>
+      <li><b>Read down a column</b> to judge one claim: if the cell on the diagonal (where row = column) is clearly the darkest in its column, that claim is <b>grounded</b> - its own direction is what drives it.</li>
+      <li>If an <b>off-diagonal cell in the column is nearly as dark</b>, the claim is <b>entangled</b>: another claim's direction moves it just as much, so the two share a direction.</li>
+      <li>A whole column that stays pale means that claim barely depends on <code>h</code> (<b>confabulated</b>).</li>
+    </ul>`));
+  // values: sr[i].spec_row[j]. HTML table with numbers for a few claims; SVG heatmap past that.
+  let max = 0.5; sr.forEach(s=> (s.spec_row||[]).forEach(v=> { if(v!=null) max=Math.max(max, Math.abs(v)); }));
+  if(n>8){
+    p.appendChild(wrapChart(`Specificity heatmap · ${n}×${n} claims`,
+      "rows = ablated claim, columns = affected claim; greener = bigger drop; the outlined diagonal should dominate its column; the tick above each column is that claim's verdict colour",
+      specificityHeatmapSVG(r)));
+  } else {
+    const tbl = $(`<table class="mat"></table>`);
+    const head = $(`<tr><th></th></tr>`); for(let j=0;j<n;j++) head.appendChild($(`<th>C${j}</th>`)); tbl.appendChild(head);
+    for(let i=0;i<n;i++){
+      const tr = $(`<tr><th>ablate C${i}</th></tr>`);
+      for(let j=0;j<n;j++){
+        const v = (sr[i].spec_row||[])[j];
+        const inten = v==null?0:Math.min(1, Math.abs(v)/max);
+        const col = v==null?'#fff':(v>=0?`rgba(74,124,89,${inten})`:`rgba(166,93,87,${inten})`);
+        tr.appendChild($(`<td style="background:${col}; color:${inten>0.55?'#fff':'var(--ink2)'}" title="ablate C${i} → claim C${j}: ${nats(v)} nats">${v==null?'–':nats(v)}</td>`));
+      }
+      tbl.appendChild(tr);
+    }
+    p.appendChild(tbl);
+  }
+  p.appendChild($(`<p class="muted" style="margin-top:10px">A claim is <b>grounded</b> when, reading down its column, the diagonal cell is the largest by a clear margin: its own ablation suppresses it more than any other claim's ablation does. When an off-diagonal cell in the column rivals the diagonal, the claim is <b>entangled</b> with that sibling (it depends on the activation, but the two claims share a direction, so the drop cannot be cleanly attributed). The random-direction null sits near zero, so it is not shown here; it only certifies that the diagonal effect is real.</p>`));
+  return p;
+}
+
+// ── vector panel (stores all info) ──
+function vectorPanel(r, vec){
+  const p = $(`<section class="panel"><h2><span class="num">▸</span> Vectors <span class="sub2">full arrays stored on disk; magnitude profiles shown here</span></h2></section>`);
+  p.appendChild(howto(`
+    <p>The actual high-dimensional vectors behind this audit. Each strip is a <b>magnitude profile</b>: the ${vec.d_model}-dimensional vector's absolute values, downsampled to a sparkline so you can eyeball where its energy sits.</p>
+    <ul>
+      <li><b>|h|</b> - the activation under audit.</li>
+      <li><b>|Δ| for claim C<i>i</i></b> - that claim's direction (from the AR), the thing we project out of <code>h</code>. ‖Δ‖ is its length; longer + more <code>h</code>-aligned generally means a bigger ablation effect.</li>
+    </ul>
+    <p>Everything (raw <code>h</code>, every Δ, the AR outputs, the null matrix, per-token log-probs) is saved in the per-activation <code>.npz</code> for offline reanalysis - nothing is discarded.</p>`));
+  p.appendChild($(`<div class="kv"><span>d_model <b>${vec.d_model}</b></span><span>‖h‖ <b>${fmt(vec.h.norm,2)}</b></span>${vec.ar_full?`<span>‖AR(z)‖ <b>${fmt(vec.ar_full.norm,2)}</b></span>`:''}<span>marker@<b>${vec.marker_pos}</b></span></div>`));
+  p.appendChild(wrapChart('|h| magnitude profile (downsampled)', 'the activation under audit', sparkSVG(vec.h.spark, '#3f6f8f')));
+  (vec.deltas||[]).forEach((d,i)=>{
+    const s = (r.snippet_results||[])[i];
+    p.appendChild(wrapChart(`|Δ| for claim C${i} - ‖Δ‖=${fmt(d.norm,2)} · ${s?esc(s.verdict):''}`,
+      s?esc(s.text.slice(0,90)):'', sparkSVG(d.spark, s&&s.verdict==='grounded'?'#4a7c59':'#a65d57')));
+  });
+  p.appendChild($(`<p class="muted" style="margin-top:8px">Per-activation file: <code>vectors/${r.idx}.npz</code> holds the raw <code>h</code>, every <code>Δ_i</code>, <code>AR(z)</code>, <code>AR(z\\C_i)</code>, the null matrix, and per-token log-probs under <code>h</code> and each ablation - nothing is discarded.</p>`));
+  return p;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  SVG charts
+// ─────────────────────────────────────────────────────────────────────────────
+function wrapChart(title, sub, node){
+  const w = $(`<div class="chartwrap"><div style="font-size:0.84rem; font-weight:600; color:var(--ink2)">${esc(title)}</div>${sub?`<div class="muted" style="font-size:0.78rem; font-style:italic; margin-bottom:2px">${esc(sub)}</div>`:''}</div>`);
+  w.appendChild(node); return w;
+}
+
+function nullBarSVG(s){
+  const W=620,H=58,padL=8,padR=8,y=30;
+  const nulls = s.null_dlogps||[];
+  const lo = Math.min(0, s.dlogp==null?0:s.dlogp, ...nulls, s.null_thr==null?0:s.null_thr);
+  const hi = Math.max(0.5, s.dlogp==null?0:s.dlogp, ...nulls, s.null_thr==null?0:s.null_thr)*1.08;
+  const x = v => padL + (v-lo)/(hi-lo)*(W-padL-padR);
+  const el = svg('svg',{viewBox:`0 0 ${W} ${H}`, width:'100%', height:H});
+  // zero line
+  el.appendChild(svg('line',{x1:x(0),y1:8,x2:x(0),y2:H-8,class:'gridln'}));
+  // null band (min..thr)
+  if(nulls.length){
+    const nmin=Math.min(...nulls);
+    const band=svg('rect',{x:x(nmin),y:y-9,width:Math.max(1,x(s.null_thr)-x(nmin)),height:18,fill:'#c9bfb0',opacity:0.35,rx:3});
+    el.appendChild(band);
+  }
+  // threshold line
+  if(s.null_thr!=null){ el.appendChild(svg('line',{x1:x(s.null_thr),y1:y-13,x2:x(s.null_thr),y2:y+13,stroke:'#8a7c66','stroke-dasharray':'3 2','stroke-width':1.4})); }
+  // null sample dots
+  nulls.forEach(v=> el.appendChild(svg('circle',{cx:x(v),cy:y+16,r:2.2,fill:'#9b8e78',opacity:0.7})));
+  // dlogp bar
+  const col = s.verdict==='grounded'?'#4a7c59':'#a65d57';
+  if(s.dlogp!=null){
+    const x0=x(0), x1=x(s.dlogp);
+    el.appendChild(svg('rect',{x:Math.min(x0,x1),y:y-9,width:Math.max(2,Math.abs(x1-x0)),height:18,fill:col,rx:3}));
+  }
+  // labels
+  const t1=svg('text',{x:x(s.null_thr??0)+3,y:14,class:'axislbl'}); t1.textContent='null 95%'; el.appendChild(t1);
+  const t2=svg('text',{x:Math.max(padL,x(s.dlogp??0)-2),y:H-4,class:'axislbl','text-anchor':'end'}); t2.textContent='Δlogp '+nats(s.dlogp); el.appendChild(t2);
+  return el;
+}
+
+function histogramSVG(h){
+  const W=520,H=170,padL=34,padB=24,padT=10,padR=8;
+  const el = svg('svg',{viewBox:`0 0 ${W} ${H}`, width:'100%'});
+  if(!h||!h.counts||!h.counts.length){ const t=svg('text',{x:W/2,y:H/2,class:'axislbl','text-anchor':'middle'}); t.textContent='no data'; el.appendChild(t); return el; }
+  const n=h.counts.length, maxc=Math.max(...h.counts,1);
+  const bw=(W-padL-padR)/n;
+  el.appendChild(svg('line',{x1:padL,y1:H-padB,x2:W-padR,y2:H-padB,class:'axis'}));
+  el.appendChild(svg('line',{x1:padL,y1:padT,x2:padL,y2:H-padB,class:'axis'}));
+  // zero marker on x
+  const x0idx = h.edges.findIndex(e=>e>=0);
+  for(let i=0;i<n;i++){
+    const ht=(h.counts[i]/maxc)*(H-padB-padT);
+    const mid=(h.edges[i]+h.edges[i+1])/2;
+    const col= mid<=0.05 ? '#a65d57' : (mid>0.5?'#4a7c59':'#b9a98f');
+    el.appendChild(svg('rect',{x:padL+i*bw+0.5,y:H-padB-ht,width:Math.max(1,bw-1),height:ht,fill:col,opacity:0.85}));
+  }
+  [0, h.edges[0], h.edges[h.edges.length-1]].forEach(()=>{});
+  const lblL=svg('text',{x:padL,y:H-6,class:'axislbl'}); lblL.textContent=fmt(h.edges[0],1); el.appendChild(lblL);
+  const lblR=svg('text',{x:W-padR,y:H-6,class:'axislbl','text-anchor':'end'}); lblR.textContent=fmt(h.edges[h.edges.length-1],1); el.appendChild(lblR);
+  const lblY=svg('text',{x:4,y:padT+8,class:'axislbl'}); lblY.textContent=maxc; el.appendChild(lblY);
+  const lblx=svg('text',{x:(W)/2,y:H-2,class:'axislbl','text-anchor':'middle'}); lblx.textContent='Δlogp (nats) →'; el.appendChild(lblx);
+  return el;
+}
+
+function scatterSVG(pts, pearson){
+  const W=520,H=170,padL=38,padB=26,padT=10,padR=10;
+  const el=svg('svg',{viewBox:`0 0 ${W} ${H}`, width:'100%'});
+  if(!pts||!pts.length){ const t=svg('text',{x:W/2,y:H/2,class:'axislbl','text-anchor':'middle'}); t.textContent='no data'; el.appendChild(t); return el; }
+  const xs=pts.map(p=>p[1]), ys=pts.map(p=>p[0]); // x=ΔMSE, y=Δlogp
+  const xlo=Math.min(0,...xs), xhi=Math.max(0.1,...xs), ylo=Math.min(0,...ys), yhi=Math.max(0.5,...ys);
+  const X=v=>padL+(v-xlo)/(xhi-xlo)*(W-padL-padR), Y=v=>H-padB-(v-ylo)/(yhi-ylo)*(H-padB-padT);
+  el.appendChild(svg('line',{x1:padL,y1:H-padB,x2:W-padR,y2:H-padB,class:'axis'}));
+  el.appendChild(svg('line',{x1:padL,y1:padT,x2:padL,y2:H-padB,class:'axis'}));
+  if(xlo<0&&xhi>0) el.appendChild(svg('line',{x1:X(0),y1:padT,x2:X(0),y2:H-padB,class:'gridln'}));
+  if(ylo<0&&yhi>0) el.appendChild(svg('line',{x1:padL,y1:Y(0),x2:W-padR,y2:Y(0),class:'gridln'}));
+  pts.forEach(p=> el.appendChild(svg('circle',{cx:X(p[1]),cy:Y(p[0]),r:2.6,fill:'#3f6f8f',opacity:0.5})));
+  const lx=svg('text',{x:(W)/2,y:H-3,class:'axislbl','text-anchor':'middle'}); lx.textContent='AR ΔMSE (remove claim) →'; el.appendChild(lx);
+  const ly=svg('text',{x:6,y:padT+8,class:'axislbl'}); ly.textContent='Δlogp ↑'; el.appendChild(ly);
+  if(pearson!=null){ const t=svg('text',{x:W-padR,y:padT+10,class:'axislbl','text-anchor':'end'}); t.textContent='r = '+fmt(pearson,2); t.setAttribute('fill','#3f6f8f'); el.appendChild(t); }
+  return el;
+}
+
+function sparkSVG(spark, color){
+  const W=620,H=44,pad=2;
+  const el=svg('svg',{viewBox:`0 0 ${W} ${H}`, width:'100%', height:H});
+  if(!spark||!spark.length) return el;
+  const max=Math.max(...spark,1e-9), n=spark.length, bw=(W-2*pad)/n;
+  spark.forEach((v,i)=>{ const ht=(v/max)*(H-2*pad); el.appendChild(svg('rect',{x:pad+i*bw,y:H-pad-ht,width:Math.max(0.6,bw*0.92),height:ht,fill:color,opacity:0.8})); });
+  return el;
+}
+
+function tokLogpSVG(h, ab, span){
+  const lo=Math.max(0,(span[0]||1)-3), hi=Math.min(h.length,(span[1]||h.length)+3);
+  const W=620,H=120,padL=8,padR=8,padT=10,padB=18;
+  const el=svg('svg',{viewBox:`0 0 ${W} ${H}`, width:'100%'});
+  const idxs=[]; for(let i=lo;i<hi;i++) idxs.push(i);
+  if(!idxs.length) return el;
+  const vals=idxs.flatMap(i=>[h[i-1],ab[i-1]]).filter(v=>v!=null);
+  const ylo=Math.min(...vals), yhi=Math.max(...vals, ylo+0.1);
+  const X=k=>padL+k/(idxs.length-1||1)*(W-padL-padR), Y=v=>H-padB-(v-ylo)/(yhi-ylo)*(H-padT-padB);
+  // shade the actual claim span
+  const sLo=idxs.indexOf(span[0]), sHi=idxs.indexOf(span[1]-1);
+  if(sLo>=0) el.appendChild(svg('rect',{x:X(sLo),y:padT,width:Math.max(2,X(sHi>=0?sHi:idxs.length-1)-X(sLo)),height:H-padT-padB,fill:'#e8e0d4',opacity:0.5}));
+  const line=(arr,color)=>{ let d=''; idxs.forEach((i,k)=>{ const v=arr[i-1]; if(v==null) return; d+=(d?'L':'M')+X(k)+' '+Y(v)+' '; });
+    el.appendChild(svg('path',{d,fill:'none',stroke:color,'stroke-width':1.6})); };
+  line(h,'#4a7c59'); line(ab,'#a65d57');
+  return el;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  VIEW 4 - help / how it works  (intuitive guide + worked example + glossary)
+// ─────────────────────────────────────────────────────────────────────────────
+// ── "Watch it score": animated, fully-real multi-claim scoring walkthrough ─────
+// One real activation (#20) whose explanation is 3 claims. Data precomputed from the
+// run's stored per-token log-probs (vectors/20.npz: tok_logp_h, tok_logp_ablate)
+// decoded with the AV tokenizer; spec_row = the effect-matrix row (ablate Ci -> effect
+// on each Cj). Per-token drops sum to the recorded Δlogp; diagonal = each claim's Δlogp.
+const SCORE_WALK = {"run_id": "qwen7b-20260622-121049-fineweb", "av": "kitft/nla-qwen2.5-7b-L20-av", "layer": 20, "d_model": 3584, "R": 10, "null_pct": 95.0, "spec_margin": 1.5, "activation": {"idx": 20, "read_token": " possess", "ctxL": "…m police custody Thursday evening after being charged with the misdemeanor counts of possess-ing unregistered firearms. His owner's ID card to possess", "ctxR": " them had been revoked, according to pol…", "claims": [{"label": "C0", "verdict": "confabulated", "text": "News report format with newspaper headline structure detailing a Georgia shooting incident, establishing factual narrative about a celebrity's firearms conviction.", "l0": -15.17, "l1": -14.9, "dlogp": -0.28, "null_thr": 0.28, "spec_ratio": -0.2, "col_off_max": 1.42, "spec_row": [-0.28, -1.37, -0.49], "hero": 9, "tokens": [{"t": "News", "h": -0.01, "a": -0.02, "d": 0.0}, {"t": " report", "h": -1.41, "a": -1.26, "d": -0.15}, {"t": " format", "h": -0.01, "a": -0.01, "d": -0.0}, {"t": " with", "h": -0.0, "a": -0.0, "d": -0.0}, {"t": " newspaper", "h": -0.73, "a": -0.62, "d": -0.11}, {"t": " headline", "h": -0.38, "a": -0.39, "d": 0.01}, {"t": " structure", "h": -0.51, "a": -0.42, "d": -0.09}, {"t": " detailing", "h": -0.55, "a": -0.52, "d": -0.03}, {"t": " a", "h": -0.15, "a": -0.14, "d": -0.02}, {"t": " Georgia", "h": -1.72, "a": -2.31, "d": 0.59}, {"t": " shooting", "h": -0.55, "a": -0.59, "d": 0.04}, {"t": " incident", "h": -0.56, "a": -0.51, "d": -0.06}, {"t": ",", "h": -0.31, "a": -0.34, "d": 0.03}, {"t": " establishing", "h": -2.03, "a": -1.89, "d": -0.14}, {"t": " factual", "h": -0.11, "a": -0.11, "d": -0.0}, {"t": " narrative", "h": -1.11, "a": -1.06, "d": -0.06}, {"t": " about", "h": -0.22, "a": -0.17, "d": -0.05}, {"t": " a", "h": -0.24, "a": -0.23, "d": -0.01}, {"t": " celebrity", "h": -0.45, "a": -0.47, "d": 0.02}, {"t": "'s", "h": -0.81, "a": -0.81, "d": -0.0}, {"t": " firearms", "h": -1.59, "a": -1.3, "d": -0.28}, {"t": " conviction", "h": -1.63, "a": -1.66, "d": 0.04}, {"t": ".\n\n", "h": -0.08, "a": -0.08, "d": 0.0}]}, {"label": "C1", "verdict": "entangled", "text": "The sentence \"The 53-year-old's license to carry firearms and his permit to possess\" is mid-clause describing a second conviction context, listing restrictions on a convicted felon's gun privileges, implying a specific license or permit related to his registered weapons.", "l0": -34.31, "l1": -39.16, "dlogp": 4.85, "null_thr": -0.09, "spec_ratio": 1.0, "col_off_max": 4.92, "spec_row": [0.84, 4.85, 0.75], "hero": 30, "tokens": [{"t": "The", "h": -0.0, "a": -0.0, "d": -0.0}, {"t": " sentence", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " \"", "h": -0.02, "a": -0.0, "d": -0.01}, {"t": "The", "h": -0.04, "a": -0.03, "d": -0.02}, {"t": " ", "h": -1.27, "a": -1.11, "d": -0.16}, {"t": "5", "h": -0.61, "a": -0.7, "d": 0.1}, {"t": "3", "h": -2.18, "a": -2.14, "d": -0.04}, {"t": "-year", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": "-old", "h": -0.0, "a": -0.0, "d": -0.0}, {"t": "'s", "h": -1.45, "a": -1.79, "d": 0.35}, {"t": " license", "h": -0.4, "a": -0.32, "d": -0.08}, {"t": " to", "h": -0.07, "a": -0.03, "d": -0.03}, {"t": " carry", "h": -0.25, "a": -0.33, "d": 0.08}, {"t": " firearms", "h": -0.86, "a": -0.88, "d": 0.02}, {"t": " and", "h": -0.67, "a": -0.89, "d": 0.22}, {"t": " his", "h": -0.22, "a": -0.24, "d": 0.02}, {"t": " permit", "h": -1.26, "a": -1.52, "d": 0.26}, {"t": " to", "h": -0.0, "a": -0.0, "d": -0.0}, {"t": " possess", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": "\"", "h": -0.0, "a": -0.0, "d": -0.0}, {"t": " is", "h": -0.58, "a": -1.01, "d": 0.43}, {"t": " mid", "h": -0.01, "a": -0.01, "d": 0.0}, {"t": "-cl", "h": -0.56, "a": -0.37, "d": -0.19}, {"t": "ause", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " describing", "h": -0.9, "a": -1.11, "d": 0.21}, {"t": " a", "h": -0.98, "a": -0.97, "d": -0.02}, {"t": " second", "h": -2.15, "a": -3.23, "d": 1.08}, {"t": " conviction", "h": -0.79, "a": -1.02, "d": 0.23}, {"t": " context", "h": -2.02, "a": -1.42, "d": -0.6}, {"t": ",", "h": -0.03, "a": -0.01, "d": -0.01}, {"t": " listing", "h": -0.29, "a": -1.71, "d": 1.42}, {"t": " restrictions", "h": -3.01, "a": -3.31, "d": 0.31}, {"t": " on", "h": -0.23, "a": -0.53, "d": 0.3}, {"t": " a", "h": -0.51, "a": -0.52, "d": 0.01}, {"t": " convicted", "h": -1.08, "a": -1.79, "d": 0.71}, {"t": " felon", "h": -0.46, "a": -0.85, "d": 0.39}, {"t": "'s", "h": -0.01, "a": -0.01, "d": 0.0}, {"t": " gun", "h": -1.89, "a": -1.67, "d": -0.22}, {"t": " privileges", "h": -1.28, "a": -1.14, "d": -0.14}, {"t": ",", "h": -0.16, "a": -0.11, "d": -0.04}, {"t": " implying", "h": -0.38, "a": -0.07, "d": -0.32}, {"t": " a", "h": -1.34, "a": -1.35, "d": 0.01}, {"t": " specific", "h": -0.02, "a": -0.05, "d": 0.03}, {"t": " license", "h": -1.32, "a": -1.41, "d": 0.09}, {"t": " or", "h": -0.02, "a": -0.01, "d": -0.01}, {"t": " permit", "h": -0.9, "a": -0.82, "d": -0.07}, {"t": " related", "h": -1.5, "a": -1.72, "d": 0.21}, {"t": " to", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " his", "h": -0.31, "a": -0.28, "d": -0.03}, {"t": " registered", "h": -1.76, "a": -2.18, "d": 0.41}, {"t": " weapons", "h": -0.53, "a": -0.47, "d": -0.06}, {"t": ".\n\n", "h": -0.01, "a": -0.01, "d": -0.0}]}, {"label": "C2", "verdict": "grounded", "text": "Final token \"possess\" ends mid-phrase (\"permission to possess\"), part of a parenthetical clause listing qualifications (\"his license to possess firearms to qualify to possess\"), strongly expecting \"firearms\" or \"controlled weapons\" or \"a restricted license had expired\" or \"dangerous weapons was suspended.\"", "l0": -15.46, "l1": -45.54, "dlogp": 30.08, "null_thr": 0.14, "spec_ratio": 40.0, "col_off_max": 0.75, "spec_row": [1.42, 4.92, 30.08], "hero": 11, "tokens": [{"t": "Final", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " token", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " \"", "h": -0.0, "a": -0.0, "d": -0.0}, {"t": "poss", "h": -0.01, "a": -0.01, "d": 0.01}, {"t": "ess", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": "\"", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " ends", "h": -0.2, "a": -0.11, "d": -0.09}, {"t": " mid", "h": -1.09, "a": -1.27, "d": 0.18}, {"t": "-", "h": -0.23, "a": -0.33, "d": 0.1}, {"t": "phrase", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " (\"", "h": -0.06, "a": -0.08, "d": 0.02}, {"t": "permission", "h": -0.62, "a": -7.16, "d": 6.54}, {"t": " to", "h": -0.0, "a": -0.0, "d": -0.0}, {"t": " possess", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": "\"),", "h": -0.0, "a": -0.01, "d": 0.01}, {"t": " part", "h": -0.02, "a": -0.02, "d": 0.0}, {"t": " of", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " a", "h": -0.16, "a": -0.18, "d": 0.02}, {"t": " paren", "h": -0.4, "a": -0.53, "d": 0.14}, {"t": "th", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": "etical", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " clause", "h": -0.19, "a": -0.42, "d": 0.22}, {"t": " listing", "h": -0.35, "a": -0.17, "d": -0.17}, {"t": " qualifications", "h": -0.43, "a": -2.53, "d": 2.1}, {"t": " (\"", "h": -0.02, "a": -0.01, "d": -0.01}, {"t": "his", "h": -0.52, "a": -0.67, "d": 0.15}, {"t": " license", "h": -0.71, "a": -0.09, "d": -0.62}, {"t": " to", "h": -0.0, "a": -0.0, "d": -0.0}, {"t": " possess", "h": -0.01, "a": -0.04, "d": 0.03}, {"t": " firearms", "h": -0.36, "a": -0.65, "d": 0.29}, {"t": " to", "h": -0.24, "a": -1.64, "d": 1.41}, {"t": " qualify", "h": -0.13, "a": -0.51, "d": 0.38}, {"t": " to", "h": -0.48, "a": -3.69, "d": 3.2}, {"t": " possess", "h": -0.78, "a": -2.1, "d": 1.31}, {"t": "\"),", "h": -0.01, "a": -0.01, "d": 0.0}, {"t": " strongly", "h": -0.48, "a": -0.48, "d": 0.0}, {"t": " expecting", "h": -0.03, "a": -0.03, "d": 0.0}, {"t": " \"", "h": -0.14, "a": -0.21, "d": 0.07}, {"t": "fire", "h": -0.18, "a": -0.6, "d": 0.42}, {"t": "arms", "h": -0.03, "a": -0.05, "d": 0.02}, {"t": "\"", "h": -0.0, "a": -0.31, "d": 0.31}, {"t": " or", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " \"", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": "controlled", "h": -0.38, "a": -5.4, "d": 5.02}, {"t": " weapons", "h": -0.32, "a": -0.23, "d": -0.09}, {"t": "\"", "h": -1.23, "a": -5.15, "d": 3.92}, {"t": " or", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " \"", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": "a", "h": -0.18, "a": -0.0, "d": -0.18}, {"t": " restricted", "h": -1.14, "a": -3.08, "d": 1.95}, {"t": " license", "h": -0.68, "a": -0.15, "d": -0.52}, {"t": " had", "h": -0.57, "a": -0.17, "d": -0.4}, {"t": " expired", "h": -0.1, "a": -0.35, "d": 0.25}, {"t": "\"", "h": -0.04, "a": -0.05, "d": 0.01}, {"t": " or", "h": -0.34, "a": -0.24, "d": -0.1}, {"t": " \"", "h": -0.24, "a": -0.19, "d": -0.05}, {"t": "danger", "h": -1.42, "a": -5.07, "d": 3.65}, {"t": "ous", "h": -0.0, "a": -0.0, "d": 0.0}, {"t": " weapons", "h": -0.3, "a": -0.97, "d": 0.67}, {"t": " was", "h": -0.12, "a": -0.13, "d": 0.01}, {"t": " suspended", "h": -0.52, "a": -0.43, "d": -0.1}, {"t": ".\"\n", "h": -0.0, "a": -0.0, "d": -0.0}]}]}};
+
+function scoreWalk(){
+  const DATA = SCORE_WALK, A = DATA.activation, CL = A.claims, N = CL.length;
+  const MARGIN = DATA.spec_margin || 1.5;
+  const M = CL.map(c => c.spec_row);            // effect matrix: M[i][j] = ablate Ci, effect on Cj
+  const root = $(`<section class="panel walk" id="watch">
+    <h2><span class="num">▸</span> Watch it score <span class="sub2">a real explanation of several claims; audit one, accurately</span></h2>
+    <p class="lead2">Every number here is read straight from the stored run <code>${esc(DATA.run_id)}</code> (activation #${A.idx}); none are invented. The verbalizer wrote <b>${N} claims</b>. To audit one, we remove <em>that claim's</em> direction from <code>h</code> (the text never changes) and re-score. Pick a claim and press play: its score is rebuilt token by token, first under the real <code>h</code>, then under <code>h&prime;</code>; the gap is <code>&Delta;logp</code>. Then we check it is <em>specific</em> by also ablating the other claims.</p>
+    <div class="muted" style="font-size:.85rem">the activation was taken at the highlighted token, in real web text:</div>
+    <div class="src" id="wSrc"></div>
+    <div class="muted" style="font-size:.85rem;margin-top:10px">reading it, the verbalizer wrote these ${N} claims (its verdicts shown):</div>
+    <div class="claims" id="wClaims"></div>
+    <div style="margin-top:6px;font-size:.92rem;color:var(--ink2)"><b>Audit which claim?</b> <span class="muted">remove its direction from h, then re-score</span></div>
+    <div class="sel" id="wSel"></div>
+    <div id="wStage"></div>
+  </section>`);
+  let head = A.ctxL; const rt = A.read_token || '';
+  if(rt && head.endsWith(rt)) head = head.slice(0, head.length - rt.length);
+  root.querySelector('#wSrc').innerHTML = `${esc(head)}<span class="readtok">${esc(rt)}</span>${esc(A.ctxR)}`;
+  const cWrap = root.querySelector('#wClaims');
+  CL.forEach(c => cWrap.appendChild($(`<div class="cblock ${c.verdict}"><span class="lbl">${c.label}</span><span class="vbadge ${c.verdict}">${esc(c.verdict)}</span><div style="margin-top:5px">${esc(c.text)}</div></div>`)));
+  const sel = root.querySelector('#wSel'), stage = root.querySelector('#wStage');
+  let timer = null;
+  CL.forEach((c, ai) => {
+    const b = $(`<button class="sm${ai===N-1?' on':''}">audit ${c.label}</button>`);
+    b.onclick = () => { [...sel.children].forEach(x=>x.classList.remove('on')); b.classList.add('on'); render(ai); };
+    sel.appendChild(b);
+  });
+
+  function render(ai){
+    if(timer){ clearInterval(timer); timer=null; }
+    const c = CL[ai], toks = c.tokens;
+    [...cWrap.children].forEach((el, ix) => el.classList.toggle('audit', ix===ai));
+    const maxD = Math.max(0.01, ...toks.map(t=>Math.abs(t.d)));
+    const scale = 120 / maxD;
+    stage.innerHTML = '';
+    stage.appendChild($(`<div class="muted" style="font-size:.85rem;margin-top:12px"><b>Step 1</b> &mdash; remove <b>${c.label}</b>'s direction from <code>h</code> (giving <code>h&prime;</code>), then score <b>${c.label}</b>'s tokens under each. The text (all ${N} claims) is unchanged; only the injected vector differs.</div>`));
+    stage.appendChild($(`<div class="counters">
+      <div class="ctr h"><small>score(${c.label} | h)</small><b id="wSH">0.00</b></div>
+      <div class="ctr a"><small>score(${c.label} | h&prime;)</small><b id="wSA">0.00</b></div>
+      <div class="ctr d"><small>&Delta;logp(${c.label}) so far</small><b id="wD">+0.00</b></div>
+      <div class="ctr"><small>tokens scored</small><b id="wK">0 / ${toks.length}</b></div>
+    </div>`));
+    const bars = $(`<div class="bars"></div>`);
+    toks.forEach((t,j)=>{
+      const cls = t.d>0.05 ? '' : (t.d<-0.05 ? 'neg' : 'zero');
+      bars.appendChild($(`<div class="bcol" title="${esc(t.t)} &middot; drop ${t.d>=0?'+':''}${t.d}"><div class="bar ${cls}"></div></div>`));
+    });
+    stage.appendChild(bars);
+    stage.appendChild($(`<div class="muted" style="font-size:.74rem">each bar = nats token <b>${c.label}</b> loses when ${c.label}'s direction is removed. green = evidence (lost probability); amber = slightly easier without it; grey &asymp; no change.</div>`));
+    stage.appendChild($(`<div class="readout" id="wRead">press play, or step one token at a time.</div>`));
+    stage.appendChild($(`<div class="controls">
+      <button class="primary sm" id="wPlay">&#9654; play</button>
+      <button class="sm" id="wStep">step &#9656;</button>
+      <button class="sm" id="wSkip">skip to end &#9193;</button>
+      <button class="sm" id="wReset">&#8635; reset</button>
+      <span class="muted" style="font-size:.82rem">speed</span>
+      <select id="wSpeed"><option value="450">slow</option><option value="240" selected>normal</option><option value="90">fast</option></select>
+    </div>`));
+    stage.appendChild($(`<div class="verdict" id="wVerdict"></div>`));
+
+    const SH=stage.querySelector('#wSH'), SA=stage.querySelector('#wSA'), D=stage.querySelector('#wD'),
+          K=stage.querySelector('#wK'), READ=stage.querySelector('#wRead'), V=stage.querySelector('#wVerdict'),
+          PLAY=stage.querySelector('#wPlay'), cols=[...bars.querySelectorAll('.bcol')];
+    let k=-1, sumH=0, sumA=0, playing=false;
+    function paint(){ SH.textContent=sumH.toFixed(2); SA.textContent=sumA.toFixed(2);
+      const d=sumH-sumA; D.textContent=(d>=0?'+':'')+d.toFixed(2); K.textContent=`${k+1} / ${toks.length}`; }
+    function revealTok(){
+      const t=toks[k]; cols.forEach(x=>x.classList.remove('on'));
+      const col=cols[k]; col.classList.add('seen','on'); col.querySelector('.bar').style.height=Math.max(2,Math.abs(t.d)*scale)+'px';
+      READ.innerHTML=`token ${k+1}: <b>${esc(JSON.stringify(t.t))}</b> &nbsp; logP(h) = ${t.h.toFixed(2)} &nbsp; logP(h&prime;) = ${t.a.toFixed(2)} &nbsp; drop = <b>${t.d>=0?'+':''}${t.d.toFixed(2)}</b>`;
+    }
+    function step(){ if(k>=toks.length-1) return; k++; const t=toks[k]; sumH+=t.h; sumA+=t.a; revealTok(); paint(); if(k===toks.length-1) finish(); }
+    function skip(){ pause(); while(k<toks.length-1){ k++; sumH+=toks[k].h; sumA+=toks[k].a; }
+      cols.forEach((x,j)=>{ x.classList.add('seen'); x.classList.remove('on'); x.querySelector('.bar').style.height=Math.max(2,Math.abs(toks[j].d)*scale)+'px'; });
+      READ.textContent=`all ${toks.length} tokens scored.`; paint(); finish(); }
+    function matrixHTML(){
+      const th = `<tr><th></th>` + CL.map(cj=>`<th>on ${cj.label}</th>`).join('') + `</tr>`;
+      let rows='';
+      CL.forEach((ci,i)=>{
+        let tds='';
+        CL.forEach((cj,j)=>{
+          const v=M[i][j], isCol=(j===ai), isDiag=(i===ai&&j===ai);
+          tds += `<td class="${isCol?'col':''}${isDiag?' diag':''}">${v>=0?'+':''}${v.toFixed(2)}</td>`;
+        });
+        rows += `<tr><th class="rl">ablate ${ci.label}</th>${tds}</tr>`;
+      });
+      return `<table class="emat"><thead>${th}</thead><tbody>${rows}</tbody></table>`;
+    }
+    function finish(){
+      pause();
+      const own=c.dlogp, nul=c.null_thr;
+      let rk=-1, rv=-1e9; CL.forEach((_,i)=>{ if(i!==ai && M[i][ai]>rv){ rv=M[i][ai]; rk=i; } });
+      const depends = own>nul, ratioStr = rv>0 ? Math.round(own/rv)+'&times;' : '&infin;';
+      let concl;
+      if(!depends){
+        concl = `<b>${c.label} does not beat its null</b> (${own.toFixed(2)} &le; ${nul.toFixed(2)} nats). Removing its direction barely changes it, so it was not read from <code>h</code>: <b>confabulated</b>.`;
+      } else if(rv>0 && own <= MARGIN*rv){
+        concl = `${c.label} beats its null (${own.toFixed(2)} &gt; ${nul.toFixed(2)}), so it depends on <code>h</code>. <b>But it is not specific:</b> ablating <b>${CL[rk].label}</b> instead moves ${c.label} by ${rv.toFixed(2)} nats, about as much as ${c.label}'s own ${own.toFixed(2)}. The two share a direction, so credit cannot be assigned: <b>entangled</b>.`;
+      } else {
+        concl = `${c.label} beats its null (${own.toFixed(2)} &gt; ${nul.toFixed(2)}) <em>and</em> dominates its column: its own ablation (${own.toFixed(2)}) outweighs the biggest rival${rk>=0?`, ablate ${CL[rk].label} (${rv.toFixed(2)})`:''}, by ${ratioStr} (needs &gt;${MARGIN}&times;). Read from <code>h</code> via its own direction: <b>grounded</b>.`;
+      }
+      V.innerHTML=`<div><b>Step 1 done.</b> Summing ${c.label}'s tokens:</div>
+        <div class="recon">score(${c.label} | h)&nbsp;&nbsp;= ${sumH.toFixed(2)} nats&nbsp;&nbsp;(recorded l0 = ${c.l0})</div>
+        <div class="recon">score(${c.label} | h&prime;) = ${sumA.toFixed(2)} nats&nbsp;&nbsp;(recorded l1 = ${c.l1})</div>
+        <div class="big">&Delta;logp(${c.label}) = +${(sumH-sumA).toFixed(2)} nats</div>
+        <div style="margin-top:8px"><b>Step 2 &mdash; is it specific?</b> Repeat the ablation for every claim. Each row removes one claim's direction; each column is how much a claim's score moved. Read <b>column ${c.label}</b>: does ${c.label}'s own ablation (the outlined cell) beat what any <em>other</em> claim's ablation does to it?</div>
+        ${matrixHTML()}
+        <div class="muted" style="font-size:.76rem">nats lost by the column's claim. the diagonal is each claim's own &Delta;logp; the highlighted column decides ${c.label}'s verdict.</div>
+        <div style="margin-top:8px">${concl}</div>
+        <div class="muted" style="margin-top:6px"><b>grounded &ne; true:</b> a grounded verdict means the reading was genuinely computed from <code>h</code>, not that the claim is factually correct.</div>`;
+      V.classList.add('show');
+    }
+    function play(){ if(k>=toks.length-1) reset(); playing=true; PLAY.innerHTML='&#10073;&#10073; pause';
+      const sp=+stage.querySelector('#wSpeed').value;
+      timer=setInterval(()=>{ if(!root.isConnected){clearInterval(timer);timer=null;return;} if(!playing) return;
+        if(k>=toks.length-1){ pause(); return; } step(); }, sp); }
+    function pause(){ playing=false; PLAY.innerHTML='&#9654; play'; if(timer){clearInterval(timer);timer=null;} }
+    function reset(){ pause(); k=-1; sumH=0; sumA=0; cols.forEach(x=>{x.classList.remove('seen','on'); x.querySelector('.bar').style.height='0';});
+      V.classList.remove('show'); V.innerHTML=''; READ.textContent='press play, or step one token at a time.'; paint(); }
+    stage.querySelector('#wPlay').onclick=()=>{ playing?pause():play(); };
+    stage.querySelector('#wStep').onclick=()=>{ pause(); step(); };
+    stage.querySelector('#wSkip').onclick=skip;
+    stage.querySelector('#wReset').onclick=reset;
+    paint();
+  }
+  render(N-1);   // default: audit the last claim (C2, grounded)
+  return root;
+}
+
+const HELP_TABS = [
+  ['overview', 'Overview',       helpIntro],
+  ['example',  'Worked example', workedExample],
+  ['watch',    'Watch it score', scoreWalk],
+  ['glossary', 'Glossary',       glossaryDocs],
+  ['method',   'Full method',    methodsDocs],
+];
+async function viewHelp(tab){
+  if(!HELP_TABS.some(t=>t[0]===tab)) tab = 'overview';
+  setCrumbs(`<a href="#/">map</a> &rsaquo; help &rsaquo; ${esc(HELP_TABS.find(t=>t[0]===tab)[1].toLowerCase())}`);
+  const a = app(); a.innerHTML='';
+  const bar = $(`<div class="tabbar">${HELP_TABS.map(([k,l])=>
+    `<a class="tab${k===tab?' on':''}" href="#/help/${k}">${l}</a>`).join('')}</div>`);
+  a.appendChild(bar);
+  const body = $(`<div class="tabbody"></div>`);
+  body.appendChild(HELP_TABS.find(t=>t[0]===tab)[2]());
+  a.appendChild(body);
+  try{ window.scrollTo(0,0); }catch(e){}
+}
+
+function helpIntro(){
+  return $(`<section class="panel">
+    <h2><span class="num">▸</span> How it works <span class="sub2">an intuitive guide, then every number defined</span></h2>
+    <p class="lead" style="margin-top:0">An NLA has two halves. The <b>verbalizer (AV)</b> looks at a model's internal activation vector <code>h</code> and writes a few sentences about what it thinks <code>h</code> encodes. The <b>reconstructor (AR)</b> goes the other way: given text, it predicts the activation that text describes. This studio turns the two halves against each other and asks, for each sentence the verbalizer wrote: <b>did it actually read that from <code>h</code>, or is it just a plausible guess?</b></p>
+    <p><b>The intuition.</b> Say the verbalizer claims "this is about a court case." To test whether it read that from <code>h</code>, we (1) find the direction in activation space that means "court case" - we ask the reconstructor how its output shifts when those words are deleted - then (2) erase exactly that direction from <code>h</code>, and (3) ask the verbalizer to read the dented activation again. If it can no longer produce "court case," the claim really lived in <code>h</code>. If it says "court case" just as readily with the direction gone, the claim never depended on <code>h</code>: the verbalizer would have said it anyway.</p>
+    <p><b>The calibration problem.</b> How big a drop counts as "really lived in <code>h</code>"? Two controls answer that. The <b>null</b> erases a <em>random</em> direction instead, showing what "nothing real happened" looks like (it is tiny). <b>Specificity</b> checks that erasing claim A's direction hurts A more than it hurts claim B. A claim that beats the null and passes specificity is <b>grounded</b>; one that beats the null but fails specificity is <b>entangled</b>; one that cannot beat the null is <b>confabulated</b>. No human labels and no LLM judge enter anywhere.</p>
+    <p class="muted">Use the tabs above for a worked example with real numbers, a glossary of every quantity in the studio, and the full method.</p>
+  </section>`);
+}
+
+function workedExample(){
+  return $(`<section class="panel" id="example">
+    <h2><span class="num">▸</span> Worked example <span class="sub2">one real activation (#20 of the qwen run), three real claims, real numbers</span></h2>
+    <p>This activation was taken from Qwen at the token <span class="readtok">possess</span> in a news report about a man whose firearms permits were revoked:</p>
+    <div class="src">…his license to carry firearms and his permit to <span class="readtok">possess</span> them had been revoked…</div>
+    <p>Injected with that activation, the verbalizer wrote three claims (these are the <em>actual</em> sentences it produced):</p>
+    <ul class="exclaims">
+      <li><span class="vbadge grounded">C2</span> <b>"</b>Final token "possess" ends mid-phrase ("permission to possess")… strongly expecting "firearms" or "dangerous weapons."<b>"</b></li>
+      <li><span class="vbadge entangled">C1</span> <b>"</b>The sentence "…license to carry firearms and his permit to possess" is mid-clause… listing restrictions on a convicted felon's gun privileges.<b>"</b></li>
+      <li><span class="vbadge confabulated">C0</span> <b>"</b>News report format with newspaper headline structure detailing a Georgia shooting incident… a celebrity's firearms conviction.<b>"</b></li>
+    </ul>
+    <p>We ablate each claim's direction in turn and record how much <em>every</em> claim weakens (Δlogp in nats; bigger = more suppressed). That is the <b>effect matrix</b>:</p>
+    <div class="formula">                          on C0    on C1    on C2
+  ablate C0  (the framing)   -0.28    -1.37    -0.49
+  ablate C1  (the clause)     0.84     4.85     0.75
+  ablate C2  (the token)      1.42     4.92    30.08
+  null (random dir), 95th:    0.28    -0.09     0.14   <- the bar each claim must beat</div>
+    <div class="wex">
+      <div class="sl"><span class="n">0</span><div class="tx"><b>The null is ~0.</b> Erasing a <em>random</em> direction barely moves any claim (≤ 0.28 nats), because random directions are nearly perpendicular to <code>h</code> in 3584 dimensions. So any drop bigger than a claim's null is a real effect of removing <em>that</em> claim's direction.</div></div>
+      <div class="sl"><span class="n">1</span><div class="tx"><b>C2 → grounded.</b> Read down column C2: ablating C2 itself costs 30.08 nats, while ablating C0 or C1 costs it only −0.49 and 0.75. Its own ablation dominates the column, far above its 0.14 null. The activation at "possess" genuinely encodes "&rarr; firearms/weapons." <span class="num">own vs rival = 30.08 / 0.75 ≈ 40×</span></div></div>
+      <div class="sl"><span class="n">2</span><div class="tx"><b>C1 → entangled.</b> Ablating C1 costs it 4.85 nats (well past its ~0 null), so it does depend on <code>h</code>. But ablating <em>C2</em> costs C1 4.92 nats - slightly more. C1 and C2 both describe the same "permit to possess firearms" phrase, so their directions overlap and the drop cannot be credited to C1 alone. <span class="num">own vs rival = 4.85 / 4.92 ≈ 0.99 &lt; 1.5 margin</span></div></div>
+      <div class="sl"><span class="n">3</span><div class="tx"><b>C0 → confabulated.</b> Ablating C0 changes it by −0.28 nats, inside its 0.28 null. Removing the "news-report framing" direction does not make the verbalizer any less likely to assert it: the "Georgia shooting / celebrity conviction" story is its narrative prior, not read from this activation (and the text does not actually support those specifics). <span class="num">Δlogp −0.28 ≤ null 0.28</span></div></div>
+    </div>
+    <p class="muted">So this one activation is 1 grounded + 1 entangled + 1 confabulated - the three verdicts the studio assigns. Note <b>grounded ≠ true</b>: C2 is grounded because it was causally read from <code>h</code>, regardless of whether "firearms" is literally what follows; C0 is confabulated even though it reads as plausible. Every quantity named here is defined in the Glossary tab.</p>
+  </section>`);
+}
+
+function glossaryDocs(){
+  const rows = [
+    ["grp","Corpus result - the run page"],
+    ["grounded rate","Fraction of located claims that passed the full test (depend on h AND specific to their own direction). The headline faithfulness number."],
+    ["entangled rate","Fraction that depend on h but share a direction with another claim, so credit cannot be cleanly assigned."],
+    ["confabulated rate","Fraction whose effect stays inside the random null - not read from h, true or not."],
+    ["activations / claims","How many activation vectors were audited, and how many individual claims they produced."],
+    ["mean Δlogp · grounded","Average nats a grounded claim loses when its own direction is removed. Bigger = stronger dependence on h."],
+    ["Δlogp ↔ ΔMSE corr.","Pearson correlation between our causal test and the AR's independent ΔMSE signal. Near +1 means two unrelated methods agree."],
+    ["Δlogp distribution","Histogram of every claim's effect. Confabulated claims pile up near 0; grounded ones form a right tail."],
+    ["Δlogp vs ΔMSE","Scatter of the same two signals; an upward cloud is the agreement made visual."],
+    ["grp","Per-claim causal test - the activation page"],
+    ["claim (snippet)","One blank-line-separated paragraph of the verbalizer's explanation. The split into claims is done by the verbalizer's own formatting (a regex on blank lines) - never an LLM or a rubric. Activations with fewer than two claims are skipped."],
+    ["Δlogp","THE core number (nats): logP(claim | h) − logP(claim | h with the claim's direction removed). How much harder it is to say the claim once its substrate is gone. ~0 = no dependence; large positive = strong."],
+    ["null thr","The 95th-percentile Δlogp from R random-direction ablations of the same h. The bar a real effect must clear. Usually near 0."],
+    ["own vs rival","The specificity ratio: this claim's Δlogp ÷ the largest Δlogp any OTHER claim's ablation inflicts on it. Must exceed the margin (default 1.5×) to be grounded. ∞ = no other ablation touched it."],
+    ["rival","The raw nats of that strongest competing ablation (the denominator of the ratio above)."],
+    ["collateral","Average nats this claim's own ablation inflicted on the OTHER claims. Low = a clean, targeted edit."],
+    ["ΔMSE","MSE(AR(z without claim), h) − MSE(AR(z), h). The AR's opinion: positive means dropping the claim hurt reconstruction (the paper's heuristic). Shown as an independent cross-check."],
+    ["‖Δ‖","Length of the claim's direction vector (before it is normalized to a unit direction)."],
+    ["h·Δ̂ (cos)","How much of h already lies along the claim's unit direction - the size of what gets removed - and its cosine with h."],
+    ["span … tok","How many tokens the claim occupies in the teacher-forced text; Δlogp is summed over exactly these tokens."],
+    ["per-token chart","logP of each token in the claim under h (green) vs under the ablated h′ (red). The gap localizes where support was lost."],
+    ["l0 / l1","The summed log-prob of the claim under h (l0) and under the ablated h′ (l1). Δlogp = l0 − l1."],
+    ["grp","Activation header"],
+    ["grounded claims","Grounded ÷ located claims for this one activation."],
+    ["‖h‖","Length of the activation vector. Only its direction is injected (it is rescaled to the training norm); the length is kept for reference."],
+    ["cos(AR(z), h)","How well the reconstructor maps the WHOLE explanation back to h (whole-explanation fidelity - what the NLA paper reports). 1 = perfect."],
+    ["AR MSE(z, h)","The same thing as a distance: 2(1 − cos). 0 perfect, 2 orthogonal."],
+    ["grp","Vectors"],
+    ["d_model","Dimensionality of h (3584 for Qwen-7B at this layer)."],
+    ["‖AR(z)‖","Length of the reconstructor's prediction for the full explanation."],
+    ["marker@","Token position where h is injected into the verbalizer's prompt."],
+    ["magnitude profile","Each coordinate's absolute value, downsampled to a sparkline so you can see where the vector's energy sits."],
+    ["grp","The four verdicts"],
+    ["grounded","Beats the null AND its own ablation dominates its column (specific). Causally read from h via its own direction."],
+    ["entangled","Beats the null, but a sibling claim's ablation rivals it. Depends on h, just not separably."],
+    ["confabulated","Does not beat the null. Not read from h - produced from the verbalizer's prior, true or not."],
+    ["unlocated","The claim's tokens could not be found in the teacher-forced text, so it was not scored."],
+    ["grp","Run progress / config"],
+    ["n_done / n_ok / n_skip / n_cjk","Audited so far / usable / skipped (fewer than 2 claims) / CJK outputs (an injection-failure smell; should be 0)."],
+    ["R, α, null pct","Random-null samples per claim; ablation strength (1 = full projection); the percentile of the null used as the threshold (95)."],
+    ["spec margin","How many times its column an own-ablation must dominate to count as grounded (default 1.5)."],
+    ["K, d, inj_scale","The model layer audited; d_model; the norm h is rescaled to at injection time."],
+  ];
+  let body='';
+  rows.forEach(r=>{ body += (r[0]==='grp')
+    ? `<tr class="grp"><td colspan="2">${esc(r[1])}</td></tr>`
+    : `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`; });
+  return $(`<section class="panel" id="glossary">
+    <h2><span class="num">▸</span> What every number means <span class="sub2">a reference for every quantity in the studio</span></h2>
+    <p class="muted" style="margin-top:0">Grouped by where it appears. Open the &#9432; "How to read this" note on any panel for the short version in context.</p>
+    <table class="gtable"><thead><tr><th>term</th><th>meaning</th></tr></thead><tbody>${body}</tbody></table>
+  </section>`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  methods documentation (plain English)
+// ─────────────────────────────────────────────────────────────────────────────
+function methodsDocs(){
+  return $(`<div class="docs" id="methods">
+    <h2 class="section">How the claim-ablation test works</h2>
+    <p class="lead">The goal is a faithfulness metric that needs no human labels and no knowledge of what the target model was actually computing. The trick is to make the NLA audit itself.</p>
+
+    <h3>The problem it solves</h3>
+    <p>The NLA paper has no metric for <em>faithfulness-to-activation</em>. Its three confabulation heuristics are proxies: factual accuracy measures truth-of-context (not whether the claim came from <code>h</code>); the AR's ΔMSE is the reconstructor's opinion and never closes the loop back through the verbalizer; cross-token recurrence needs a claim to repeat. A claim can be perfectly true of the surrounding text yet never have been read from this particular activation. That is exactly the case these proxies miss.</p>
+
+    <h3>The five steps, per activation</h3>
+    <div class="steps">
+      <div class="step"><h4>Generate the explanation</h4><p>Inject <code>h</code> at the marked token and let the verbalizer (AV) free-run. Parse the <code>&lt;explanation&gt;</code> block and split it on blank lines into snippets - each snippet is one claim. Skip activations with fewer than two claims.</p></div>
+      <div class="step"><h4>Define each claim's direction with the AR</h4><p>The reconstructor (AR) maps text back to a vector. For claim C, compute <code>Δ = AR(z) − AR(z without C)</code> (both AR outputs L2-normalized first, since the AR is direction-only). Δ is the direction in activation space that this claim corresponds to. This is the same difference trick the paper uses for steering, repurposed as measurement. "Ablating a claim from the AR" just means dropping that snippet from the AR's <em>input text</em> - nothing inside the AR is changed.</p></div>
+      <div class="step"><h4>Ablate the direction from h</h4><p><code>h' = h − (h·Δ̂)Δ̂</code> removes that one direction (rank-1 projection). Everything else about <code>h</code> is preserved.</p></div>
+      <div class="step"><h4>Re-read by teacher forcing</h4><p>Score the claim's exact tokens under <code>h</code>, then again under <code>h'</code>, with the explanation text held fixed. <code>Δlogp = logP(C|h) − logP(C|h')</code>, in nats. This needs no repetition and no LLM judge: rather than ask whether the verbalizer would <em>re-generate</em> the claim, we read the probability it assigns to the claim's already-written tokens, so the measure is defined even for a claim that appears once. The mechanics - exactly which tokens are scored and what each is conditioned on - are spelled out in <b>the next section</b>, since this is the step most worth being precise about.</p></div>
+      <div class="step halt"><h4>Decide with two controls</h4><p>The <b>random-direction null</b> (R random rank-1 ablations of the same <code>h</code>) certifies the effect is real: a claim whose Δlogp stays within the null was not read from <code>h</code> at all, so it is <b>confabulated</b>. For claims that beat the null, <b>specificity</b> is judged by column dominance of the effect matrix: a claim is <b>grounded</b> only if ablating its own direction suppresses it more (by a margin) than ablating any other claim's direction does. If a sibling claim's ablation rivals it, the claim is <b>entangled</b> (it reads from <code>h</code>, but the two claims share a direction).</p></div>
+    </div>
+
+    <h3>What counts as a "claim", and who decides</h3>
+    <p><b>No LLM, and no scoring rubric.</b> The split into claims is purely mechanical and comes entirely from the verbalizer's own formatting. The open-model verbalizer was trained to write its explanation as a short list of separate observations, one per paragraph, inside an <code>&lt;explanation&gt;…&lt;/explanation&gt;</code> block. We take the text inside that block and split it on blank lines; each non-empty paragraph that results <em>is</em> one claim. Nothing reads the claims for meaning, ranks them, or decides which ones "count" - a single regular expression does the entire segmentation.</p>
+    <div class="formula"> the verbalizer writes (one observation per paragraph):
+
+   &lt;explanation&gt;
+   News report format … detailing a Georgia shooting incident.
+
+   The sentence "…permit to possess" is mid-clause, listing a felon's gun rights.
+
+   Final token "possess" ends mid-phrase, strongly expecting "firearms".
+   &lt;/explanation&gt;
+
+   split on blank lines  →  3 claims:  C0, C1, C2   (top-to-bottom = index 0, 1, 2)</div>
+    <p>Three consequences of letting the verbalizer's paragraph breaks define the claims:</p>
+    <ul>
+      <li>The unit of analysis is a <b>paragraph-sized snippet</b>, not a single sentence and not a sub-clause. If one paragraph bundles two ideas, they are tested together as one claim. (Finer, sub-snippet splitting is a deliberately deferred extension.)</li>
+      <li>An activation whose explanation has <b>fewer than two</b> paragraphs is skipped: with a single claim there is no sibling to measure specificity against.</li>
+      <li>A claim is scored only if its exact text can be located in the teacher-forced sequence; otherwise it is marked <em>unlocated</em>. That, too, is a plain string match, not a judgment.</li>
+    </ul>
+    <div class="note"><b>Why there is no judge here either.</b> The whole point of the metric is to avoid one. The moment an LLM decides what a "claim" is, or whether it is supported, the result inherits that model's opinions and is no longer ground-truth-free. Letting the verbalizer's own paragraph breaks define the claims, and teacher-forced log-probability decide whether each is grounded, keeps every stage judge-free, from segmentation through scoring.</div>
+
+    <h3>A finer cut: atomic typed claims (atom-mode runs)</h3>
+    <p>The blank-line split above is the original <b>block mode</b>. Other runs in this studio (their id ends <code>-atoms</code>, and their claims carry a type chip) use a finer <b>atom mode</b>: the same activation and the same verbalizer text, cut into many small typed claims instead of a few paragraphs. Everything downstream of "which characters are this claim" is identical to block mode, so a block record and an atom record stay directly comparable; only the granularity changes.</p>
+    <p>The cut is a <b>two-layer tiling</b> of the explanation, with full coverage and no gaps. Layer 1 labels every stretch as a <code>theme</code> claim (what the text is about), a <code>detail</code> claim (a specific quote, date, number, or name), or <code>connective</code> glue; Layer 2 overlays named entities. Each content claim also carries a role (<em>describes</em> / <em>quotes</em> / <em>predicts</em>), an optional hedge word, and a character-exact span. Only <code>theme</code> and <code>detail</code> claims are scored; connectives are shown but never scored, and entities are folded into the claim that contains them.</p>
+    <div class="note"><b>The segmenter is an LLM, and the test is still judge-free.</b> Unlike the blank-line regex, the atomic cut is made by a language model (temperature 0, forced to return character-exact spans). That model decides only <em>where one claim ends and the next begins</em>; it never sees the activation <code>h</code>, so it cannot know or judge whether a claim is faithful. Groundedness is still decided entirely by the teacher-forced log-probability test below, exactly as in block mode, so a segmentation opinion can never leak into a verdict.</div>
+    <p>Two mechanics differ. A tiling cannot be rebuilt by re-joining snippets, so a claim's direction is taken by <b>deleting its characters</b> from the explanation and re-encoding: <code>Δ = normalize(AR(full text)) − normalize(AR(text with the claim deleted))</code>. And with dozens of claims per activation, specificity needs a scale-stable denominator (a 90th-percentile-plus-1-nat-floor rule; see the research note), so atom-mode grounded rates are <em>not</em> comparable to the block 63.5% headline. What atom mode buys is the question block mode cannot ask: <b>which kinds of claim the verbalizer grounds</b>. Bucketed by what each claim is about, the recurring finding is that <b>GIST</b> (genre, topic, tone, style) is read from <code>h</code>, while <b>POSITION / STRUCTURE</b> and next-token <b>PREDICTION</b> are largely confabulated from the prior. The run page's "What kinds of claims get grounded" panel is exactly that breakdown.</p>
+
+    <h3>The log-probability measurement, taught from scratch</h3>
+    <p class="lead">This is the engine of the whole test, so here it is built up one idea at a time, with a single running example carried all the way through. If you already know how a language model assigns probabilities to tokens, skim the first two pieces.</p>
+    <p>Throughout, the model doing the "reading" is the <b>verbalizer (AV)</b>, and our running claim is the grounded one from the Worked example tab: at the token <span class="readtok">possess</span>, the verbalizer wrote that the activation is <em>"strongly expecting firearms."</em> We will measure whether that claim really came from the activation.</p>
+
+    <div class="steps">
+      <div class="step"><h4>What one token's log-probability is</h4><p>At every position, a language model outputs a probability for each possible next token. The <b>log-probability</b> is just the natural log of the probability it gave to one specific token. It is always ≤ 0: a token the model finds obvious sits near 0, a token it finds surprising is far below 0. <span class="ex">Example: as the verbalizer writes its claim and reaches the word <code>firearms</code>, suppose it assigns that word probability 0.55. Then that token's log-prob is ln(0.55) = −0.6 (a fairly expected word). A word it thought wildly unlikely, say probability 0.001, would score ln(0.001) = −6.9.</span></p></div>
+
+      <div class="step"><h4>Scoring a whole claim: add up the logs</h4><p>The probability of a sequence of tokens is the product of each token's probability given the ones before it (the chain rule). Taking logs turns that product into a <b>sum</b>, which is what we use. So the "score" of a claim is the sum of the log-probabilities of its tokens, each conditioned on everything to its left. <span class="ex">A two-word fragment like <code>expecting firearms</code> is two such numbers added together; the full claim is just more of them.</span></p></div>
+
+      <div class="step"><h4>Teacher forcing: supply the words, measure their probability</h4><p>When a model <em>generates</em>, it picks a token, feeds its own pick back in, and continues. We do the opposite, called <b>teacher forcing</b>: the verbalizer already wrote the claim once, so we hold those exact tokens fixed and, at each position, force the known next token and record the probability the model would have given it. One forward pass produces all those numbers at once. <span class="ex">We are not asking the verbalizer to say the claim again; we are asking how strongly it believed the claim it already wrote.</span> This is why a claim that appears only once still gives a clean, repeatable number, and why no second model or LLM judge is ever needed.</p></div>
+
+      <div class="step"><h4>Where the activation comes in</h4><p>The sequence we score is the verbalizer's prompt followed by its explanation, with the activation <code>h</code> written into one marked position in the prompt (the same injection used to generate the explanation). That injected <code>h</code> is the <em>only</em> thing carrying the target model's internal state into the scoring. Everything else is plain text.</p></div>
+
+      <div class="step halt"><h4>Do it twice and subtract: that is Δlogp</h4><p>Score the claim's tokens <b>once with the real <code>h</code></b> injected, then <b>again with <code>h'</code></b> (the same <code>h</code> but with this claim's direction removed). The difference, <code>Δlogp = score(claim | h) − score(claim | h')</code>, is how many nats of probability the claim loses when its substrate is taken away. <span class="ex">Near 0 → the claim did not need <code>h</code> (confabulated). Large and positive → it did (grounded, if it also passes specificity).</span></p></div>
+    </div>
+
+    <h4 class="docsub">Which tokens go into the sum? (the question you asked)</h4>
+    <p><b>Only the one claim's own tokens.</b> Not the prompt, and not the other claims. Each claim owns a separate, non-overlapping stretch of the sequence and is scored on that stretch alone. We locate the claim's sentence(s) inside the explanation, map that character range to its tokens, and sum the log-probs of exactly those. (If a claim's text cannot be found in the sequence, it is marked <em>unlocated</em> and skipped, never guessed at.)</p>
+    <div class="formula"> one forward pass over the whole fixed sequence (no text is ever edited):
+
+   [ verbalizer prompt ..... &lt;h injected here&gt; ..... ]   &larr; prompt: never scored
+   [ claim C0 tokens ][ claim C1 tokens ][ claim C2 tokens ]   &larr; the explanation
+
+ to score claim C1 we sum ONLY its own tokens, and each token is conditioned on
+ everything to its left: the prompt, the injected vector, ALL of C0, and C1's
+ own earlier tokens (C2 is to the right, so it never enters C1's score).
+
+   logp(token_t) = log P( token_t | prompt, h, C0, C1's earlier tokens )
+
+   score(C1 | h)  = sum of logp(token_t) over every token t in C1
+   score(C1 | h') = the same sum, with h replaced by h'
+                    (C1's direction removed; prompt, C0, and C1's tokens stay identical)
+
+   Δlogp(C1) = score(C1 | h) − score(C1 | h')</div>
+
+    <h4 class="docsub">The same example, worked end to end</h4>
+    <p>Take just the two-token fragment <code>expecting firearms</code> from our running claim. With the real activation injected the verbalizer is happy to predict "firearms"; once that direction is removed it is shocked by the very same word. Illustrative numbers, but the shape is the real one:</p>
+    <div class="formula"> with h injected (the real activation):
+     "expecting"   P = 0.40    logP = -0.92
+     " firearms"   P = 0.50    logP = -0.69
+     score(claim | h)   =  -0.92 + (-0.69)  =  -1.61
+
+ with h' (the "firearms" direction removed):
+     "expecting"   P = 0.30    logP = -1.20
+     " firearms"   P = 0.001   logP = -6.91     &larr; now shocked by "firearms"
+     score(claim | h')  =  -1.20 + (-6.91)  =  -8.11
+
+ Δlogp  =  score(h) - score(h')  =  -1.61 - (-8.11)  =  6.5 nats</div>
+    <p>That 6.5 nats is for a two-token slice. Over the full (longer) claim these per-token gaps accumulate to the <b>30.08 nats</b> reported for this exact claim in the Worked example tab. Every activation page draws this token by token: a <b>per-token chart</b> with each token's logP under <code>h</code> (green) versus under <code>h'</code> (red), so you can see precisely where in the sentence the activation was load-bearing.</p>
+
+    <h4 class="docsub">So what happens to C0 and C2 while C1 is scored?</h4>
+    <p><b>The text never changes; only the injected vector does.</b> This is the crux, so here it is stated flatly: in every forward pass the full explanation <code>C0 C1 C2</code> is present, verbatim and in order. The phrase "ablate a claim" means editing the injected activation <code>h</code>, not deleting any words. So C0 is never skipped or removed when we score C1. It stays in the sequence and forms part of the left context that C1 is conditioned on (and C1 in turn is part of C2's context).</p>
+    <p>Walking your <code>C0 C1 C2</code> example through the two passes:</p>
+    <ul>
+      <li><b>Pass 1, under the real <code>h</code>.</b> One forward returns a log-prob for every token, so it hands us C0's score, C1's score, and C2's score together. To read "C1's score" we sum the log-probs over C1's own tokens and leave the rest out of the sum. The C0 and C2 tokens are still physically there; we just do not add them into C1's number. This is exactly what you described: read the probability of C1's tokens, as they were actually written, given the real C0 sitting before them.</li>
+      <li><b>Pass 2, under <code>h'</code></b> (which is <code>h</code> with C1's direction projected out; the text is still untouched). C1's <code>Δlogp</code> is C1's score in pass 1 minus C1's score in pass 2.</li>
+    </ul>
+    <p><b>Now the part you asked about: yes, C0 and C2 can move too.</b> When we swap <code>h</code> for <code>h'</code> to test C1, the log-probs of C0 and C2 may also change, because they can draw on <code>h</code> as well. We keep those changes on purpose: recording, for each ablation, the effect on <em>every</em> claim is what produces the <b>effect matrix</b>. Each row is the claim whose direction we removed; each column is whose score then moved.</p>
+    <div class="formula">                          on C0    on C1    on C2
+  ablate C0  (the framing)   -0.28    -1.37    -0.49
+  ablate C1  (the clause)     0.84     4.85     0.75
+  ablate C2  (the token)      1.42     4.92    30.08
+  null (random dir), 95th:    0.28    -0.09     0.14</div>
+    <p>A claim is judged by reading down its own <em>column</em> and comparing the diagonal entry (its own ablation) against the rest of that column:</p>
+    <ul>
+      <li><b>C2 is grounded.</b> Removing C2's direction costs C2 <b>30.08</b> nats, while removing any other claim's direction barely touches C2 (−0.49 and 0.75). Its own direction, and only its own, carries it: the diagonal dominates the column.</li>
+      <li><b>C1 is entangled, not grounded.</b> Removing C1's direction costs C1 4.85 nats, well above its null, so C1 does depend on <code>h</code>. But removing <em>C2's</em> direction costs C1 <b>4.92</b> nats, slightly more. Since another claim's ablation moves C1 as much as its own does, the 4.85 cannot be credited to C1 alone: C1 and C2 lean on an overlapping direction (they describe the same "permit to possess firearms" phrase). The diagonal does not dominate the column.</li>
+      <li><b>C0 is confabulated.</b> Removing C0's direction moves C0 by only −0.28 nats, inside its random-direction null (0.28). Nothing we take out of <code>h</code> makes the verbalizer less willing to assert C0, so C0 was not read from <code>h</code>.</li>
+    </ul>
+    <p>So "the other claims are also altered" is not noise to be removed; it is the measurement. A grounded claim is one whose own ablation dominates its column of this matrix; a claim that some sibling's ablation damages just as much is entangled.</p>
+
+    <h4 class="docsub">Three details that matter</h4>
+    <p><b>1. What each token is conditioned on.</b> Every token in the claim is scored given its true left context: the prompt, the injected activation, <em>and</em> all earlier explanation text, including earlier claims. We are not re-deriving the claim from nothing; we ask, with the exact context the verbalizer itself produced, how much the injected activation adds to the probability of <em>this</em> claim's tokens. Because only <code>h</code> changes between the two passes, <code>Δlogp</code> isolates the activation's contribution with the wording and context held constant.</p>
+    <p><b>2. Why a sum and not an average.</b> The score is a sum over the claim's tokens (the joint log-probability of its exact string), so a longer claim can accumulate a bigger number. To keep claims comparable the studio also shows <code>Δlogp ÷ span length</code>, and the random-direction <b>null</b> (below) is computed on the very same span, so each claim's bar is self-calibrated to that claim's own length and fragility.</p>
+    <p><b>3. The cost.</b> Because one pass scores every claim at once (see the section above), auditing an <em>n</em>-claim activation takes <code>1 + n + R</code> passes in total: one baseline under <code>h</code>, one per ablated claim, and <code>R</code> random-direction nulls. Never two passes per claim.</p>
+
+    <div class="note"><b>Why <code>h'</code> is renormalized - it makes Δlogp a <em>direction</em> signal.</b> Projecting a direction out of <code>h</code> shortens it, and the injector always rescales whatever vector it writes back to the model's training norm (<code>injection_scale</code>). So after ablation <code>h'</code> is renormalized to the same length as <code>h</code>: the ablation is effectively a <em>rotation</em> of the injected direction, not a shrinking of its magnitude. This is deliberate. It keeps both forwards on the exact norm the verbalizer was trained to expect, so <code>Δlogp</code> reflects <em>which content direction</em> was removed, not a trivial drop in vector size that would depress every token's probability at once. (It also means the ablation strength <code>α</code> is a rotation angle: <code>α=1</code> fully removes the claim's component, <code>α=2</code> reflects across it.)</div>
+
+    <h3>What the verdicts mean</h3>
+    <div class="formula">depends_on_h  Δlogp_i &gt; null_95th(h,i)                  the effect beats a random direction
+specific      Δlogp_i &gt; margin × max_{k≠i} effect(ablate C_k on C_i)   own ablation dominates its column
+
+grounded      depends_on_h AND specific
+entangled     depends_on_h AND NOT specific      reads from h, but its direction overlaps a sibling claim
+confabulated  NOT depends_on_h                   within the random-direction null: not read from h
+unlocated     the claim's tokens were not found in the teacher-forced sequence</div>
+    <p>"Confabulated" is a causal statement, not an accusation of falsehood: the claim may well be true of the text, but the verbalizer did not derive it from this activation. That separation, <b>grounded ≠ true</b>, is the headline the metric is built to expose. "Entangled" is the honest middle: the claim does depend on the activation, but its AR direction is not separable from a neighboring claim's, so grounding cannot be cleanly attributed.</p>
+    <div class="note"><b>Why column dominance, not "off-diagonal ≈ 0".</b> Random directions in the 3584-dimensional activation space are nearly orthogonal to <code>h</code>, so ablating one barely changes the renormalized injection and the random-direction null sits near zero. The AR-defined claim directions, by contrast, are aligned with <code>h</code>, so every real ablation moves the read somewhat. Testing specificity by requiring the off-diagonal collateral to fall inside that ~zero null would reject every claim. The correct test is relative: does a claim's own ablation dominate its column of the effect matrix? This was confirmed on the first GPU smoke, where all three claims beat the null by 11-32 nats but differed in column dominance.</div>
+
+    <h3>The free cross-check</h3>
+    <p>For each claim we also record <code>ΔMSE = MSE(AR(z\\C), h) − MSE(AR(z), h)</code> from vectors already computed. The paper observes that removing a true claim hurts AR reconstruction. If our causal Δlogp and the AR's ΔMSE agree (positive correlation), two independent signals point the same way. They are shown together on every run's scatter plot.</p>
+
+    <div class="note"><b>Reading the studio.</b> The experimental map lists every run and its causally-grounded-claim rate. A run page shows the corpus result and a grid of audited activations. Each activation page shows the source text, the color-coded explanation, and - per claim - the Δlogp-vs-null bar, the per-token probability gap, the specificity matrix, and the stored vectors. Everything is read from run artifacts on disk; nothing is recomputed in the browser.</p></div>
+  </div>`);
+}
+</script>
+</body>
+</html>
