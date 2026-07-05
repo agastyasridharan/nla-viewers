@@ -1,0 +1,42 @@
+name: Deploy static viewers to Pages
+
+# The viewers repo outgrew the legacy branch builder once the Claim-Ablation
+# Studio bundle (~117 MB of frozen run data) was added: legacy builds time out
+# around 10 min. This artifact-based deploy handles up to ~1 GB and skips the
+# Jekyll build step. It publishes the same committed files, so all viewers ship
+# together and a failed run leaves the current live site untouched.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage site (everything except VCS + CI)
+        run: |
+          mkdir -p _site
+          rsync -a --delete \
+            --exclude='.git' --exclude='.github' --exclude='_site' \
+            ./ _site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
