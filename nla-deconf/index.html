@@ -644,7 +644,8 @@
       H+='<h1>'+esc(D.meta.title)+'</h1>'+
          '<p class="subtitle">'+esc(D.meta.subtitle)+'</p>'+
          '<p class="meta-line"><span>'+esc(D.meta.date)+'</span><span>base '+esc(D.meta.base_model)+'</span>'+
-           '<span>layer '+esc(D.meta.layer)+'</span><span>4 arms &middot; 4&times;H100</span></p>';
+           '<span>layer '+esc(D.meta.layer)+'</span><span>4 arms &middot; 4&times;H100</span>'+
+           '<span><a href="summary.html" style="font-weight:600">Results at a glance &rarr;</a></span></p>';
       H+='<div class="headline">'+esc(D.meta.headline).replace(/0\.917/,"<b>0.917</b>")+
          '<div class="qbox">Headline question: '+esc(D.meta.question)+'</div></div>';
 
