@@ -48,9 +48,9 @@ window.CALLBACK = {
             "ungraded": 0
           },
           "callback": {
-            "grounded": 77,
-            "wrong": 4,
-            "neither": 23,
+            "grounded": 81,
+            "wrong": 3,
+            "neither": 20,
             "ungraded": 0
           },
           "assistant_end": {
@@ -66,8 +66,8 @@ window.CALLBACK = {
             "ungraded": 42
           }
         },
-        "callback_accuracy": 0.9506172839506173,
-        "callback_graded": 81
+        "callback_accuracy": 0.9642857142857143,
+        "callback_graded": 84
       },
       "items": [
         {
@@ -903,11 +903,15 @@ window.CALLBACK = {
                   "read_id": "career|v|callback",
                   "grade": {
                     "read_id": "career|v|callback",
-                    "consensus": "neither",
-                    "agree": 2,
-                    "n_votes": 3
+                    "consensus": "v",
+                    "agree": 3,
+                    "n_votes": 3,
+                    "pre_audit_consensus": "neither",
+                    "pre_audit_agree": 2,
+                    "audit": true,
+                    "audit_note": "blind 3-judge re-grade (randomized A/B, opaque ids), 2026-06-18"
                   },
-                  "grounded": null
+                  "grounded": true
                 }
               ]
             },
@@ -2826,11 +2830,15 @@ window.CALLBACK = {
                   "read_id": "emigrate|v_prime|callback",
                   "grade": {
                     "read_id": "emigrate|v_prime|callback",
-                    "consensus": "v",
-                    "agree": 2,
-                    "n_votes": 3
+                    "consensus": "neither",
+                    "agree": 3,
+                    "n_votes": 3,
+                    "pre_audit_consensus": "v",
+                    "pre_audit_agree": 2,
+                    "audit": true,
+                    "audit_note": "blind 3-judge re-grade (randomized A/B, opaque ids), 2026-06-18"
                   },
-                  "grounded": false
+                  "grounded": null
                 }
               ]
             }
@@ -3765,11 +3773,15 @@ window.CALLBACK = {
                   "read_id": "furniture|v|callback",
                   "grade": {
                     "read_id": "furniture|v|callback",
-                    "consensus": "neither",
-                    "agree": 3,
-                    "n_votes": 3
+                    "consensus": "v",
+                    "agree": 2,
+                    "n_votes": 3,
+                    "pre_audit_consensus": "neither",
+                    "pre_audit_agree": 3,
+                    "audit": true,
+                    "audit_note": "blind 3-judge re-grade (randomized A/B, opaque ids), 2026-06-18"
                   },
-                  "grounded": null
+                  "grounded": true
                 }
               ]
             },
@@ -4277,11 +4289,15 @@ window.CALLBACK = {
                   "read_id": "gift|v_prime|callback",
                   "grade": {
                     "read_id": "gift|v_prime|callback",
-                    "consensus": "neither",
+                    "consensus": "v_prime",
                     "agree": 3,
-                    "n_votes": 3
+                    "n_votes": 3,
+                    "pre_audit_consensus": "neither",
+                    "pre_audit_agree": 3,
+                    "audit": true,
+                    "audit_note": "blind 3-judge re-grade (randomized A/B, opaque ids), 2026-06-18"
                   },
-                  "grounded": null
+                  "grounded": true
                 }
               ]
             }
@@ -6998,11 +7014,15 @@ window.CALLBACK = {
                   "read_id": "plot|v|callback",
                   "grade": {
                     "read_id": "plot|v|callback",
-                    "consensus": "neither",
-                    "agree": 2,
-                    "n_votes": 3
+                    "consensus": "v",
+                    "agree": 3,
+                    "n_votes": 3,
+                    "pre_audit_consensus": "neither",
+                    "pre_audit_agree": 2,
+                    "audit": true,
+                    "audit_note": "blind 3-judge re-grade (randomized A/B, opaque ids), 2026-06-18"
                   },
-                  "grounded": null
+                  "grounded": true
                 }
               ]
             },
@@ -10581,9 +10601,9 @@ window.CALLBACK = {
             "ungraded": 0
           },
           "callback": {
-            "grounded": 74,
-            "wrong": 6,
-            "neither": 24,
+            "grounded": 75,
+            "wrong": 8,
+            "neither": 21,
             "ungraded": 0
           },
           "assistant_end": {
@@ -10599,8 +10619,8 @@ window.CALLBACK = {
             "ungraded": 24
           }
         },
-        "callback_accuracy": 0.925,
-        "callback_graded": 80
+        "callback_accuracy": 0.9036144578313253,
+        "callback_graded": 83
       },
       "items": [
         {
@@ -11037,11 +11057,15 @@ window.CALLBACK = {
                   "read_id": "book|v_prime|callback",
                   "grade": {
                     "read_id": "book|v_prime|callback",
-                    "consensus": "neither",
-                    "agree": 2,
-                    "n_votes": 3
+                    "consensus": "v",
+                    "agree": 3,
+                    "n_votes": 3,
+                    "pre_audit_consensus": "neither",
+                    "pre_audit_agree": 2,
+                    "audit": true,
+                    "audit_note": "blind 3-judge re-grade (randomized A/B, opaque ids), 2026-06-18"
                   },
-                  "grounded": null
+                  "grounded": false
                 }
               ]
             }
@@ -14544,11 +14568,15 @@ window.CALLBACK = {
                   "read_id": "garment|v_prime|callback",
                   "grade": {
                     "read_id": "garment|v_prime|callback",
-                    "consensus": "neither",
+                    "consensus": "v",
                     "agree": 3,
-                    "n_votes": 3
+                    "n_votes": 3,
+                    "pre_audit_consensus": "neither",
+                    "pre_audit_agree": 3,
+                    "audit": true,
+                    "audit_note": "blind 3-judge re-grade (randomized A/B, opaque ids), 2026-06-18"
                   },
-                  "grounded": null
+                  "grounded": false
                 }
               ]
             }
@@ -14840,11 +14868,15 @@ window.CALLBACK = {
                   "read_id": "gift|v_prime|callback",
                   "grade": {
                     "read_id": "gift|v_prime|callback",
-                    "consensus": "neither",
+                    "consensus": "v_prime",
                     "agree": 3,
-                    "n_votes": 3
+                    "n_votes": 3,
+                    "pre_audit_consensus": "neither",
+                    "pre_audit_agree": 3,
+                    "audit": true,
+                    "audit_note": "blind 3-judge re-grade (randomized A/B, opaque ids), 2026-06-18"
                   },
-                  "grounded": null
+                  "grounded": true
                 }
               ]
             }

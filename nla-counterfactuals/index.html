@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Counterfactual-Pair Catalog</title>
+<title>Counterfactual-Pair &amp; Detail Confabulation Experiments</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
@@ -65,6 +65,13 @@
   .fam-item.sel{outline:2px solid var(--green); background:#eef3ec;}
   .fam-item .vp{font-weight:600; color:var(--ink2);}
   .fam-item .meta{font-size:0.76rem; color:var(--mut); font-variant-numeric:tabular-nums;}
+  .nolist-head{margin:14px 0 8px; padding-top:10px; border-top:1px dashed var(--line2);
+    font-size:0.76rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--mut);}
+  .nolist{opacity:0.55;}  .nolist .fam-item:hover{opacity:1;}
+  .mq{display:inline-block; margin:0 10px 0 0; font-size:0.82rem; font-variant-numeric:tabular-nums; color:var(--ink2);}
+  .mq b{color:var(--mut); font-weight:600; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.03em; margin-right:3px;}
+  .mq-na{font-size:0.82rem; color:var(--mut); font-style:italic;}
+  .metquad{margin:5px 0 2px; padding:5px 8px; background:var(--panel2); border:1px solid var(--line); border-radius:5px;}
 
   .pill{display:inline-block; padding:2px 9px; border-radius:999px; font-size:0.74rem;
     border:1px solid var(--line2); color:var(--mut); background:var(--panel2); vertical-align:middle;}
@@ -129,10 +136,49 @@
   .tag{font-size:0.7rem; padding:1px 6px; border-radius:999px; color:#fff;}
   .tag.condition{background:var(--amber);} .tag.callback{background:var(--green);}
   .tag.assistant_end,.tag.assistant_ref{background:var(--blue);}
+  .tag.authored{background:#7a5da8;} .tag.cond-v{background:#6b7a5d;} .tag.cond-vp{background:#a8745d;}
+  .mr-exp-note{font-size:0.8rem; color:var(--mut); margin:0 0 10px; padding:7px 11px; border-left:3px solid #7a5da8; background:#f7f3fb;}
+  .mr-pick{font-variant-numeric:tabular-nums;} .mr-pick.g{color:#2e7d32; font-weight:600;}
+  .mr-pick.w{color:#b3261e; font-weight:600;} .mr-pick.n{color:var(--mut);}
   .gbadge{font-size:0.7rem; padding:1px 7px; border-radius:999px; color:#fff;}
   .gbadge.grounded{background:var(--green);} .gbadge.wrong{background:var(--red);}
   .gbadge.neither{background:#9a8a72;} .gbadge.ungraded{background:#c9bca6;}
   .cell-pending{color:var(--mut); font-style:italic; font-size:0.82rem;}
+
+  /* ── errors & indeterminate drill-down ── */
+  .mr-intro{margin:0 0 10px;}
+  .mr-model{margin:22px 0 4px;}
+  .mr-model:first-child{margin-top:4px;}
+  .mr-model > h2{font-size:1.05rem; font-weight:600; color:var(--ink2); margin:0 0 8px;
+    padding-bottom:5px; border-bottom:2px solid var(--line2); display:flex; align-items:baseline; gap:10px;
+    text-transform:capitalize;}
+  .mr-n{font-size:0.78rem; color:var(--mut); font-weight:400; font-variant-numeric:tabular-nums;}
+  .mr-site{font-size:0.9rem; font-weight:600; color:var(--ink); margin:16px 0 8px;
+    display:flex; align-items:center; gap:8px;}
+  .mr-card{border:1px solid var(--line2); border-radius:8px; margin:0 0 12px; overflow:hidden;
+    background:var(--panel); box-shadow:0 1px 3px rgba(44,36,22,.05);}
+  .mr-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px;
+    background:var(--panel2); border-bottom:1px solid var(--line); font-size:0.9rem;}
+  .mr-head b{color:var(--ink2); text-transform:capitalize;}
+  .pill.model{color:#fff; background:var(--ink2); border-color:var(--ink2); text-transform:uppercase;
+    letter-spacing:0.04em; font-size:0.68rem; font-weight:600;}
+  .mr-id{color:var(--mut); font-size:0.78rem; margin-left:auto; font-variant-numeric:tabular-nums;}
+  .mr-tok{font-size:0.78rem; color:var(--mut);}
+  .mr-tok code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.92em; background:var(--panel);
+    border:1px solid var(--line2); border-radius:3px; padding:0 4px; color:var(--ink2);}
+  .mr-verdict{display:flex; gap:18px; flex-wrap:wrap; align-items:baseline; padding:8px 12px;
+    font-size:0.86rem; border-bottom:1px solid var(--line);}
+  .mr-verdict b{color:var(--ink2); font-weight:600;}
+  .mr-sub{color:var(--mut); font-size:0.8rem;}
+  .mr-fid{margin-left:auto; color:var(--mut); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .mr-context{border-bottom:1px solid var(--line);}
+  .mr-av{padding:9px 12px; font-size:0.9rem; line-height:1.55; background:#fbf6ec; color:var(--ink);}
+  .mr-av .mr-lbl{display:block; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--mut); margin-bottom:3px;}
+  .mr-reclass{font-size:0.64rem; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;
+    color:#fff; background:var(--amber,#b8860b); border-radius:999px; padding:1px 7px; white-space:nowrap;}
+  .mr-prov{padding:6px 12px; font-size:0.8rem; color:var(--ink); background:#fcf3e2;
+    border-bottom:1px solid var(--line); border-left:3px solid var(--amber,#b8860b);}
 
   /* ── dashboard: explainer ── */
   .how{max-width:none;}
@@ -151,6 +197,18 @@
   .how ul.how-sub b{color:var(--ink2);}
   .how .formula{background:var(--panel2); border:1px solid var(--line2); border-radius:5px;
     padding:10px 14px; margin:0 0 11px; line-height:1.55;}
+  .how .how-quote{background:#fbf6ec; border:1px solid var(--line2); border-left:3px solid var(--mut);
+    border-radius:5px; padding:9px 14px; margin:0 0 11px; line-height:1.55; font-size:0.92rem; color:var(--ink);}
+  .how .how-ex{border:1px solid var(--line2); border-radius:5px; margin:0 0 11px; overflow:hidden;}
+  .how .how-ex .ex-label{background:var(--panel2); border-bottom:1px solid var(--line2); padding:5px 13px;
+    font-size:0.74rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--mut); font-weight:600;}
+  .how .how-ex .ex-label .ex-site{text-transform:none; letter-spacing:0; color:var(--ink2); font-weight:600;}
+  .how .how-ex pre{margin:0; padding:11px 14px; background:#fbf6ec; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:0.81rem; line-height:1.5; white-space:pre-wrap; color:var(--ink); overflow-x:auto;}
+  .how .how-ex pre .ex-opt{color:#6b3d00; font-weight:600;}
+  .how .how-ex .ex-verdict{border-top:1px dashed var(--line2); padding:8px 14px; font-size:0.86rem;
+    line-height:1.5; color:var(--ink); background:#fff;}
+  .how .how-ex .ex-verdict b{color:var(--ink2);}
   .dot{display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:7px;}
 
   /* ── dashboard: per-model results ── */
@@ -208,6 +266,31 @@
   .fidtable th{background:var(--panel2); color:var(--mut); font-weight:600;}
   .fidtable td.num{font-variant-numeric:tabular-nums; text-align:right;}
   .sitegrid .hd.modelhd{display:flex; align-items:center;}
+
+  /* ── fidelity-vs-grounding tab ── */
+  .fid-verdict{border:1px solid var(--line2); border-left:4px solid var(--ink2); border-radius:6px;
+    background:#fbf6ec; padding:12px 15px; margin:6px 0 0; line-height:1.55;}
+  .fid-verdict b{color:var(--ink2);}
+  .fp-axis,.fp-row{display:grid; grid-template-columns:170px 1fr 132px; gap:12px; align-items:center;}
+  .fp-axis{font-size:0.72rem; color:var(--mut); margin:6px 0 3px;}
+  .fp-axis .fp-ends{display:flex; justify-content:space-between;}
+  .fp-row{margin:0 0 10px; font-size:0.85rem;}
+  .fp-lab{color:var(--ink2); font-weight:600; line-height:1.3;}
+  .fp-lab .fp-sub{display:block; font-weight:400; color:var(--mut); font-size:0.76rem;}
+  .fp-track{position:relative; height:24px; background:var(--panel2); border:1px solid var(--line2); border-radius:4px;}
+  .fp-mid{position:absolute; top:-4px; bottom:-4px; left:50%; width:1px; background:var(--mut);}
+  .fp-ci{position:absolute; top:50%; height:4px; transform:translateY(-50%); border-radius:2px; opacity:.45;}
+  .fp-pt{position:absolute; top:50%; width:12px; height:12px; border-radius:50%;
+    transform:translate(-50%,-50%); box-shadow:0 0 0 2px #fff;}
+  .fp-val{font-variant-numeric:tabular-nums; color:var(--ink2); text-align:right; white-space:nowrap;}
+  .fp-val .fp-ci-txt{display:block; color:var(--mut); font-size:0.75rem; font-weight:400;}
+  .fp-dir{font-size:0.7rem; padding:1px 7px; border-radius:999px; color:#fff; white-space:nowrap;}
+  .fp-dir.reversed{background:var(--red);} .fp-dir.expected{background:var(--green);} .fp-dir.null{background:#9a8a72;}
+  .ftab{border-collapse:collapse; width:100%; font-size:0.84rem; margin-top:4px;}
+  .ftab th,.ftab td{border:1px solid var(--line); padding:5px 9px; text-align:left; vertical-align:middle;}
+  .ftab th{background:var(--panel2); color:var(--mut); font-weight:600;}
+  .ftab td.num{font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap;}
+  .ftab .best{color:#2e7d32; font-weight:600;} .ftab .worst{color:#b3261e; font-weight:600;}
 
   /* ── family results tab ── */
   .cf-headline{border-left:3px solid var(--green); background:var(--panel2); border-radius:5px; padding:14px 18px;}
@@ -273,7 +356,7 @@
 <body>
 <div class="container">
   <header>
-    <h1>Counterfactual-Pair Catalog</h1>
+    <h1>Counterfactual-Pair &amp; Detail Confabulation Experiments</h1>
     <div class="sub">contrastive NLA reads &middot; one upstream difference, one anchor token &middot; authored pairs + live callback data</div>
   </header>
 
@@ -281,6 +364,9 @@
     <button data-t="families" class="on">Authored families <span class="count" id="cFam"></span></button>
     <button data-t="callback">Callback reads <span class="count" id="cCb"></span></button>
     <button data-t="dashboard">Cross-model dashboard</button>
+    <button data-t="misreads">Errors &amp; indeterminate <span class="count" id="cMr"></span></button>
+    <button data-t="fidelity">Fidelity vs grounding</button>
+    <button data-t="metrics">Reconstruction metrics</button>
     <button data-t="results">Family results</button>
   </div>
 
@@ -347,21 +433,23 @@
       <h2>Objective</h2>
       <div class="how">
         <p>A natural-language autoencoder (NLA) reads a hidden state from a host language model and emits a
-          short natural-language description of its contents. The central validity question is whether such
-          a description reflects genuine readout of the information encoded in the hidden state, or whether
-          it is an instance of <b>input inversion</b>.</p>
-        <p><b>Input inversion</b> denotes the failure mode in which the decoder reconstructs the tokens in
-          the local neighborhood of the read position rather than decoding what the hidden state represents.
-          Because a hidden state at a given position is determined largely by the preceding tokens, a
-          description obtained by inverting that local context can appear substantive while conveying nothing
-          beyond what the surrounding text already specifies. Separating genuine readout from input
-          inversion is the purpose of the experiment reported here.</p>
-        <p>The two cases are dissociated by construction. Each item introduces a fact early in the input and
-          later refers back to it with a token that is held fixed across conditions. The local context of
-          that later token is therefore identical regardless of the fact, so any version-specific content in
-          its description cannot have been produced by inverting the local input and must instead have been
-          carried in the hidden state. A description that recovers the fact at this token is evidence against
-          input inversion; a description that fails to recover it is consistent with input inversion.</p>
+          short natural-language description of its contents. The question this page measures is whether that
+          description <b>recovers the specific fact carried in the hidden state</b>, or instead falls back on
+          whatever the surrounding text and the model's prior make the most likely default — a substituted,
+          confabulated detail in place of the encoded one.</p>
+        <p>The two outcomes are dissociated by construction. Each item introduces a fact early in the input and
+          later refers back to it with a token held fixed across the two versions. Because that later token and
+          its immediate neighbours are identical regardless of which fact was stated, any <b>version-specific</b>
+          content in its description has to come from the hidden state at that position rather than from the
+          local tokens around it. A description that recovers this version's fact at that token shows the fact
+          is present and decodable in the hidden state there; one that recovers the other version's fact, or
+          neither, shows the read settling on a default instead of the encoded fact.</p>
+        <p class="note" style="margin:2px 0 0">This is a claim about what the recall-token hidden state
+          <i>contains</i> and whether the decoder surfaces it. It is deliberately <b>not</b> a claim that the
+          decoder reaches information unavailable from the input as a whole: the fact was stated earlier in the
+          same input, so a model that reconstructs it from the broader context would also score as recovering
+          it. What the held-fixed recall token rules out is reliance on the <i>local</i> neighbourhood of the
+          read position, nothing wider.</p>
 
         <p class="scopebar"><b>Scope.</b> The quantities reported on this page derive solely from live reads
           of the two hosted models on the recall items, which are enumerated in the Callback reads tab. The
@@ -387,8 +475,9 @@
           scored separately.</p>
         <ul class="how-list">
           <li><span class="dot" style="background:#b45309"></span><b>Fact token.</b> The token at which the
-            fact is first stated, for example "painting". Because the token itself names the fact, this
-            condition approximates an upper bound rather than a test of input inversion.</li>
+            fact is first stated, for example "painting". Because the token itself names the fact, a correct
+            description here is recoverable from the local text alone, so this condition approximates an upper
+            bound rather than a diagnostic read of the hidden state.</li>
           <li><span class="dot" style="background:#4a7c59"></span><b>Recall token.</b> A later token that is
             identical across the two versions. This is the diagnostic condition: its local context is
             constant, so a correct description implicates information carried in the hidden state rather than
@@ -406,21 +495,101 @@
     <section class="panel">
       <h2>Scoring procedure</h2>
       <div class="how">
-        <p>For each read, the decoder has already produced a single descriptive sentence. That sentence is
-          scored in isolation, with no access to any other information about the item.</p>
+        <p>This one procedure scores <b>every read in both experiments</b> — the callback recall-token reads
+          (this dashboard's headline test) and the authored counterfactual-family reads (the Families,
+          Family-reads, and Errors &amp; indeterminate tabs). For each read the decoder has already produced a
+          single descriptive sentence; that sentence is scored in isolation, with no access to anything else
+          about the item: not the conversation, not which version it came from, not the reconstruction cosine.</p>
         <ol class="how-steps">
-          <li>The sentence is presented to three independent language-model graders. Each grader receives
-            only the sentence and the two candidate facts, designated A and B. The graders do not observe the
-            conversation or the version from which the read originated, and the candidate ordering is held
-            constant across versions, so ordering is uninformative.</li>
-          <li>Each grader returns A, B, or neither. The majority verdict over the three graders is taken; a
-            three-way disagreement is recorded as neither.</li>
+          <li>The sentence is presented to <b>three independent language-model graders</b> — a Claude judge
+            panel run as a grading workflow, in batches of twelve reads, three judges per batch. The two options
+            are not invented for grading: they are the item's <b>counterfactual pair</b> — the single fact that
+            was varied to build the two versions, and nothing else. On this dashboard option A is always the
+            pair's first value and option B its second (for the read below, A = “a rescue greyhound”, B = “a
+            tabby kitten”), in a fixed order that does not depend on which version the read came from; the
+            <i>correct</i> option is simply whichever value the read's own version stated. Each grader sees only
+            the sentence, those two options, and an id — not the conversation, the version, the reconstruction
+            cosine, or the other judges' answers. (How the A/B order and the id are set differs between the two
+            experiments — see <i>Both experiments, two safeguards</i> below.)</li>
+          <li>Each grader answers <b>A</b>, <b>B</b>, or <b>neither</b>, judging each read independently. The
+            instruction is to match on <i>meaning</i> rather than exact words, and to answer "neither" — not
+            guess — whenever a description fits both candidates, fits neither, or is too generic to tell.</li>
+          <li>The three answers are combined by <b>strict majority</b>: a value is taken only when at least two
+            of the three graders choose it, so a one-to-one-to-one split is recorded as neither.</li>
           <li>The majority verdict is compared against the originating version. A verdict matching the true
             fact is scored <b>correct</b>; the opposing fact is scored <b>wrong</b>; a verdict of neither is
             recorded as <b>indeterminate</b> and excluded from scoring.</li>
         </ol>
+        <p class="how-quote">Each grader is given these instructions verbatim: <i>“You are a careful, literal
+          grader. … Match on MEANING, not exact words … Answer ‘A’ if it clearly indicates option A, ‘B’ if
+          option B. Answer ‘neither’ if the description fits both equally, fits neither, or is too
+          generic/abstract to tell. Do NOT guess when genuinely ambiguous. Judge each item independently.”</i></p>
         <p class="formula"><b>grounding = correct / (correct + wrong)</b><br>
           Indeterminate reads are reported alongside each bar and are excluded from the denominator.</p>
+
+        <h3>What each grader sees</h3>
+        <p>Under those instructions the judge gets a numbered list of reads. One entry looks exactly like this —
+          a real callback read, verbatim as the panel received it: the AV's full description, then the two
+          candidate facts as option A and option B (the panel collapses any double quotes in the description to
+          single quotes, shown here as-is):</p>
+        <div class="how-ex">
+          <div class="ex-label">one item in the batch · <span class="ex-site">callback recall-token read · Gemma · family “pet2”</span></div>
+<pre>7. read_id: pet2|v|callback
+   description: "UK pet/lifestyle article register established, describing a rescue dog adjusting to a new home, with a positive outcome narrative about a dog named Poppy.
+
+The opening sentence 'he's quite a character and the animal' signals a real-life anecdote about a dog with anxiety/behavioural challenges, likely from a rescue centre.
+
+Final token 'the animal' begins a noun phrase describing a named animal or staff role — 'the animal' strongly expects a noun like 'centre/shelter' or 'centre staff' or 'shelter staff say' or 'rescue told us' or 'carer said' or 'centre/him was amazing' or 'trainer was in his.'"
+   <span class="ex-opt">option A: "a rescue greyhound"</span>
+   <span class="ex-opt">option B: "a tabby kitten"</span></pre>
+          <div class="ex-verdict">All three judges answered <b>A</b> — the description is plainly about a dog,
+            not a cat, even though it never says “greyhound”. Strict majority → <b>A</b>, and option A
+            (“a rescue greyhound”) is the value the activation actually carried, so this read is scored
+            <b>correct / grounded</b>. A majority of B would be <b>wrong</b>; a 1-1-1 split, or a majority of
+            “neither”, would be <b>indeterminate</b> and dropped from the denominator.</div>
+        </div>
+
+        <h3>Both experiments, two safeguards</h3>
+        <p>The panel, the verbatim instructions, the strict-majority rule and the grounding formula are
+          <b>identical</b> for the callback reads and the authored-family reads. They differ only in two anti-leak
+          safeguards — both of which the authored-family grading had from the start, and the callback grading
+          gained in the re-grade audit below:</p>
+        <ul class="how-list">
+          <li><span class="dot" style="background:var(--mut)"></span><b>Opaque read id.</b> The callback item
+            above shows <code>read_id: pet2|v|callback</code>, whose <code>|v|</code> encodes the version. The
+            authored-family reads instead carry an opaque hash (e.g. <code>798f044e02d7</code>), so the id leaks
+            nothing.</li>
+          <li><span class="dot" style="background:var(--mut)"></span><b>Randomized A/B order.</b> On the callback
+            reads option A is always the first value, B the second. On the authored-family reads the two values
+            are shuffled per read by a hash of the id, so position is uncorrelated with the answer. The same
+            family graded under both versions shows it directly:</li>
+        </ul>
+        <div class="how-ex">
+          <div class="ex-label">randomized order · authored family “wealth” · <span class="ex-site">true value = poor in both versions</span></div>
+<pre>wealth_a    option A: "wealthy"    option B: "poor"       → judges: B → “poor”  → correct
+wealth_b    option A: "poor"       option B: "wealthy"    → judges: A → “poor”  → correct</pre>
+        </div>
+        <p class="note">Because a family's v and v′ reads are shuffled independently, any A/B position bias cancels
+          in the v-vs-v′ contrast instead of adding to it. One more authored-only detail: Qwen (the local read
+          arm) produces <b>ten</b> sampled descriptions per read, each graded by the panel; the ten are reduced to
+          one read verdict from the committed draws — grounded if at least half point to the true value, wrong
+          otherwise, indeterminate if none commit. Llama and Gemma are hosted single-read, so their read verdict
+          is just the panel's majority on that one description.</p>
+
+        <h3>Blind re-grade audit</h3>
+        <p>Every contested recall-token read — each read the panel scored wrong or indeterminate, 57 in
+          all — was re-scored by a second blind three-judge panel, now with opaque identifiers and a
+          per-read randomized candidate order, and each stored description was reverified against the
+          live Neuronpedia cache (all 57 reproduced exactly, and the identity mse = 2(1 &minus; cos)
+          held in every case). The two validity-critical directions were clean: no read moved between
+          correct and wrong in either direction, so the re-grade neither exonerated a wrong read nor
+          manufactured one. It revised <b>eight</b> contested reads; those revisions are folded into the
+          figures on this page, and the revised reads are flagged in the Errors &amp; indeterminate tab.</p>
+        <p class="note">The second panel was somewhat stricter, abstaining on 8 of 24 grounded controls
+          it also re-graded, so the absolute grounding rate should be read as panel-dependent at the level
+          of a few percent. Only the contested reads received complete re-grading; the grounded totals
+          remain the first panel's, and a fully blind re-grade of all reads was not performed. The
+          cross-model comparison and the failure analysis below are unaffected by this.</p>
       </div>
     </section>
 
@@ -436,9 +605,9 @@
       <h2>Grounding by read site</h2>
       <p class="note" id="siteNote" style="margin-top:0">Each bar gives the grounding rate for the
         corresponding read site. The <b>fact token</b> sits on the answer and therefore approximates an upper
-        bound. The <b>recall token</b> is the diagnostic condition: because it is identical across versions,
-        a correct description indicates that the fact was carried in the hidden state rather than recovered
-        by input inversion.</p>
+        bound. The <b>recall token</b> is the diagnostic condition: because it and its local context are
+        identical across versions, a correct description indicates the fact was carried in the hidden state at
+        that token rather than recoverable from the surrounding text.</p>
       <div id="bysite"></div>
     </section>
 
@@ -449,10 +618,11 @@
           read. A hidden state is reconstructed from the description and compared against the original by
           cosine similarity; the value lies on a scale with maximum 1, and higher values are intended to
           indicate more complete descriptions.</p>
-        <p><b>Provenance.</b> The recorded values are veridical. Every stored cosine was reverified against
-          the live Neuronpedia service: across a sample of 200 reads, 100 per model, all values reproduced
-          exactly, and the identity mse = 2(1 &minus; cos) holds throughout. The stored quantities are
-          therefore faithful to the source.</p>
+        <p><b>Provenance.</b> Every contested read in the audit — all 57 scored wrong or indeterminate,
+          27 on Gemma and 30 on Llama — was reverified read-for-read against the live Neuronpedia cache:
+          the stored cosine, mse, token, and description reproduced exactly in every case, and the
+          identity mse = 2(1 &minus; cos) held for all of them. The stored quantities are faithful to the
+          source.</p>
         <p><b>Incomparability across models.</b> The raw cosine is not comparable between the two models.
           Gemma's residual stream is strongly anisotropic: almost all of the magnitude of any hidden state
           lies along a single direction shared by nearly all tokens. Under such anisotropy, arbitrary pairs
@@ -467,10 +637,21 @@
           is recovered. After this correction, Llama recovers a larger fraction of the hidden state than
           Gemma at every read site, reversing the ordering implied by the raw cosine.</p>
         <div id="fidelity"></div>
-        <p class="note">The floor values are drawn from a separate activation-space study of the same models
-          and layers; the adjusted values should be interpreted as an approximate correction rather than an
-          exact measurement. The grounding rate above provides the reliable cross-model comparison, as it is
-          determined by the graders and is independent of this geometry.</p>
+        <p><b>Why the adjustment is coarse, especially for Gemma.</b> The correction divides by
+          1 &minus; floor. For Llama that denominator is about 0.84, a benign factor of roughly 1.2&times;;
+          for Gemma it is about 0.06, so the correction magnifies the slender gap above the floor about
+          17&times;. A change of 0.01 in either the raw cosine or the estimated floor therefore moves
+          Gemma's adjusted value by about 0.17. Gemma's adjusted numbers consequently carry wide
+          uncertainty, and per-read adjusted recovery (shown beside each read in the Errors &amp;
+          indeterminate tab) should be read as indicative only. For this reason the correction is applied
+          to per-site means, where read-to-read noise averages out, rather than trusted read by read.</p>
+        <p class="note">The floor values are drawn from a separate activation-space study of the same
+          models and layers, so the adjusted values are an approximate correction, not an exact
+          measurement. The qualitative reversal — Llama above Gemma at every site — is the robust
+          conclusion (Gemma's best-adjusted site still sits below Llama's worst), whereas the exact
+          magnitudes, Gemma's in particular, depend on the floor estimate. The grounding rate above
+          remains the reliable cross-model comparison: it is set by the graders and is independent of this
+          geometry.</p>
       </div>
     </section>
 
@@ -535,11 +716,31 @@
         </div>
         <div class="fcard">
           <div class="fhead"><span class="fmodel llama">llama</span><span class="fitem">gift</span>
-            <span class="ftag unclear">necklace → unclear</span></div>
-          <div class="fquote">“a sentimental clause about a gift given by a partner… ‘even though it has been se[t]…’”</div>
-          <div class="fwhy">Another abstain. A gift from a partner is described, but telescope versus necklace is left open.</div>
+            <span class="ftag unclear">telescope → unclear</span></div>
+          <div class="fquote">“a sentimental clause about a gift given by a partner… ‘even though it has been se[veral years]…’”</div>
+          <div class="fwhy">A genuine abstain on the telescope condition. A gift from a partner is described, but telescope versus necklace is left open. (The necklace condition, by contrast, was read correctly and the audit re-grade confirmed it as grounded.)</div>
         </div>
       </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════ TAB: errors & indeterminate reads ════════════════════ -->
+  <div class="tabpage" id="page-misreads">
+    <section class="panel">
+      <h2>Errors &amp; indeterminate reads</h2>
+      <div class="wtabs" id="mrExpSeg" style="margin-bottom:8px">
+        <button data-mrx="callback" class="on">Callback recall-token <span id="mrExpCbN" style="opacity:.8"></span></button>
+        <button data-mrx="authored">Authored families <span id="mrExpAuN" style="opacity:.8"></span></button>
+      </div>
+      <p class="note mr-intro" id="mrIntro"></p>
+      <div class="wtabs" id="mrSubSeg">
+        <button data-mr="errors" class="on">Errors — wrong <span id="mrErrN" style="opacity:.8"></span></button>
+        <button data-mr="indeterminate">Indeterminate — neither <span id="mrUncN" style="opacity:.8"></span></button>
+      </div>
+      <p class="note" id="mrSubNote" style="margin-top:0"></p>
+    </section>
+    <section class="panel">
+      <div id="mrContent"></div>
     </section>
   </div>
 
@@ -553,30 +754,30 @@
       <h2>Objective</h2>
       <div class="how">
         <p>This page reports a direct test of whether the verbalizer reads the content of a hidden state.
-          The test proceeds by injection. For an authored sentence, the hidden state at a chosen position is
-          replaced with an activation that encodes a specific value, and the verbalizer is asked to describe
-          that position. If the description names the injected value, the read recovered the injected content.
-          If it does not, the description is governed by something other than the injected activation, most
-          often the model's prior expectation given the surrounding text.</p>
+          The test proceeds by <b>reading</b>, not by adding any vector: for an authored sentence, the
+          verbalizer reads the hidden state the sentence produces at a chosen anchor position and describes it.
+          The value is carried into that hidden state only by the wording of the sentence. If the description
+          names this version's value, the read recovered the encoded content. If it does not, the description
+          is governed by something other than the read activation, most often the model's prior expectation
+          given the surrounding text.</p>
 
         <p>The items are the authored families enumerated in the first tab. Each family is a counterfactual
           pair: two values for a single attribute, for example a professional domain that is either
           agricultural or forestry, sharing one read anchor whose neighboring tokens are held constant. The
-          activation encoding the first value is injected and the anchor is read, then the activation
-          encoding the second value is injected and the same anchor is read again. Because the anchor and its
-          context do not change between the two injections, any difference between the two descriptions must
-          originate in the injected activation rather than in the surrounding text.</p>
+          first version is read at the anchor, then the second version is read at the same anchor. Because the
+          anchor and its surrounding context do not change between the two versions, any difference between the
+          two descriptions must originate in the read activation rather than in the surrounding text.</p>
 
-        <p>Recovery is the difference between how often the verbalizer indicates a value when that value is
-          injected and how often it indicates the same value when the alternative is injected, measured net
-          of a no-injection floor.</p>
-        <div class="formula"><b>recovery = P(verbalizer indicates v | v injected) &minus; P(verbalizer indicates v | v&prime; injected)</b><br>
+        <p>Recovery is the difference between how often the verbalizer indicates a value when that version is
+          the one read and how often it indicates the same value when the alternative version is read, measured
+          net of a text-only floor.</p>
+        <p class="formula"><b>recovery = P(verbalizer indicates v | version v read) &minus; P(verbalizer indicates v | version v&prime; read)</b><br>
           Recovery lies between &minus;1 and +1. A value near +1 means the description reliably follows the
-          injected activation, which is a grounded read. A value near 0 means the injection makes no
+          read activation, which is a grounded read. A value near 0 means which version is read makes no
           difference and the description reflects the prior. A negative value means the description
-          systematically indicates the opposite of the injected value.</p>
+          systematically indicates the opposite of the version's value.</p>
 
-        <p class="scopebar"><b>Scope.</b> The figures on this page come from the authored-family injection
+        <p class="scopebar"><b>Scope.</b> The figures on this page come from the authored-family read
           experiment on the qwen7b autoencoder, run locally. This is a separate evaluation from the
           cross-model dashboard, which uses the two hosted models and a reveal-then-recall design on live
           reads. The two experiments examine the same question, whether a read reflects the activation or the
@@ -587,24 +788,56 @@
 
     <section class="panel">
       <h2>Model and grading</h2>
+      <div class="how">
+        <p>This experiment grades differently from the cross-model dashboard, and the two are not
+          interchangeable. Each verbalizer description is scored by an <b>independent grader model of a
+          different lineage from the autoencoder's base model</b>, asked a constrained multiple-choice
+          question. The grader sees only the description and three options — the value v, the value v&prime;,
+          and <b>neither / unsure</b> as an explicit third choice — and must reply with a single letter.</p>
+        <p>To cancel position bias rather than assume it away, the question is asked <b>k times with the option
+          order permuted each run</b> (a fixed per-item schedule); each answer is de-permuted back to its role
+          and the majority over the k runs is taken. A tie, an unparseable answer, or a grader that declines
+          all map to <b>neither</b>, never to a value. The estimate then climbs one level at a time: the k-run
+          majority gives one indication per draw; a majority over the draws gives one indication per
+          (condition, wording) cell; the rate over wordings gives P(indicate v | condition); and the
+          per-family signal is P(indicate v | version v read) &minus; P(indicate v | version v&prime; read), taken
+          net of the text-only floor. The <b>family is the unit of evidence</b>; draws and wordings are nested
+          and never inflate the count. The exact grader model, number of runs, draws, bootstrap resamples, and
+          permutations for this run are listed below.</p>
+        <p class="how-quote">The grader prompt is, verbatim: <i>“Read the following description, then answer the
+          question. Description: {description} Question: Based ONLY on this description, what does it indicate
+          about the writer's likely attribute value? (a) {one value} (b) {another value} (c) {neither / unsure}
+          Answer with the single letter of the best option.”</i> The three options carry the two values and
+          “neither / unsure” in a per-run-permuted order.</p>
+      </div>
       <div id="cfModel"></div>
+      <div class="how">
+        <p class="formula"><b>Certified-grounded</b> requires <i>all</i> of: the bootstrap CI excludes zero
+          (lower bound &gt; 0), the point recovery is at least <b>0.15</b>, the family permutation test is
+          significant after family-wise correction (Holm at a 0.05 error rate for confirmatory attributes,
+          Benjamini-Hochberg at a 0.10 false-discovery rate otherwise), the effect is symmetric across both
+          read directions (v and v&prime;), inter-rater agreement (Cohen's &kappa;) is at least <b>0.6</b>, and the premise
+          gate is clean. A CI that includes zero is <b>prior-driven</b>; anything in between is
+          <b>activation-specific but unverified</b>. These boundaries are fixed in code, not tuned per run.</p>
+      </div>
     </section>
 
     <section class="panel">
       <h2>Premise gate</h2>
       <div class="how">
         <p>A family is admitted to the read-side test only if it first passes a premise gate. The gate
-          enforces three conditions, so that a recovered value can be attributed to the injection rather than
-          to an artifact.</p>
+          enforces three conditions, so that a recovered value can be attributed to the read activation rather
+          than to an artifact.</p>
         <ul class="how-list">
-          <li><b>Presence.</b> The base model must already encode the attribute at the read anchor. If the
-            value cannot be read from the unmodified activation, there is nothing for the injection to
+          <li><b>Presence.</b> The base model must already encode the attribute at the read anchor — the
+            activations there must separate the two values at an accuracy of at least <b>0.67</b> (chance
+            is 0.5). If the value cannot be read from the activation at all there is nothing for the read to
             recover, and the family is dropped.</li>
-          <li><b>No-injection floor.</b> With no injection, the grader must not be able to guess the value
-            from the description. A floor near zero confirms that the surrounding text does not give the
-            answer away on its own.</li>
-          <li><b>Wiring.</b> A positive control confirms that the injection path actually alters the
-            activation, so that a null result reflects the model and not a broken pipeline.</li>
+          <li><b>Text-only floor.</b> Given only the shared suffix text and no activation read, the grader
+            must not be able to guess the value. A floor near zero confirms that the surrounding text does not
+            give the answer away on its own.</li>
+          <li><b>Wiring.</b> A positive control confirms that the read path actually carries the activation's
+            content to the verbalizer, so that a null result reflects the model and not a broken pipeline.</li>
         </ul>
         <div id="cfE0"></div>
       </div>
@@ -623,20 +856,20 @@
     <section class="panel">
       <h2>What the verdicts mean</h2>
       <div class="how">
-        <p><b>Certified-grounded.</b> The reading of this attribute genuinely tracks the injected activation.
+        <p><b>Certified-grounded.</b> The reading of this attribute genuinely tracks the read activation.
           The effect is positive, large enough to matter, statistically significant across families after
-          correction, symmetric across the two injection directions, reliably graded, and supported by a
+          correction, symmetric across the two read directions, reliably graded, and supported by a
           clean premise gate. This is the strong positive result.</p>
         <p><b>Activation-specific, unverified.</b> There is a positive, activation-specific effect, but it
           does not clear the full bar. Most often this is because too few families were available for the
           corrected permutation test to reach significance, or the effect is below the minimum size. This is
           suggestive, not established.</p>
         <p><b>Prior-driven.</b> The apparent reading is explained by the model's text prior rather than by the
-          injection. The confidence interval includes zero, so injecting the alternative value did not change
-          what the grader could read.</p>
+          read activation. The confidence interval includes zero, so reading the alternative version did not
+          change what the grader could read.</p>
         <p>Certification requires all of the following: a confidence interval excluding zero, a point estimate
           of at least 0.15, a significant family-wise adjusted permutation test, symmetry across the two
-          injection directions, an inter-rater agreement of at least 0.6, and a clean premise gate.</p>
+          read directions, an inter-rater agreement of at least 0.6, and a clean premise gate.</p>
       </div>
     </section>
 
@@ -652,11 +885,11 @@
       <h2>The recovery metric, and what limits it</h2>
       <div class="how">
         <p>Recovery is a behavioral measurement. It records whether independent graders could read the
-          injected value from the description, netted across the two injection directions. It is not an
+          version's value from the description, netted across the two read directions. It is not an
           activation-space cosine. For this reason the anisotropy that complicates the reconstruction cosine
           on the cross-model dashboard, where a mismatched description can already score near the ceiling,
-          does not apply here. Recovery is bounded between &minus;1 and +1, a value of zero means the
-          injection made no measurable difference, and the no-injection floor and the wiring control anchor
+          does not apply here. Recovery is bounded between &minus;1 and +1, a value of zero means which version
+          is read made no measurable difference, and the text-only floor and the wiring control anchor
           the scale so that it cannot be inflated by the geometry of the residual stream.</p>
         <p>The binding limitation is statistical power, not geometry. The permutation test uses the family as
           its unit, so an attribute represented by only a few families cannot reach significance even when its
@@ -667,17 +900,136 @@
       </div>
     </section>
   </div>
+
+  <!-- ════════════════════ TAB: fidelity vs grounding ════════════════════ -->
+  <div class="tabpage" id="page-fidelity">
+    <section class="panel">
+      <h2>Does reconstruction fidelity predict a misread?</h2>
+      <div class="how">
+        <p>Every read carries a <b>reconstruction fidelity</b>: the cosine (equivalently the MSE) between the
+          activation the verbalizer read and the activation an independent reconstructor re-encodes from the
+          verbalizer's description. The intuitive worry is that the <b>errors and indeterminate</b> reads are
+          just the low-fidelity ones — that a poor round-trip is what produces a wrong or non-committal
+          description, so cosine could be used to screen reads. This tab tests that hypothesis directly, within
+          each model, on every graded read in both experiments.</p>
+        <div id="fidHeadline"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>How this is measured</h2>
+      <div class="how">
+        <ul class="how-list">
+          <li><span class="dot" style="background:var(--mut)"></span><b>Unit = one read.</b> Callback has one
+            read per item-version; the authored qwen arm draws ten descriptions per read, each with its own
+            cosine and its own grade, so the draw is the unit there. Llama and Gemma are single-read.</li>
+          <li><span class="dot" style="background:var(--mut)"></span><b>Within model only.</b> The residual
+            stream is anisotropic and raw cosine is not comparable across models (see the dashboard cosine
+            box), so each test runs inside one model. The statistic is a <b>rank</b> measure, so it is
+            unchanged by the monotonic floor-correction — the result is identical for raw and adjusted cosine.</li>
+          <li><span class="dot" style="background:var(--mut)"></span><b>Separation = AUC.</b> The probability
+            that a randomly chosen <b>grounded</b> read has a higher cosine than a randomly chosen
+            <b>not-grounded</b> (wrong or indeterminate) read. <b>0.5</b> means fidelity tells you nothing;
+            <b>above 0.5</b> means grounded reads reconstruct better (the intuitive hypothesis); <b>below
+            0.5</b> means grounded reads reconstruct <i>worse</i>.</li>
+          <li><span class="dot" style="background:var(--mut)"></span><b>Inference.</b> A 95% confidence
+            interval from a bootstrap that resamples whole <b>families</b>, so the ten draws nested in a read
+            and the two versions of a pair are not double-counted as independent evidence. An interval clear of
+            0.5 is significant in that direction. A naive Mann-Whitney p (which assumes independence, so it is
+            anti-conservative here) is shown alongside for reference.</li>
+        </ul>
+        <p class="note">MSE is not analysed separately: across all reads the identity
+          <b>mse = 2(1 &minus; cos)</b> holds to within 1e-5, so MSE and cosine are one signal and every cosine
+          result mirrors exactly in MSE.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Result</h2>
+      <p class="note" style="margin-top:0">One row per model per experiment. The dot is the AUC; the bar is the
+        family-clustered 95% CI; the centre line is 0.5 (no relationship).
+        <span style="color:#2e7d32;font-weight:600">Green</span> = grounded reads reconstruct better;
+        <span style="color:var(--red);font-weight:600">red</span> = grounded reads reconstruct worse (reversed);
+        <span style="color:#9a8a72;font-weight:600">grey</span> = no separation.</p>
+      <div id="fidForest"></div>
+      <div id="fidTable" style="margin-top:18px"></div>
+    </section>
+
+    <section class="panel">
+      <h2>What it means</h2>
+      <div class="how" id="fidInterp"></div>
+    </section>
+  </div>
+
+  <div class="tabpage" id="page-metrics">
+    <section class="panel">
+      <h2>Reconstruction metrics: cos, std-cos, mse, fve</h2>
+      <div class="how">
+        <p>Every read in both experiments is now reported with four reconstruction-fidelity numbers, computed
+          uniformly from the AV&rarr;AR round-trip cosine. The residual stream is strongly anisotropic and raw
+          cosine is not comparable across models, so two standardized forms are derived from per-model constants
+          (measured on GPU; see below):</p>
+        <div id="metHeadline"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Per-model constants (derived on GPU)</h2>
+      <p class="note" style="margin-top:0">Baselines and floors were derived from the actual extraction models on
+        the Athena cluster, not assumed. The <b>fve baseline</b> is the predict-the-mean variance over a 500-doc
+        diverse FineWeb activation sample (identical corpus and code for all three models); the
+        <b>std-cos floor</b> is the cosine a reconstruction from a <i>mismatched</i> description achieves.</p>
+      <div id="metConfig"></div>
+      <div class="how" id="metValidation" style="margin-top:10px"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Per-model summary</h2>
+      <p class="note" style="margin-top:0">Mean of each metric over the reads in that group, split by the blind
+        verdict. Read the standardized columns, not raw cos: a model can post a high raw cosine purely from
+        anisotropy (gemma) yet a modest fve.</p>
+      <div id="metSummary"></div>
+    </section>
+
+    <section class="panel">
+      <h2>How the constants were derived</h2>
+      <div class="how" id="metMethod"></div>
+    </section>
+  </div>
 </div>
 
 <script src="catalog.js"></script>
 <script src="callback.js"></script>
 <script src="cf_results.js"></script>
 <script src="cf_reads.js"></script>
+<script src="cf_fidelity.js"></script>
+<script src="cf_metrics.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const C  = window.CATALOG  || null;   // authored families
 const CB = window.CALLBACK || null;   // live callback data (multi-model, schema v3)
-const RD = window.CF_READS || null;   // authored-family AV reads (descriptions; cos/mse/verdict pending)
+const RD = window.CF_READS || null;   // authored-family AV reads (multi-model: qwen local + llama/gemma hosted)
+const FID = window.CF_FIDELITY || null; // fidelity(cos)-vs-grounding analysis (precomputed by analyze_fidelity_grounding.py)
+const MET = window.CF_METRICS || null;  // per-model reconstruction-metric config (baselines/floors) + summary (compute_cf_metrics.py)
+
+// ── uniform reconstruction-metric quadruple, computed live from cos + the GPU-derived
+// per-model constants in cf_metrics.js (baseline_rawvar, control_floor). See that file's
+// `definitions`. std_cos and fve are two complementary anisotropy corrections of cos.
+function metCfg(model){ return (MET && MET.config && MET.config.models && MET.config.models[model]) || null; }
+function mseOf(cos){ return cos==null ? null : 2*(1-cos); }
+function stdCosOf(cos, model){ const c=metCfg(model); if(cos==null||!c) return null; return (cos-c.control_floor)/(1-c.control_floor); }
+function fveOf(cos, model){ const c=metCfg(model); if(cos==null||!c) return null; return 1 - (2*(1-cos))/c.baseline_rawvar; }
+function fmtMet(x, dp){ return x==null ? "n/a" : (x>=0?"":"−")+Math.abs(x).toFixed(dp==null?3:dp); }
+// the four metrics as inline HTML chips for one read's cosine on a given model
+function metricChips(cos, model){
+  if(cos==null) return '<span class="mq-na">cos/mse/fve pending</span>';
+  return `<span class="mq"><b>cos</b> ${fmtMet(cos)}</span>`
+       + `<span class="mq"><b>std-cos</b> ${fmtMet(stdCosOf(cos,model))}</span>`
+       + `<span class="mq"><b>mse</b> ${fmtMet(mseOf(cos))}</span>`
+       + `<span class="mq"><b>fve</b> ${fmtMet(fveOf(cos,model))}</span>`;
+}
+const FAM_BY_ID = {};                 // family_id → catalog family (join key for cf_reads ↔ catalog)
+if(C) for(const f of C.families) FAM_BY_ID[f.family_id] = f;
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function pct(x,nd=0){ return x==null?"n/a":(x*100).toFixed(nd)+"%"; }
 
@@ -685,8 +1037,12 @@ let state = {
   tab:"families",
   // families
   style:"all", q:"", selId:null, wording:0,
+  cfModel:(RD && RD.default_model) || null,   // authored-family reads model selector
   // callback
   cbModel:(CB && CB.default_model) || null, cbMode:"all", cbq:"", cbSel:null,
+  // errors & indeterminate drill-down
+  mrExp:"callback",   // which experiment: "callback" (recall-token) | "authored" (counterfactual families)
+  mrSub:"errors",
 };
 
 // ════════════════════════════ tab switching ════════════════════════════
@@ -721,13 +1077,18 @@ function visibleFamilies(){
   });
 }
 
-function renderList(){
-  const fams = visibleFamilies();
+// A family has AV reads if any model collected it in cf_reads.js. Families with
+// no reads (catalog entries not yet run, e.g. the language / sibling / residence
+// pairs) carry no cos/std_cos/mse/fve, so they sort to a greyed section at the end.
+function famHasReads(fid){
+  if(!RD || !RD.models) return true;
+  return (RD.model_aliases || []).some(a => RD.models[a] && RD.models[a].reads && RD.models[a].reads[fid]);
+}
+function famGroupHTML(fams){
   const groups = {};
   for(const f of fams){ (groups[f.attribute] = groups[f.attribute] || []).push(f); }
-  const order = Object.keys(groups);
   let html = "";
-  for(const attr of order){
+  for(const attr of Object.keys(groups)){
     const g = groups[attr];
     const style = g[0].style;
     html += `<div class="attr-group"><div class="attr-head"><span>${esc(attr)} <span class="pill ${style}">${style}</span></span><span>${g.length}</span></div>`;
@@ -740,7 +1101,22 @@ function renderList(){
     }
     html += `</div>`;
   }
-  if(!fams.length) html = `<div class="empty">No families match.</div>`;
+  return html;
+}
+function renderList(){
+  const fams = visibleFamilies();
+  const withR = fams.filter(f => famHasReads(f.family_id));
+  const noR = fams.filter(f => !famHasReads(f.family_id));
+  let html;
+  if(!fams.length){
+    html = `<div class="empty">No families match.</div>`;
+  } else {
+    html = famGroupHTML(withR);
+    if(noR.length){
+      html += `<div class="nolist-head">Not yet collected · ${noR.length} families with no AV reads (no cos / fve)</div>`;
+      html += `<div class="nolist">` + famGroupHTML(noR) + `</div>`;
+    }
+  }
   $("grouplist").innerHTML = html;
   [...document.querySelectorAll("#grouplist .fam-item")].forEach(el =>
     el.onclick = () => { state.selId = el.dataset.id; state.wording = 0; renderList(); renderDetail(); });
@@ -827,50 +1203,119 @@ function renderDetail(){
     </div>
     ${renderFamilyReadsHTML(f.family_id, state.wording, f)}`;
 
-  [...document.querySelectorAll("#detail .wtabs button")].forEach(b =>
+  [...document.querySelectorAll("#detail .wtabs button[data-w]")].forEach(b =>
     b.onclick = () => { state.wording = parseInt(b.dataset.w,10); renderDetail(); });
+  [...document.querySelectorAll("#detail .cf-modelseg button")].forEach(b =>
+    b.onclick = () => { state.cfModel = b.dataset.cfm; renderDetail(); });
 }
 
-// ── authored-family AV reads: descriptions now; cos/mse/verdict pending ──
+// ── authored-family AV reads (multi-model: qwen local + llama/gemma hosted) ──
 function cfPend(label){ return `<span class="cell-pending">${label||"pending"}</span>`; }
-function cfReadsTable(cell){
-  const tok = cell.read_token || "";
+function cfModels(){ return (RD && RD.models) || {}; }
+function cfCur(){ const m = cfModels(); return state.cfModel ? m[state.cfModel] : null; }
+
+function cfVerdictBadge(cell, m){
+  if(!m.has_grounding) return cfPend("verdict pending");
+  if(!cell.verdict) return cfPend("not graded");
+  const cv = cell.chosen_value ? ` &rarr; ${esc(cell.chosen_value)}` : "";
+  const color = cell.verdict==="grounded" ? "#2e7d32" : cell.verdict==="wrong" ? "#b3261e" : "var(--mut)";
+  return `<span style="font-weight:600;color:${color}">${esc(cell.verdict)}${cv}</span>`;
+}
+function cfReadsTable(cell, m){
   const rows = cell.draws.map((d,i) => {
-    const cos = d.cos==null ? cfPend() : d.cos.toFixed(3);
-    const mse = d.mse==null ? cfPend() : d.mse.toFixed(3);
-    return `<tr>
-      <td class="num">d${i}</td>
-      <td class="num"><code>${esc(tok)}</code></td>
-      <td class="num">shared</td>
-      <td>${cell.verdict ? esc(cell.verdict) : cfPend()}</td>
-      <td class="num">${cos}</td>
-      <td class="num">${mse}</td>
-      <td class="av">${esc(d.text)}</td></tr>`;
+    if(d.cos==null) return `<tr><td class="num">d${i}</td><td class="num">${cfPend()}</td><td class="num">${cfPend()}</td><td class="num">${cfPend()}</td><td class="num">${cfPend()}</td><td class="av">${esc(d.text)}</td></tr>`;
+    return `<tr><td class="num">d${i}</td><td class="num">${d.cos.toFixed(3)}</td>`
+      + `<td class="num">${fmtMet(stdCosOf(d.cos, m.alias))}</td>`
+      + `<td class="num">${fmtMet(mseOf(d.cos))}</td>`
+      + `<td class="num">${fmtMet(fveOf(d.cos, m.alias))}</td>`
+      + `<td class="av">${esc(d.text)}</td></tr>`;
   }).join("");
-  return `<table><tr><th>draw</th><th>token</th><th>id?</th><th>verdict</th><th>cos</th><th>mse</th><th>AV description</th></tr>${rows}</table>`;
+  return `<table><tr><th>draw</th><th>cos</th><th>std-cos</th><th>mse</th><th>fve</th><th>AV description</th></tr>${rows}</table>`;
+}
+function cfModelSegHTML(){
+  const aliases = (RD && RD.model_aliases) || [];
+  return `<div class="wtabs cf-modelseg" style="margin:16px 0 4px">` + aliases.map(a => {
+    const m = cfModels()[a] || {};
+    return `<button data-cfm="${esc(a)}" class="${a===state.cfModel?"on":""}" title="${esc(m.model_id||"")} L${m.layer}">${esc(a)}</button>`;
+  }).join("") + `</div>`;
+}
+// Per-wording stats for the cell currently on screen (both conditions' draws).
+// cos = mean reconstruction cosine over this cell's draws; grounding = grounded /
+// committed over this cell's graded draws. These vary by family AND wording.
+function cfCellStats(cell){
+  const cosVals = []; let committed = 0, grounded = 0, neither = 0;
+  for(const k of ["v","v_prime"]){
+    const c = cell[k]; if(!c) continue;
+    for(const d of (c.draws||[])){
+      if(d.cos!=null) cosVals.push(d.cos);
+      if(d.chosen_value!=null){ committed++; if(d.grounded===true) grounded++; }
+      else neither++;
+    }
+  }
+  return {
+    cosMean: cosVals.length ? cosVals.reduce((a,b)=>a+b,0)/cosVals.length : null,
+    committed, grounded, neither, acc: committed ? grounded/committed : null,
+  };
+}
+function cfSummaryLine(m, f, cell){
+  // The leading numbers describe THIS cell (family + wording) so they change as you
+  // switch wording/condition; the model-wide figures follow as a labeled baseline.
+  // Each clause degrades to a "pending" chip if its source artifact is absent.
+  const st = cfCellStats(cell);
+  const costxt = !m.has_fidelity ? cfPend("cos/mse pending (GPU pass)")
+    : metricChips(st.cosMean, m.alias);
+  let gtxt;
+  if(!m.has_grounding) gtxt = cfPend("grounding pending");
+  else if(st.committed) gtxt = `grounding <b>${pct(st.acc)}</b> (${st.grounded}/${st.committed} committed`
+    + (st.neither ? `, ${st.neither} indeterminate` : "") + `)`;
+  else gtxt = `grounding <b>n/a</b> (0 committed` + (st.neither ? `, ${st.neither} indeterminate` : "") + `)`;
+  // model-wide baseline (constant across wordings, clearly labeled so it isn't
+  // mistaken for the cell above): overall cos, overall grounding, attribute recovery.
+  const s = m.summary || {};
+  const oc = s.fidelity && s.fidelity.overall_cos;
+  const og = s.grounding && s.grounding.overall;
+  const orec = s.recovery && s.recovery[f.attribute];
+  const obits = [];
+  if(m.has_fidelity && oc!=null) obits.push(`cos ${oc.toFixed(3)} / std-cos ${fmtMet(stdCosOf(oc,m.alias))} / fve ${fmtMet(fveOf(oc,m.alias))}`);
+  if(m.has_grounding && og && og.acc!=null) obits.push(`grounding ${pct(og.acc)}`);
+  if(orec) obits.push(`${esc(f.attribute)} recovery ${(orec.recovery>=0?"+":"")}${orec.recovery.toFixed(2)}`);
+  const baseline = obits.length
+    ? ` <span style="color:var(--mut)">&middot; model overall: ${obits.join(" &middot; ")}</span>` : "";
+  return `<span><b>this wording:</b> ${costxt} &middot; ${gtxt}${baseline}</span>`;
 }
 function renderFamilyReadsHTML(fid, wording, f){
-  if(!RD || !RD.reads) return "";
-  const fam = RD.reads[fid];
-  if(!fam){
-    return `<div class="reads"><h3 style="font-size:1rem;margin:16px 0 6px">AV reads at the anchor</h3>
-      <p class="note" style="margin-top:0">This family did not survive the premise gate, so no AV reads were
-      collected. See the <b>Family results</b> tab.</p></div>`;
-  }
+  if(!RD || !RD.models || !(RD.model_aliases||[]).length) return "";
+  const seg = cfModelSegHTML();
+  const m = cfCur();
+  const head = `<div class="reads"><h3 style="font-size:1rem;margin:16px 0 6px">AV reads at the anchor</h3>
+    <p class="note" style="margin:0 0 4px">The AV's description of the activation read at the anchor token, per
+      condition. The anchor is token-identical across the two conditions, so any difference reflects the
+      activation rather than the surrounding text. The grounded / wrong / neither verdict on each read comes
+      from the <b>blind 3-judge panel</b> (the same method as the cross-model dashboard's Scoring procedure:
+      majority of three judges who see only the description and the two values). That is separate from the
+      certification on the Family results tab, which uses a permuted multiple-choice grader and the recovery
+      metric. Pick a model:</p>${seg}`;
+  if(!m) return head + `<p class="note">No data for this model.</p></div>`;
+
+  const fam = m.reads[fid];
+  if(!fam) return head + `<p class="note" style="margin-top:8px">No AV reads for <b>${esc(fid)}</b> on
+    <b>${esc(m.alias)}</b> yet (collection in progress, or this family was not collected for this model).</p></div>`;
   const cell = fam[String(wording)];
-  if(!cell) return `<div class="reads"><h3 style="font-size:1rem;margin:16px 0 6px">AV reads at the anchor</h3><p class="note" style="margin-top:0">No AV reads recorded for this wording.</p></div>`;
-  const pend = !RD.has_fidelity;
+  if(!cell) return head + `<p class="note" style="margin-top:8px">No AV reads recorded for this wording on ${esc(m.alias)}.</p></div>`;
+
   const v = cell.v, vp = cell.v_prime;
-  const tokShown = (v || vp || {}).read_token || "";
-  return `<div class="reads">
-    <h3 style="font-size:1rem;margin:16px 0 6px">AV reads at the anchor${pend?` ${cfPend("cos, mse, verdict pending")}`:""}</h3>
-    <p class="note" style="margin:0 0 8px">The AV's description of the activation read at the anchor token
-      <code>${esc(tokShown)}</code>, one row per draw, for each condition. The anchor is token-identical across
-      the two conditions, so any difference between the columns reflects the activation rather than the
-      surrounding text. cos and mse are the AV&rarr;AR reconstruction fidelity${pend?", not yet computed for these reads (a GPU pass)":""}.</p>
-    ${v ? `<h3 style="font-size:0.92rem;margin:12px 0 5px">condition v &middot; ${esc(f.value_v)}</h3>${cfReadsTable(v)}` : ""}
-    ${vp ? `<h3 style="font-size:0.92rem;margin:12px 0 5px">condition v&prime; &middot; ${esc(f.value_v_prime)}</h3>${cfReadsTable(vp)}` : ""}
-  </div>`;
+  return head +
+    `<p class="note" style="margin:6px 0 8px">${cfSummaryLine(m, f, cell)}</p>` +
+    `<p class="note" style="margin:0 0 8px;font-size:0.8rem">Each read now carries the full quadruple: raw
+      <b>cos</b>, <b>std-cos</b> = (cos − floor)/(1 − floor) against this model's mismatched-description floor,
+      <b>mse</b> = 2(1 − cos), and <b>fve</b> = 1 − mse/baseline against its predict-the-mean variance. The
+      floors and baselines were derived on GPU (FineWeb activation sample + the qwen round-trip); see the
+      <b>Reconstruction metrics</b> tab for the constants, methodology and validation. Raw cos is not comparable
+      across models (anisotropy); std-cos and fve are the comparable forms. The Family results tab additionally
+      scores grounding by permutation test.</p>` +
+    (v ? `<h3 style="font-size:0.92rem;margin:12px 0 5px">condition v &middot; ${esc(f.value_v)} &nbsp; ${cfVerdictBadge(v, m)}</h3>${cfReadsTable(v, m)}` : "") +
+    (vp ? `<h3 style="font-size:0.92rem;margin:12px 0 5px">condition v&prime; &middot; ${esc(f.value_v_prime)} &nbsp; ${cfVerdictBadge(vp, m)}</h3>${cfReadsTable(vp, m)}` : "") +
+    `</div>`;
 }
 
 // ════════════════════════════ TAB 2: callback reads ════════════════════════════
@@ -981,19 +1426,23 @@ function verdictCell(r){
   return `<span class="gbadge ${cls}">${tag}</span> <span style="color:var(--mut);font-size:0.78rem">${label} · ${g.agree}/${g.n_votes}</span>`;
 }
 
-function readsTable(cond){
+function readsTable(cond, alias){
+  const floor = CONTROL_FLOOR[alias];
   const rows = cond.reads.map(r=>{
     const cos = r.cosine==null?"n/a":r.cosine.toFixed(3);
     const mse = r.mse==null?"n/a":r.mse.toFixed(3);
+    const a = (r.cosine!=null && floor!=null) ? adjCos(r.cosine, floor) : null;
+    const rec = a==null ? "n/a" : (a<0?"−":"")+Math.abs(a).toFixed(2);
+    const fv = r.cosine==null ? "n/a" : fmtMet(fveOf(r.cosine, alias));
     const found = r.found?"":' <span style="color:var(--red)">(not found)</span>';
     return `<tr><td><span class="tag ${r.name}">${esc(r.name)}</span></td>
       <td class="num">${r.token?('<code>'+esc(r.token)+'</code>'):'n/a'}${found}</td>
       <td class="num">${r.token_identical?'shared':'n/a'}</td>
       <td>${verdictCell(r)}</td>
-      <td class="num">${cos}</td><td class="num">${mse}</td>
+      <td class="num">${cos}</td><td class="num">${rec}</td><td class="num">${mse}</td><td class="num">${fv}</td>
       <td class="av">${esc(r.description||"")}</td></tr>`;
   }).join("");
-  return `<table><tr><th>read</th><th>token</th><th>id?</th><th>verdict</th><th>cos</th><th>mse</th><th>AV description</th></tr>${rows}</table>`;
+  return `<table><tr><th>read</th><th>token</th><th>id?</th><th>verdict</th><th>cos</th><th>std-cos</th><th>mse</th><th>fve</th><th>AV description</th></tr>${rows}</table>`;
 }
 
 function renderCbDetail(){
@@ -1012,8 +1461,15 @@ function renderCbDetail(){
       <span><span class="sw" style="background:#f6ddb8"></span>condition (info revealed)</span>
       <span><span class="sw" style="background:#bfe0c8"></span>callback (shared read token)</span>
       <span><span class="sw" style="background:#cfe0f0"></span>assistant read</span></div>
-    <div class="reads"><h3 style="font-size:1rem;margin:14px 0 6px">reads for version v</h3>${readsTable(v)}
-      <h3 style="font-size:1rem;margin:14px 0 6px">reads for version v′</h3>${readsTable(vp)}</div>`;
+    <div class="reads">
+      <p class="note" style="margin:10px 0 4px"><b>std-cos</b> = floor-corrected cosine
+        (cos &minus; floor)/(1 &minus; floor) against the mismatched-description floor${
+        CONTROL_FLOOR[state.cbModel]!=null?` (≈ ${CONTROL_FLOOR[state.cbModel].toFixed(2)} for ${esc(MODEL_LABEL[state.cbModel]||state.cbModel)})`:""};
+        <b>fve</b> = 1 &minus; mse/baseline = fraction of variance explained vs predict-the-mean. Raw cosine is
+        not comparable across models (anisotropy); std-cos and fve are. See the <b>Reconstruction metrics</b> tab
+        for the per-model constants and how they were derived.</p>
+      <h3 style="font-size:1rem;margin:14px 0 6px">reads for version v</h3>${readsTable(v, state.cbModel)}
+      <h3 style="font-size:1rem;margin:14px 0 6px">reads for version v′</h3>${readsTable(vp, state.cbModel)}</div>`;
 }
 
 function renderCallbackTab(){
@@ -1046,9 +1502,9 @@ function verdictText(m){
   const acc = siteAcc(g);
   if(acc==null) return "No recall-token reads have been scored.";
   let lead;
-  if(acc >= 0.9)       lead = "At the recall token, determinate descriptions are matched to the correct fact in nearly all cases, which is evidence against input inversion for this model.";
+  if(acc >= 0.9)       lead = "At the recall token, determinate descriptions are matched to the correct fact in nearly all cases: the read reliably recovers this version's fact from the hidden state.";
   else if(acc >= 0.75) lead = "At the recall token, determinate descriptions are usually matched to the correct fact.";
-  else                 lead = "At the recall token, determinate descriptions frequently fail to identify the correct fact, a pattern consistent with input inversion.";
+  else                 lead = "At the recall token, determinate descriptions frequently fail to identify the correct fact, settling on the other value or no decision rather than the encoded one.";
   const n = g.neither || 0;
   const tail = n ? ` ${n} read${n>1?"s were":" was"} indeterminate and ${n>1?"are":"is"} excluded from the rate.` : "";
   return lead + tail;
@@ -1163,7 +1619,7 @@ function renderCfHeadline(){
   if(cert.length){
     const c = res[cert[0]];
     big = `<span class="big"><b>${esc(cert[0])}</b> is the first attribute certified as grounded for this ` +
-      `autoencoder: the verbalizer's reading of it tracks the injected activation. Recovery ` +
+      `autoencoder: the verbalizer's reading of it tracks the read activation. Recovery ` +
       `<span class="nums">${sp(c.point)}</span>, 95% CI <span class="nums">[${sp(c.ci_lo)}, ${sp(c.ci_hi)}]</span>, ` +
       `permutation p <span class="nums">${fp(c.perm_p)}</span> across <span class="nums">${c.n_families}</span> families.</span>`;
   } else {
@@ -1184,8 +1640,8 @@ function renderCfModel(){
     <span class="k">Verbalizer / reconstructor</span><span class="v"><code>${esc(m.av_repo)}</code> &middot; <code>${esc(m.ar_repo)}</code></span>
     <span class="k">Read layer</span><span class="v">${m.layer_k} (d_model ${m.d_model})</span>
     <span class="k">Injection scale</span><span class="v">${m.injection_scale}</span>
-    <span class="k">Grader</span><span class="v">${esc(R.grader_model)}, inter-rater agreement (Cohen's kappa) ${R.kappa}</span>
-    <span class="k">Sampling</span><span class="v">${c.n_draws} draws per cell, ${c.grader_k} graders per draw, ${c.permutation_m} permutations, ${c.bootstrap_B} bootstrap resamples, seed ${c.seed}</span>
+    <span class="k">Grader</span><span class="v">${esc(R.grader_model)} (constrained 3-way MC; different lineage from the base model), inter-rater agreement (Cohen's kappa) ${R.kappa}</span>
+    <span class="k">Sampling</span><span class="v">${c.n_draws} AV draws per cell, ${c.grader_k} option-permuted grader runs per draw, ${c.permutation_m} permutations, ${c.bootstrap_B} bootstrap resamples, seed ${c.seed}</span>
   </div>`;
 }
 
@@ -1206,11 +1662,11 @@ function renderCfE0(){
       <span class="survive"><b>${e0.n_survivors}</b> of <b>${e0.n_in}</b> families admitted, <b>${e0.n_dropped}</b> dropped (${esc(reasons)})</span>
     </div>
     <div class="cf-checks">
-      <span>no-injection floor <span class="ok">${e0.no_injection_ok?"clean":"failed"}</span> (signal ${floor})</span>
+      <span>text-only floor <span class="ok">${e0.no_injection_ok?"clean":"failed"}</span> (signal ${floor})</span>
       <span>wiring control <span class="ok">${e0.wiring_ok?"live":"failed"}</span> (signal ${e0.wiring_signal.toFixed(2)})</span>
     </div>
     <p class="note" style="margin-top:13px">Every dropped family failed the presence check: the base model
-      did not encode the attribute at the read anchor, so there was nothing for the injection to recover. The
+      did not encode the attribute at the read anchor, so there was nothing for the read to recover. The
       table gives the fraction of each attribute's families that were dropped.${fully.length?` The following
       attributes were dropped in full and have no read-side verdict: ${fully.map(esc).join(", ")}.`:""}</p>
     <table class="cf-drop"><tr><th>attribute</th><th>families dropped</th></tr>${rows}</table>`;
@@ -1256,8 +1712,8 @@ function renderCfTable(){
   if(neg){
     const r = res[neg];
     notes += `<p class="note"><b>${esc(neg)}</b> has a negative recovery, meaning the description tended to
-      indicate the opposite of the injected value. With ${r.n_families} famil${r.n_families>1?"ies":"y"} this
-      is not distinguishable from chance (permutation p ${fp(r.perm_p)}), and the two injection directions
+      indicate the opposite of the version's value. With ${r.n_families} famil${r.n_families>1?"ies":"y"} this
+      is not distinguishable from chance (permutation p ${fp(r.perm_p)}), and the two read directions
       were not symmetric, so it is parked in the unverified region rather than read as a finding.</p>`;
   }
   notes += `<p class="note">The adjusted p applies the family-wise correction specified in advance: Holm across
@@ -1269,13 +1725,13 @@ function renderCfTable(){
 function renderCfEvidence(){
   if(!R || !R.evidence) return;
   const KIND = {
-    tracks:{cls:"tracks", lab:"description follows the injection"},
+    tracks:{cls:"tracks", lab:"description follows the read activation"},
     prior: {cls:"prior",  lab:"description holds to the prior"},
   };
   $("cfEvidence").innerHTML = R.evidence.map(ev => {
     const k = KIND[ev.kind] || {cls:"prior", lab:esc(ev.kind)};
     const rows = ev.pair.map(p =>
-      `<div class="cf-evrow"><div class="cf-evlabel">injected <b>${esc(p.injected)}</b></div>` +
+      `<div class="cf-evrow"><div class="cf-evlabel"><b>${esc(p.injected)}</b> version</div>` +
       `<div class="cf-evtext">${esc(p.text)}</div></div>`).join("");
     return `<div class="cf-evcard"><div class="cf-evhead">
       <span class="cf-evkind ${k.cls}">${k.lab}</span>
@@ -1306,6 +1762,540 @@ function renderResultsTab(){
   renderCfHeadline(); renderCfModel(); renderCfE0(); renderCfTable(); renderCfEvidence(); renderCfPower();
 }
 
+// ════════════════════════════ TAB: errors & indeterminate reads ════════════════════════════
+// Drill-down into the cross-model callback (recall-token) reads scored WRONG (committed to the
+// value opposite the one revealed) or INDETERMINATE (no majority / "neither"). These verdicts are
+// the AUDIT-CORRECTED grades: callback.js is regenerated from grades.jsonl after the blind 3-judge
+// re-grade (randomized A/B order, opaque ids) was folded into the data, so this tab, the per-read
+// tables, and the dashboard scorecard all read identical numbers from one source. Reads the
+// re-grade changed carry grade.audit + grade.pre_audit_consensus and render a "↻ audit" marker.
+function mrClassify(r){
+  const g = r.grade;
+  if(!g) return "ungraded";                       // anchor not located → nothing to grade
+  if(g.consensus === "neither") return "indeterminate";
+  if(r.grounded === false) return "errors";       // committed to the opposite value
+  return "grounded";
+}
+function mrPickedValue(it, r){
+  const c = r.grade && r.grade.consensus;
+  return c === "v" ? it.value_v : (c === "v_prime" ? it.value_v_prime : null);
+}
+function mrTokenLabel(r){            // the read token, with whitespace-only tokens shown explicitly
+  if(r.token == null) return "n/a";
+  return r.token.trim() === "" ? esc(JSON.stringify(r.token)) : esc(r.token);
+}
+// Reconstruction fidelity for one read, made cross-model honest: the raw cosine is not
+// comparable between models (Gemma's residual stream is anisotropic; see the dashboard cosine
+// box), so the floor-corrected "recovery" = (cos − floor)/(1 − floor) leads, with the raw cos
+// and the per-model floor shown alongside. Per-read recovery is noisy on Gemma (the floor is
+// near 1, so the correction divides by ≈0.06 and amplifies ≈17×) — read it as indicative only.
+function mrFidLine(alias, r){
+  if(r.cosine == null) return "cos n/a";
+  const cos = r.cosine.toFixed(3);
+  const mse = r.mse == null ? "n/a" : r.mse.toFixed(3);
+  const floor = CONTROL_FLOOR[alias];
+  if(floor == null) return `cos <b>${cos}</b> · mse <b>${mse}</b>`;
+  const a = adjCos(r.cosine, floor);
+  const adjTxt = a == null ? "n/a" : (a < 0 ? "−" : "") + Math.abs(a).toFixed(2);
+  return `recovery <b>${adjTxt}</b> <span class="mr-sub">(raw cos ${cos}, floor ${floor.toFixed(2)})</span> · mse ${mse}`;
+}
+function mrReadContext(it, cl, cond, r){
+  // full transcript of THIS condition, with only the focal read's token highlighted.
+  const occ = r.name === "callback" ? "last" : (r.name === "condition" ? "first" : "last");
+  const focal = {...r, occurrence: occ};
+  return cond.messages.map((m, i) => {
+    let hit = false;
+    if(r.role === m.role){
+      if(r.name === "condition")      hit = (i === 0);
+      else if(r.name === "callback")  hit = (i === cond.messages.length - 1);
+      else                            hit = (m.role === "assistant");
+    }
+    const gen = it.mode === "multiturn" && m.role === "assistant";
+    const body = hit ? highlightTurn(m.content, [focal]) : esc(m.content);
+    return `<div class="turn"><div class="role">${esc(m.role)}${gen?' <span class="gen">· generated live</span>':''}</div>`
+         + `<div class="body">${body}</div></div>`;
+  }).join("");
+}
+function renderMisreadCard(alias, it, cl, cond, r){
+  const trueVal  = cl === "v" ? it.value_v : it.value_v_prime;
+  const otherVal = cl === "v" ? it.value_v_prime : it.value_v;
+  const condLabel = cl === "v" ? "v" : "v′";
+  const g = r.grade || {};
+  const picked = mrPickedValue(it, r);
+  const judged = g.consensus === "neither"
+    ? `<span class="gbadge neither">neither</span> <span class="mr-sub">no majority — ${g.agree}/${g.n_votes} graders</span>`
+    : `<span class="gbadge wrong">wrong ✗</span> <span class="mr-sub">graders read it as <b>${esc(picked||"?")}</b> — ${g.agree}/${g.n_votes}</span>`;
+  // provenance: was this read's verdict changed by the blind audit re-grade?
+  let reclassTag = "", prov = "";
+  if(g.audit){
+    const pv = g.pre_audit_consensus;
+    const wasTxt = pv === "neither" ? "no majority (indeterminate)"
+                 : `“${esc(pv === "v" ? it.value_v : it.value_v_prime)}”`;
+    reclassTag = ` <span class="mr-reclass" title="verdict changed by the blind audit re-grade">↻ audit</span>`;
+    prov = `<div class="mr-prov">↻ blind audit re-grade — original panel said ${wasTxt}; the verdict above is the re-grade panel's${g.audit_note?` (${esc(g.audit_note)})`:""}.</div>`;
+  }
+  return `<div class="mr-card">
+    <div class="mr-head">
+      <span class="pill model">${esc(alias)}</span>
+      <b>${esc(it.category)}</b>
+      <span class="tag ${r.name}">${esc(r.name)}</span>
+      <span class="pill ${esc(it.mode)}">${esc(it.mode)}</span>
+      <span class="mr-tok">token <code>${mrTokenLabel(r)}</code></span>${reclassTag}
+      <span class="mr-id">${esc(it.item_id)} · anchor “${esc(it.anchor_label)}”</span>
+    </div>
+    <div class="mr-verdict">
+      <span>true: <b>${esc(trueVal)}</b> <span class="mr-sub">(condition ${condLabel}; other value “${esc(otherVal)}”)</span></span>
+      <span>${judged}</span>
+      <span class="mr-fid">${mrFidLine(alias, r)}</span>
+    </div>
+    ${prov}
+    <div class="mr-context">${mrReadContext(it, cl, cond, r)}</div>
+    <div class="mr-av"><span class="mr-lbl">AV explanation (the read)</span>${esc(r.description||"(none)")}</div>
+  </div>`;
+}
+// This view covers ONLY the callback (recall-token) reads — the dashboard's headline
+// test. The condition site is trivially grounded (the read sits on the value word) and the
+// assistant-side sites (assistant_ref / assistant_end) are a noisier secondary probe; both
+// are on the Cross-model dashboard, not here.
+const MR_SITE = "callback";
+function collectMisreads(kind){               // kind: "errors" | "indeterminate" → {alias:[{it,cl,cond,r}]}
+  const out = {};
+  for(const a of ((CB && CB.model_aliases) || [])){
+    const M = (CB.models || {})[a]; if(!M) continue;
+    for(const it of (M.items || [])){
+      for(const cl of ["v", "v_prime"]){
+        const cond = it.conditions[cl]; if(!cond) continue;
+        for(const r of (cond.reads || [])){
+          if(r.name !== MR_SITE) continue;
+          if(mrClassify(r) !== kind) continue;
+          (out[a] = out[a] || []).push({it, cl, cond, r});
+        }
+      }
+    }
+  }
+  return out;
+}
+function mrCounts(){
+  const c = {errors:0, indeterminate:0, grounded:0, ungraded:0};
+  for(const a of ((CB && CB.model_aliases) || [])){
+    const M = (CB.models || {})[a]; if(!M) continue;
+    for(const it of (M.items || []))
+      for(const cl of ["v", "v_prime"]){
+        const cond = it.conditions[cl]; if(!cond) continue;
+        for(const r of (cond.reads || [])){ if(r.name !== MR_SITE) continue; c[mrClassify(r)]++; }
+      }
+  }
+  return c;
+}
+// ── authored-family errors/indeterminate (the COUNTERFACTUAL-FAMILIES experiment) ──
+// A separate experiment from the callback reads above. Each family is one authored sentence
+// written two ways — value v vs v′ — differing only in the attribute; the AV reads the
+// activation at the shared anchor token. Reads come from cf_reads.js (RD): qwen is the
+// local read arm (10 sampled draws/read, cell verdict = blind-3-judge majority over
+// draws); llama/gemma are hosted passive re-reads (1 deterministic read). A cell is an ERROR
+// ("wrong") when the AV commits to the OPPOSITE value, INDETERMINATE ("neither") when no
+// value wins. Each read joins back to its catalog family (FAM_BY_ID) for the authored
+// document, anchor, and the two candidate values — verified against the source grades.jsonl.
+function authoredCellStats(cell){          // per-condition draw breakdown (drives the draw summary)
+  let committed=0, grounded=0, neither=0; const cos=[];
+  for(const d of (cell.draws||[])){
+    if(d.cos!=null) cos.push(d.cos);
+    if(d.chosen_value!=null){ committed++; if(d.grounded===true) grounded++; } else neither++;
+  }
+  return { n:(cell.draws||[]).length, committed, grounded, wrong:committed-grounded, neither,
+           cosMean: cos.length ? cos.reduce((a,b)=>a+b,0)/cos.length : null };
+}
+function authoredClassify(cell){           // "errors" | "indeterminate" | "grounded" | "ungraded"
+  if(cell.verdict==="wrong")    return "errors";
+  if(cell.verdict==="neither")  return "indeterminate";
+  if(cell.verdict==="grounded") return "grounded";
+  return "ungraded";
+}
+function collectAuthoredMisreads(kind){    // kind → {alias:[{fid,widx,cond,cell,fam,wd}]}
+  const out = {};
+  for(const a of ((RD && RD.model_aliases) || [])){
+    const M = (RD.models || {})[a]; if(!M || !M.reads) continue;
+    for(const fid of Object.keys(M.reads)){
+      const fam = FAM_BY_ID[fid]; if(!fam) continue;             // require the catalog join
+      for(const widx of Object.keys(M.reads[fid])){
+        const wd = fam.wordings[parseInt(widx,10)];
+        for(const cond of ["v","v_prime"]){
+          const cell = M.reads[fid][widx][cond]; if(!cell) continue;
+          if(authoredClassify(cell) !== kind) continue;
+          (out[a] = out[a] || []).push({fid, widx, cond, cell, fam, wd});
+        }
+      }
+    }
+  }
+  return out;
+}
+function authoredCounts(){                  // {alias:{errors,indeterminate}, _total:{...}}
+  const c = {}; let errors=0, indeterminate=0;
+  for(const a of ((RD && RD.model_aliases) || [])){
+    const M = (RD.models || {})[a]; if(!M || !M.reads) continue;
+    c[a] = {errors:0, indeterminate:0};
+    for(const fid of Object.keys(M.reads)){
+      if(!FAM_BY_ID[fid]) continue;
+      for(const widx of Object.keys(M.reads[fid]))
+        for(const cond of ["v","v_prime"]){
+          const cell = M.reads[fid][widx][cond]; if(!cell) continue;
+          const k = authoredClassify(cell);
+          if(k==="errors"){ c[a].errors++; errors++; }
+          else if(k==="indeterminate"){ c[a].indeterminate++; indeterminate++; }
+        }
+    }
+  }
+  c._total = {errors, indeterminate};
+  return c;
+}
+// the authored document for this (family, wording, condition): anchor (where the AV reads)
+// highlighted green, the version's value word highlighted amber.
+function authoredDocHTML(fam, wd, cond){
+  if(!wd) return `<div class="empty">authored document unavailable for this wording.</div>`;
+  const doc = cond==="v" ? wd.document_v : wd.document_v_prime;
+  const trueVal = cond==="v" ? fam.value_v : fam.value_v_prime;
+  const condLabel = cond==="v" ? "v" : "v′";
+  const marks = [{token: fam.anchor_token, name:"anchor", occurrence:"last"}];
+  if(trueVal) marks.push({token: trueVal, name:"contrast", occurrence:"first"});
+  return `<div class="turn"><div class="role">authored document · condition ${condLabel}
+      <span class="gen" style="text-transform:none;letter-spacing:0">· <mark class="contrast">${esc(trueVal)}</mark> is this version's value; AV reads the activation at <mark class="anchor">${esc((fam.anchor_token||"").trim())}</mark></span></div>
+    <div class="body">${highlightTurn(doc||"", marks)}</div></div>`;
+}
+function authoredDrawsTable(cell, single){
+  const rows = (cell.draws||[]).map((d,i) => {
+    const cos = d.cos==null ? cfPend() : d.cos.toFixed(3);
+    const mse = d.mse==null ? cfPend() : d.mse.toFixed(3);
+    const pick = d.chosen_value==null
+      ? `<span class="mr-pick n">neither</span>`
+      : `<span class="mr-pick ${d.grounded===true?"g":"w"}">${esc(d.chosen_value)}</span>`;
+    const lbl = single ? "read" : ("d"+i);
+    return `<tr><td class="num">${lbl}</td><td>${pick}</td><td class="num">${cos}</td><td class="num">${mse}</td>
+      <td class="av">${esc(d.text)}</td></tr>`;
+  }).join("");
+  return `<div class="reads"><table><tr><th>${single?"read":"draw"}</th><th>grader pick</th><th>raw cos</th><th>mse</th><th>AV description</th></tr>${rows}</table></div>`;
+}
+function renderAuthoredMisreadCard(alias, x){
+  const {fid, widx, cond, cell, fam, wd} = x;
+  const trueVal  = cond==="v" ? fam.value_v : fam.value_v_prime;
+  const otherVal = cond==="v" ? fam.value_v_prime : fam.value_v;
+  const condLabel= cond==="v" ? "v" : "v′";
+  const st = authoredCellStats(cell);
+  const single = st.n <= 1;        // llama/gemma: one deterministic hosted read; qwen: 10 sampled draws
+  let judged;
+  if(cell.verdict==="neither"){
+    const detail = single ? `the read commits to neither value`
+      : `no value wins — ${st.committed}/${st.n} draws committed (${st.grounded} grounded, ${st.wrong} to “${esc(otherVal)}”), ${st.neither} neither`;
+    judged = `<span class="gbadge neither">neither</span> <span class="mr-sub">${detail}</span>`;
+  } else {
+    const detail = single ? `read as <b>${esc(cell.chosen_value||otherVal)}</b>`
+      : `majority read it as <b>${esc(cell.chosen_value||otherVal)}</b> — ${st.wrong}/${st.n} draws to the wrong value (${st.grounded} grounded, ${st.neither} neither)`;
+    judged = `<span class="gbadge wrong">wrong ✗</span> <span class="mr-sub">${detail}</span>`;
+  }
+  const cosTxt = st.cosMean!=null ? `raw cos <b>${st.cosMean.toFixed(3)}</b>` : "cos n/a";
+  const pos = cell.read_index!=null ? cell.read_index : cell.position;
+  return `<div class="mr-card">
+    <div class="mr-head">
+      <span class="pill model">${esc(alias)}</span>
+      <b>${esc(fam.attribute)}</b>
+      <span class="tag authored">authored</span>
+      <span class="tag cond-${cond==="v"?"v":"vp"}">${condLabel}</span>
+      <span class="mr-tok">anchor <code>${esc(cell.read_token!=null?cell.read_token:fam.anchor_token)}</code>${pos!=null?` · pos ${pos}`:""}</span>
+      <span class="mr-id">${esc(fid)} · wording ${esc(widx)}</span>
+    </div>
+    <div class="mr-verdict">
+      <span>true: <b>${esc(trueVal)}</b> <span class="mr-sub">(condition ${condLabel}; other value “${esc(otherVal)}”)</span></span>
+      <span>${judged}</span>
+      <span class="mr-fid">${cosTxt} <span class="mr-sub">(raw, no floor)</span></span>
+    </div>
+    <div class="mr-context">${authoredDocHTML(fam, wd, cond)}</div>
+    <div class="mr-av"><span class="mr-lbl">AV ${single?"read":st.n+" sampled draws"} · grader pick + description</span>${authoredDrawsTable(cell, single)}</div>
+  </div>`;
+}
+
+function renderMisreadsContent(){
+  const kind = state.mrSub;
+  const word = kind === "errors" ? "wrong" : "indeterminate";
+  if(state.mrExp === "authored") return renderAuthoredMisreadsContent(kind, word);
+  const grouped = collectMisreads(kind);
+  let html = "", total = 0;
+  for(const a of ((CB && CB.model_aliases) || [])){
+    const arr = grouped[a] || [];
+    total += arr.length;
+    html += `<div class="mr-model"><h2>${esc(a)} <span class="mr-n">${arr.length} ${word} read${arr.length===1?"":"s"} at the recall token</span></h2>`;
+    if(!arr.length){ html += `<div class="empty">No ${word} callback reads for ${esc(a)}.</div></div>`; continue; }
+    for(const x of arr) html += renderMisreadCard(a, x.it, x.cl, x.cond, x.r);
+    html += `</div>`;
+  }
+  $("mrContent").innerHTML = total ? html : `<div class="empty">No ${word} callback reads.</div>`;
+}
+function renderAuthoredMisreadsContent(kind, word){
+  const grouped = collectAuthoredMisreads(kind);
+  let html = "", total = 0;
+  for(const a of ((RD && RD.model_aliases) || [])){
+    const arr = grouped[a] || [];
+    total += arr.length;
+    const M = (RD.models||{})[a] || {};
+    const armTxt = (M.source||"").includes("activation") ? "local read arm · 10 draws/read"
+      : "hosted passive re-read · 1 read";
+    html += `<div class="mr-model"><h2>${esc(a)} <span class="mr-n">${arr.length} ${word} read${arr.length===1?"":"s"} at the anchor token · ${armTxt}</span></h2>`;
+    if(!arr.length){ html += `<div class="empty">No ${word} authored-family reads for ${esc(a)}.</div></div>`; continue; }
+    for(const x of arr) html += renderAuthoredMisreadCard(a, x);
+    html += `</div>`;
+  }
+  $("mrContent").innerHTML = total ? html : `<div class="empty">No ${word} authored-family reads.</div>`;
+}
+const MR_CALLBACK_INTRO =
+    `Reads at the <b>callback recall token</b> (the token identical across both counterfactual conditions, `
+    + `the cross-model dashboard's headline test) scored <b>wrong</b> (committed to the value opposite the one `
+    + `actually revealed) or <b>indeterminate</b> (no majority, "neither"). Each read is shown in full: the `
+    + `transcript with the recall token highlighted, the two candidate values, the verdict, AR cosine/mse, and `
+    + `the AV's explanation. Grouped by model. Verdicts are <b>audit-corrected</b> — a blind three-judge re-grade `
+    + `(randomized order, opaque ids) re-verified every contested read against the Neuronpedia cache and was `
+    + `folded back into the grades; reads it changed carry a <span class="mr-reclass">↻ audit</span> marker and `
+    + `show the original panel's verdict. Cosine is reported as floor-corrected <b>recovery</b> because the raw `
+    + `value is not comparable across models (see the dashboard cosine box). `
+    + `<span class="mr-sub">The same audited grades drive the Cross-model dashboard, so the numbers there match `
+    + `this tab. The condition site (trivially grounded) and the assistant-side sites are on that dashboard.</span>`;
+const MR_AUTHORED_INTRO =
+    `<span class="mr-exp-note">A <b>different experiment</b> from the callback reads. These are AV reads from the `
+    + `<b>authored counterfactual-families</b> suite (the Families and Family-reads tabs), not the hosted callback test.</span>`
+    + `Each family is one authored sentence written two ways — value <b>v</b> vs <b>v′</b> — differing only in the `
+    + `attribute; the AV reads the activation at the shared <b>anchor token</b> (highlighted green below; the version's `
+    + `value word is amber). Nothing is injected: the value is carried only by the wording, and the AV reads the natural `
+    + `activation the sentence produces at the anchor. A read is <b>wrong</b> when the AV's description commits to the `
+    + `<i>opposite</i> value, <b>indeterminate</b> ("neither") when no value wins. Verdicts come from the <b>blind `
+    + `3-judge panel</b> — the same method as the Family-reads tab (three judges see only the description and the two `
+    + `candidate values; strict majority). <b>Qwen</b> is the local read arm: 10 sampled draws per read, the cell verdict is the majority `
+    + `over draws (the per-draw grader pick is shown). <b>Llama-70B</b> and <b>Gemma-27B</b> are hosted passive `
+    + `re-reads: one deterministic read each. Grouped by model. `
+    + `<span class="mr-sub">Cosine is <b>raw</b> here — no mismatch floor has been measured for these models, so it is `
+    + `not floor-corrected or comparable across models (the Family-results tab scores grounding by permutation test for `
+    + `this reason). These reads are separate from the callback numbers above and from the Family-results certification.</span>`;
+function renderMisreadsTab(){
+  const haveCb = !!(CB && CB.models && ((CB.model_aliases) || []).length);
+  const haveAu = !!(RD && RD.models && ((RD.model_aliases) || []).length);
+  if(!haveCb && !haveAu){
+    $("mrContent").innerHTML = '<span class="pill">callback.js / cf_reads.js not found. Run export_browser.py and export_reads.py</span>'; return;
+  }
+  // fall back to whichever experiment actually has data
+  if(state.mrExp==="callback" && !haveCb) state.mrExp = "authored";
+  if(state.mrExp==="authored" && !haveAu) state.mrExp = "callback";
+
+  const cc = haveCb ? mrCounts() : {errors:0, indeterminate:0};
+  const ac = haveAu ? authoredCounts() : {_total:{errors:0, indeterminate:0}};
+  const ccTot = cc.errors + cc.indeterminate;
+  const acTot = ac._total.errors + ac._total.indeterminate;
+  // nav badge counts every card the tab now holds (BOTH experiments); the experiment
+  // selector immediately shows the split so the combined total is never read as "callback".
+  if($("cMr"))      $("cMr").textContent = ccTot + acTot;
+  if($("mrExpCbN")) $("mrExpCbN").textContent = `(${ccTot})`;
+  if($("mrExpAuN")) $("mrExpAuN").textContent = `(${acTot})`;
+  [...document.querySelectorAll("#mrExpSeg button")].forEach(b => {
+    b.classList.toggle("on", b.dataset.mrx === state.mrExp);
+    b.disabled = (b.dataset.mrx==="callback" && !haveCb) || (b.dataset.mrx==="authored" && !haveAu);
+  });
+
+  if(state.mrExp === "authored"){
+    if($("mrErrN")) $("mrErrN").textContent = `(${ac._total.errors})`;
+    if($("mrUncN")) $("mrUncN").textContent = `(${ac._total.indeterminate})`;
+    $("mrIntro").innerHTML = MR_AUTHORED_INTRO;
+    $("mrSubNote").innerHTML = state.mrSub === "errors"
+      ? `The version carried one value; the AV's description commits to the <b>other</b> value.`
+      : `No majority — the description commits to neither value (a tie, or too generic to read either).`;
+  } else {
+    if($("mrErrN")) $("mrErrN").textContent = `(${cc.errors})`;
+    if($("mrUncN")) $("mrUncN").textContent = `(${cc.indeterminate})`;
+    $("mrIntro").innerHTML = MR_CALLBACK_INTRO;
+    $("mrSubNote").innerHTML = state.mrSub === "errors"
+      ? `The activation was for one value; the description points to the <b>other</b> value.`
+      : `No majority verdict — a tie, or a reading of something that is neither choice.`;
+  }
+  [...document.querySelectorAll("#mrSubSeg button")].forEach(b => b.classList.toggle("on", b.dataset.mr === state.mrSub));
+  renderMisreadsContent();
+}
+
+// ════════════════════════════ TAB: fidelity vs grounding ════════════════════════════
+// Displays the precomputed cosine->grounding analysis (window.CF_FIDELITY). The stats —
+// AUC, family-clustered bootstrap 95% CI, Mann-Whitney p — are computed in Python by
+// analyze_fidelity_grounding.py from callback.js + cf_reads.js; this only renders them.
+function fidDirColor(d){ return d==="reversed" ? "var(--red)" : d==="expected" ? "var(--green)" : "#9a8a72"; }
+function fidName(r){ return esc(r.experiment) + " · " + esc(r.model); }
+function fp3(x){ return x==null ? "n/a" : x.toFixed(3); }
+function fpP(p){ if(p==null) return "n/a"; return p<1e-3 ? p.toExponential(1) : p.toFixed(3); }
+
+function renderFidHeadline(){
+  const rs = FID.results;
+  const rev = rs.filter(r=>r.direction==="reversed");
+  const nul = rs.filter(r=>r.direction==="null");
+  const revNames = rev.map(r=>esc(r.experiment+" "+r.model)).join(" and ");
+  $("fidHeadline").innerHTML =
+    `<div class="fid-verdict"><b>No — fidelity does not flag misreads, and where the effect is significant it runs backward.</b>
+      Across the ${rs.length} model-by-experiment cells, not one shows grounded reads reconstructing
+      <i>better</i> than failed reads. ${nul.length} show <b>no separation at all</b> (the 95% CI straddles 0.5):
+      cosine carries no information about whether a read is grounded, wrong, or indeterminate.
+      ${rev.length} — <b>${revNames}</b> — are significant but <b>reversed</b>: the grounded reads reconstruct
+      <i>worse</i>, and the <b>indeterminate</b> reads carry the <i>highest</i> fidelity. A low cosine or high
+      MSE is therefore not a warning sign, and a near-perfect round-trip is mild evidence the read said nothing
+      specific.</div>`;
+}
+function fidForestRow(r){
+  const lo = r.auc_ci[0], hi = r.auc_ci[1], a = r.auc, col = fidDirColor(r.direction);
+  const pct = x => Math.max(0, Math.min(100, x*100));
+  const ciTxt = (lo==null) ? "" : `<span class="fp-ci-txt">95% CI ${fp3(lo)}–${fp3(hi)}</span>`;
+  return `<div class="fp-row">
+    <div class="fp-lab">${fidName(r)}<span class="fp-sub">${r.n_grounded}g / ${r.n_wrong}w / ${r.n_neither}n · ${r.n_families} fam</span></div>
+    <div class="fp-track"><div class="fp-mid"></div>
+      ${lo==null?"":`<div class="fp-ci" style="left:${pct(lo)}%;width:${pct(hi)-pct(lo)}%;background:${col}"></div>`}
+      <div class="fp-pt" style="left:${pct(a)}%;background:${col}"></div>
+    </div>
+    <div class="fp-val">AUC ${fp3(a)}${ciTxt}</div>
+  </div>`;
+}
+function renderFidForest(){
+  const axis = `<div class="fp-axis"><div></div><div class="fp-ends"><span>0.0</span><span>0.5 no effect</span><span>1.0</span></div><div></div></div>`;
+  $("fidForest").innerHTML = axis + FID.results.map(fidForestRow).join("");
+}
+function renderFidTable(){
+  const dirBadge = d => `<span class="fp-dir ${d}">${d==="reversed"?"reversed":d==="expected"?"expected":"no effect"}</span>`;
+  const rows = FID.results.map(r => {
+    const present = [r.cos_grounded, r.cos_wrong, r.cos_neither].filter(Boolean).map(g=>g[0]);
+    const mx = Math.max(...present), mn = Math.min(...present), hl = r.direction!=="null";
+    const cell = g => g==null ? '<td class="num">n/a</td>'
+      : `<td class="num ${hl?(g[0]===mx?"best":g[0]===mn?"worst":""):""}">${g[0].toFixed(3)}</td>`;
+    const ci = r.auc_ci[0]==null ? "n/a" : `${fp3(r.auc_ci[0])}–${fp3(r.auc_ci[1])}`;
+    return `<tr><td>${fidName(r)}</td>
+      ${cell(r.cos_grounded)}${cell(r.cos_wrong)}${cell(r.cos_neither)}
+      <td class="num">${fp3(r.auc)}</td><td class="num">${ci}</td><td class="num">${fpP(r.mw_p)}</td>
+      <td>${dirBadge(r.direction)}</td></tr>`;
+  }).join("");
+  $("fidTable").innerHTML =
+    `<table class="ftab"><tr>
+       <th>experiment · model</th><th>cos grounded</th><th>cos wrong</th><th>cos neither</th>
+       <th>AUC</th><th>95% CI (clustered)</th><th>MW p</th><th>direction</th></tr>${rows}</table>
+     <p class="note" style="margin:7px 0 0">Mean cosine per group; <span style="color:#2e7d32;font-weight:600">green</span>
+       = highest in that row, <span style="color:#b3261e;font-weight:600">red</span> = lowest (shown only for the
+       significant rows). In both
+       significant rows the <b>neither</b> column is green and <b>grounded</b> is red — the indeterminate reads
+       reconstruct best. The Mann-Whitney p ignores family clustering and is anti-conservative; the clustered CI
+       is the inference that counts.</p>`;
+}
+function renderFidInterp(){
+  const q = FID.results.find(r=>r.experiment==="authored"&&r.model==="qwen");
+  const gMed = q.cos_grounded[1].toFixed(3), nMed = q.cos_neither[1].toFixed(3);
+  const auc = q.auc.toFixed(2), share = Math.round((1-q.auc)*100);
+  $("fidInterp").innerHTML =
+    `<p>Across all five cells, fidelity never predicts errors in the intuitive direction. In the callback
+      experiment cosine does not separate the outcomes at all — both intervals straddle 0.5. In the authored
+      experiment the relationship is significant but <b>runs backward</b>: on qwen the indeterminate reads have
+      the highest median cosine (<b>${nMed}</b>) and the grounded reads the lowest (<b>${gMed}</b>), an AUC of
+      <b>${auc}</b> — a randomly chosen failed read reconstructs better than a randomly chosen grounded read
+      about ${share}% of the time. Gemma shows the same reversal; llama points the same way but is underpowered.</p>
+    <p>The cause is the anisotropy that limits cosine elsewhere. Cosine is dominated by the large shared
+      component of the residual stream. An activation that sits near that generic mean reconstructs almost
+      perfectly — high cosine — but carries little version-specific content, so the verbalizer has nothing to
+      commit to and the read comes back <b>indeterminate</b>. An activation that actually encodes the version's
+      value departs from the generic mean, and that specific component is exactly what the round-trip
+      reconstructs least faithfully, so a <b>groundable</b> read tends to score a little lower. High fidelity
+      tracks generic, low-information activations, not correct reads.</p>
+    <p class="note"><b>Practical consequence.</b> You cannot screen for misreads with cosine or MSE. A low
+      round-trip score is not a warning that a read is wrong, and a high score is not a certificate that it is
+      right. This is why the cross-model dashboard reports grounding from the blind judge panel rather than from
+      reconstruction fidelity, and why the family-results tab scores recovery behaviorally instead of by cosine.</p>`;
+}
+function renderFidelityTab(){
+  if(!FID || !FID.results || !FID.results.length){
+    if($("fidHeadline")) $("fidHeadline").innerHTML = '<span class="pill">cf_fidelity.js not found. Run analyze_fidelity_grounding.py</span>';
+    return;
+  }
+  renderFidHeadline(); renderFidForest(); renderFidTable(); renderFidInterp();
+}
+
+// ════════════════════════════ TAB: reconstruction metrics ════════════════════════════
+// Renders the per-model reconstruction-metric config (cf_metrics.js, derived on GPU by
+// cf_baseline.py + cf_qwen_verify.py) and the per-(experiment x model x verdict) summary.
+function renderMetHeadline(){
+  $("metHeadline").innerHTML =
+    `<ul class="how-list">
+      <li><span class="dot" style="background:var(--mut)"></span><b>cos</b> — raw AV&rarr;AR round-trip cosine. Model-specific scale; not comparable across models.</li>
+      <li><span class="dot" style="background:var(--mut)"></span><b>std-cos</b> = (cos − floor)/(1 − floor). 0 = a mismatched description, 1 = perfect. Floor = the model's mismatched-description cosine (the dashboard's old "recovery").</li>
+      <li><span class="dot" style="background:var(--mut)"></span><b>mse</b> = 2(1 − cos). The scale-free round-trip MSE (the mse = 2(1−cos) identity holds to ~1e-6).</li>
+      <li><span class="dot" style="background:var(--mut)"></span><b>fve</b> = 1 − mse/baseline. Fraction of variance explained vs predicting the mean activation: 0 = predict-the-mean, 1 = perfect, &lt;0 = worse than the mean. The canonical NLA reconstruction metric.</li>
+    </ul>
+    <p class="note">std-cos and fve both correct cos for anisotropy but against <i>different</i> references — a mismatched
+      reconstruction vs the mean activation — so they are not affine in general. The gap is clearest on llama, whose
+      mismatched-description floor (0.17) and predict-the-mean 1−baseline (0.08) differ.</p>`;
+}
+function renderMetConfig(){
+  const M = MET.config.models;
+  const order = ["qwen", "gemma", "llama"].filter(k => M[k]);
+  const row = k => { const c = M[k];
+    return `<tr><td><b>${esc(k)}</b><span class="fp-sub">${esc(c.model_id)} · L${c.layer} · d=${c.d_model}</span></td>
+      <td class="num">${c.baseline_rawvar.toFixed(3)}</td>
+      <td class="num">${c.control_floor.toFixed(3)}</td>
+      <td class="num">${Math.round(c.raw_norm_median).toLocaleString()}</td></tr>`;
+  };
+  $("metConfig").innerHTML =
+    `<table class="ftab"><tr><th>model</th><th>fve baseline<br><span style="font-weight:400">predict-the-mean var</span></th>
+       <th>std-cos floor<br><span style="font-weight:400">mismatched descr.</span></th>
+       <th>raw activation norm<br><span style="font-weight:400">median</span></th></tr>
+     ${order.map(row).join("")}</table>`;
+  const v = MET.config.validation || {};
+  const checks = [];
+  if(v.qwen_broad_vs_published) checks.push(`qwen baseline <b>${v.qwen_broad_vs_published[0]}</b> vs published <b>${v.qwen_broad_vs_published[1]}</b> — ${esc(v.qwen_broad_vs_published[2])}`);
+  if(v.gemma_anisotropy_vs_controlfloor) checks.push(`gemma 1−baseline <b>${v.gemma_anisotropy_vs_controlfloor[0]}</b> vs measured control floor <b>${v.gemma_anisotropy_vs_controlfloor[1]}</b> — ${esc(v.gemma_anisotropy_vs_controlfloor[2])}`);
+  if(v.qwen_controlfloor_vs_evalset) checks.push(`qwen control floor <b>${v.qwen_controlfloor_vs_evalset[0]}</b> ≈ 1−eval-set variance <b>${v.qwen_controlfloor_vs_evalset[1]}</b>`);
+  if(v.qwen_mse_determinism_dev!=null) checks.push(`qwen round-trip reproduced all stored cosines exactly (max |dev| = <b>${v.qwen_mse_determinism_dev}</b>)`);
+  $("metValidation").innerHTML = checks.length
+    ? `<p class="note" style="margin:0"><b>Validation.</b> ` + checks.join("; &nbsp;") + `.</p>` : "";
+}
+function renderMetSummary(){
+  const blocks = ["callback", "authored"].map(exp => {
+    const S = MET.summary[exp]; if(!S) return "";
+    let rows = "";
+    for(const mdl of Object.keys(S)){
+      for(const g of ["all", "grounded", "wrong", "neither"]){
+        const b = S[mdl][g]; if(!b) continue;
+        const lead = g === "all" ? `<b>${esc(mdl)}</b>` : "";
+        rows += `<tr><td>${lead}</td><td>${g}</td><td class="num">${b.n}</td>
+          <td class="num">${b.cos[0].toFixed(3)}</td><td class="num">${fmtMet(b.std_cos[0])}</td>
+          <td class="num">${b.mse[0].toFixed(3)}</td><td class="num">${fmtMet(b.fve[0])}</td></tr>`;
+      }
+    }
+    return `<h3 style="font-size:0.95rem;margin:16px 0 5px">${exp} experiment</h3>
+      <table class="ftab"><tr><th>model</th><th>group</th><th>n</th><th>cos</th><th>std-cos</th><th>mse</th><th>fve</th></tr>${rows}</table>`;
+  });
+  $("metSummary").innerHTML = blocks.join("");
+}
+function renderMetMethod(){
+  const M = MET.config.models, v = MET.config.validation || {};
+  $("metMethod").innerHTML =
+    `<p><b>fve baseline (predict-the-mean variance).</b> For each model we ran its base extraction model on the Athena
+      cluster over a 500-document diverse FineWeb sample, took the activation at the data-gen layer (output of block L),
+      L2-normalized each to √d, and computed Var = 1 − ‖mean unit activation‖² — exactly the rawvar baseline the NLA
+      trainers log. Identical corpus and code for all three (cf_baseline.py). qwen came out
+      <b>${M.qwen.baseline_rawvar.toFixed(3)}</b> against the published <b>0.7335</b>
+      (${v.qwen_broad_vs_published ? esc(v.qwen_broad_vs_published[2]) : "close"}), which validates the procedure;
+      gemma <b>${M.gemma.baseline_rawvar.toFixed(3)}</b> (extreme anisotropy) and llama <b>${M.llama.baseline_rawvar.toFixed(3)}</b>
+      (near-isotropic) follow from the same code.</p>
+    <p><b>std-cos floor (mismatched-description cosine).</b> gemma and llama use the floors measured in the callback
+      experiment (≈ ${M.gemma.control_floor.toFixed(2)} and ${M.llama.control_floor.toFixed(2)}). For qwen we measured it
+      directly: each of the 288 read activations scored against descriptions drawn from <i>other</i> families and averaged,
+      giving <b>${M.qwen.control_floor.toFixed(3)}</b> — which matches 1 − qwen's eval-set variance
+      (<b>${v.qwen_controlfloor_vs_evalset ? v.qwen_controlfloor_vs_evalset[1] : ""}</b>), an independent consistency check.</p>
+    <p><b>Cross-checks.</b> gemma's 1 − baseline (<b>${(1 - M.gemma.baseline_rawvar).toFixed(3)}</b>) matches its measured
+      control floor (<b>${M.gemma.control_floor.toFixed(3)}</b>); the qwen round-trip reproduced all 2,880 stored cosines
+      exactly (max |dev| = <b>${M.qwen.mse_determinism_dev}</b>); and the raw activation norms (qwen ≈ ${Math.round(M.qwen.raw_norm_median)},
+      gemma ≈ ${Math.round(M.gemma.raw_norm_median).toLocaleString()}, llama ≈ ${Math.round(M.llama.raw_norm_median)}) match each
+      model's injection_scale, confirming the correct layer and tensor were read.</p>`;
+}
+function renderMetricsTab(){
+  if(!MET || !MET.config || !MET.config.models){
+    if($("metHeadline")) $("metHeadline").innerHTML = '<span class="pill">cf_metrics.js not found. Run compute_cf_metrics.py</span>';
+    return;
+  }
+  renderMetHeadline(); renderMetConfig(); renderMetSummary(); renderMetMethod();
+}
+
 // ════════════════════════════ wiring ════════════════════════════
 function init(){
   if(C) $("cFam").textContent = C.n_families;
@@ -1324,7 +2314,8 @@ function init(){
         renderList();
       });
     $("search").oninput = (e) => { state.q = e.target.value; renderList(); };
-    const first = visibleFamilies()[0];
+    const vis = visibleFamilies();
+    const first = vis.find(f => famHasReads(f.family_id)) || vis[0];
     if(first){ state.selId = first.family_id; renderList(); renderDetail(); }
   } else {
     $("detail").innerHTML = `<div class="empty">catalog.js missing. Run:<br><code>python3 -m nla_studio.experiments.counterfactual.export_catalog</code></div>`;
@@ -1345,11 +2336,26 @@ function init(){
     $("cbStats").innerHTML = '<span class="pill">callback.js not found. Run export_browser.py</span>';
   }
 
+  // --- errors & indeterminate (callback recall-token + authored families) ---
+  if((CB && CB.models) || (RD && RD.models)){
+    renderMisreadsTab();
+    [...document.querySelectorAll("#mrExpSeg button")].forEach(b =>
+      b.onclick = () => { if(b.disabled) return; state.mrExp = b.dataset.mrx; renderMisreadsTab(); });
+    [...document.querySelectorAll("#mrSubSeg button")].forEach(b =>
+      b.onclick = () => { state.mrSub = b.dataset.mr; renderMisreadsTab(); });
+  }
+
   // --- dashboard ---
   renderDashboard();
 
   // --- family results ---
   renderResultsTab();
+
+  // --- fidelity vs grounding ---
+  renderFidelityTab();
+
+  // --- reconstruction metrics (cos / std-cos / mse / fve) ---
+  renderMetricsTab();
 }
 init();
 </script>
