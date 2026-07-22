@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cycle-Consistency · Causal Grounding Audit</title>
+<style>
+  :root{
+    --bg:#faf6f1; --panel:#fffdf9; --panel2:#f5f0e8; --ink:#2c2416; --ink2:#1a1408;
+    --mut:#6b5d4d; --line:#e8e0d4; --line2:#ddd5c8;
+    --green:#4a7c59; --green-d:#3d6648; --amber:#b45309; --red:#a65d57; --red-d:#8b4d48;
+    --blue:#3f6f8f; --gray:#9a8e7d;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); padding:22px 28px;
+    font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif; line-height:1.5;}
+  a{color:var(--green); text-decoration:none;} a:hover{text-decoration:underline;}
+  header.top{border-bottom:2px solid var(--line2); padding-bottom:12px; margin-bottom:8px;}
+  header.top h1{font-size:1.7rem; font-weight:500; letter-spacing:-0.02em; color:var(--ink2); margin:0 0 2px;}
+  header.top .sub{color:var(--mut); font-style:italic; font-size:0.95rem;}
+  .topnav{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:10px;}
+  .topnav a, .topnav button{font-size:0.85rem; color:var(--ink); background:var(--panel);
+    padding:5px 13px; border:1px solid var(--line2); border-radius:14px; cursor:pointer;
+    font-family:inherit;}
+  .topnav a:hover, .topnav button:hover{border-color:var(--green); color:var(--green-d); background:#eef3ec; text-decoration:none;}
+  .topnav .on{font-weight:600; border-color:#cfe0cf; background:#eef3ec; color:var(--green-d);}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:18px 20px; margin:14px 0; max-width:1120px;}
+  .panel h2{font-size:1.15rem; font-weight:600; color:var(--ink); margin:0 0 4px;}
+  .panel h2 .sub2{color:var(--mut); font-weight:400; font-style:italic; font-size:0.85rem; margin-left:8px;}
+  .panel h3{font-size:0.98rem; color:var(--ink2); margin:16px 0 6px;}
+  p.lead{color:var(--ink2); max-width:82ch;} .muted{color:var(--mut);}
+  code,.mono{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.86em; background:var(--panel2); padding:1px 5px; border-radius:3px;}
+  .sep{height:1px; background:var(--line); margin:16px 0;}
+  /* verdict palette */
+  .v-grounded{--vc:var(--green);} .v-entangled{--vc:var(--amber);} .v-seeded{--vc:var(--blue);}
+  .v-confabulated{--vc:var(--red);} .v-unresolved{--vc:var(--gray);}
+  .chip{display:inline-block; font-size:0.72rem; font-weight:700; color:#fff; background:var(--vc);
+    padding:2px 8px; border-radius:10px; letter-spacing:0.02em; text-transform:uppercase;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; margin:8px 0 4px; font-size:0.82rem;}
+  .legend span{display:flex; align-items:center; gap:5px; color:var(--mut);}
+  .legend i{width:12px; height:12px; border-radius:3px; display:inline-block;}
+  /* stacked bar */
+  .sbar{display:flex; height:26px; border-radius:4px; overflow:hidden; border:1px solid var(--line2); background:var(--panel2);}
+  .sbar > div{height:100%;} .sbar > div:hover{filter:brightness(1.08);}
+  /* tables */
+  table.grid{border-collapse:collapse; width:100%; font-size:0.86rem; margin:6px 0;}
+  table.grid th{text-align:left; color:var(--mut); font-weight:600; font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.03em; padding:6px 9px; border-bottom:2px solid var(--line2);}
+  table.grid td{padding:6px 9px; border-bottom:1px solid var(--line); vertical-align:top; font-variant-numeric:tabular-nums;}
+  table.grid tr:hover td{background:var(--panel2);}
+  .num{font-variant-numeric:tabular-nums;}
+  .modelrow td:first-child{font-weight:600; color:var(--ink2); white-space:nowrap;}
+  /* atom->cycle shift matrix */
+  table.shift{border-collapse:collapse; font-size:0.8rem; margin:8px 0; font-variant-numeric:tabular-nums;}
+  table.shift td, table.shift th{border:1px solid var(--line); padding:5px 10px; text-align:center; color:var(--ink2); min-width:52px;}
+  table.shift th{color:var(--mut); font-weight:600; font-size:0.72rem; background:var(--panel2);}
+  table.shift th.rl{text-align:right; font-weight:700;}
+  table.shift td.diag{outline:2px solid var(--ink2); font-weight:700;}
+  table.shift td.zero{color:var(--line2);}
+  /* gate flow */
+  .flow{display:flex; gap:10px; align-items:stretch; flex-wrap:wrap; margin:10px 0;}
+  .fnode{border:1px solid var(--line2); border-radius:6px; padding:9px 13px; background:var(--panel2); min-width:120px;}
+  .fnode .k{font-size:0.72rem; color:var(--mut); text-transform:uppercase; letter-spacing:0.03em;}
+  .fnode .val{font-size:1.5rem; font-weight:600; color:var(--ink2); font-variant-numeric:tabular-nums;}
+  .fnode .note{font-size:0.74rem; color:var(--mut);}
+  .farrow{display:flex; align-items:center; color:var(--mut); font-size:1.2rem;}
+  /* stat cards */
+  .cards{display:flex; gap:14px; flex-wrap:wrap; margin:8px 0;}
+  .card{border:1px solid var(--line); border-radius:6px; padding:10px 14px; background:var(--panel2); min-width:150px;}
+  .card .lab{font-size:0.72rem; color:var(--mut); text-transform:uppercase; letter-spacing:0.03em;}
+  .card .big{font-size:1.4rem; font-weight:600; color:var(--ink2); font-variant-numeric:tabular-nums;}
+  .card .sm{font-size:0.78rem; color:var(--mut);}
+  .badge{display:inline-block; font-size:0.72rem; padding:2px 8px; border-radius:10px; font-weight:600;}
+  .badge.ok{background:#e5efe3; color:var(--green-d);} .badge.warn{background:#f6ecd9; color:var(--amber);}
+  /* claim browser */
+  .filters{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0;}
+  .filters button{font-size:0.78rem; padding:4px 11px; border:1px solid var(--line2); border-radius:12px; background:var(--panel); cursor:pointer; font-family:inherit; color:var(--ink);}
+  .filters button.on{background:var(--vc,var(--green)); color:#fff; border-color:var(--vc,var(--green));}
+  .clist{max-height:360px; overflow:auto; border:1px solid var(--line); border-radius:6px;}
+  .crow{display:grid; grid-template-columns:88px 90px 1fr 96px; gap:8px; padding:7px 10px; border-bottom:1px solid var(--line); cursor:pointer; align-items:center; font-size:0.85rem;}
+  .crow:hover{background:var(--panel2);} .crow .txt{color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .crow .meta{font-size:0.74rem; color:var(--mut); font-variant-numeric:tabular-nums;}
+  /* drilldown */
+  .drill{border:1px solid var(--line2); border-radius:6px; padding:14px 16px; margin-top:10px; background:var(--panel);}
+  .readbar{display:flex; gap:18px; flex-wrap:wrap; margin:8px 0;}
+  .read{border-left:3px solid var(--vc,var(--line2)); padding:2px 10px;}
+  .read .lab{font-size:0.72rem; color:var(--mut);} .read .v{font-size:1.2rem; font-weight:600; color:var(--ink2); font-variant-numeric:tabular-nums;}
+  table.decoys{border-collapse:collapse; width:100%; font-size:0.78rem; margin:8px 0; font-variant-numeric:tabular-nums;}
+  table.decoys th{color:var(--mut); font-weight:600; font-size:0.68rem; text-transform:uppercase; text-align:right; padding:4px 7px; border-bottom:1px solid var(--line2);}
+  table.decoys th:first-child, table.decoys td:first-child{text-align:left;}
+  table.decoys td{padding:4px 7px; border-bottom:1px solid var(--line); text-align:right; color:var(--ink2);}
+  .formula{background:var(--panel2); border-left:3px solid var(--green); padding:8px 12px; margin:8px 0; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.82rem; color:var(--ink); max-width:88ch; white-space:pre-wrap;}
+  .empty{color:var(--mut); font-style:italic; padding:20px;}
+  dl.gloss{margin:6px 0;} dl.gloss dt{font-weight:600; color:var(--ink2); margin-top:8px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.86rem;}
+  dl.gloss dd{margin:2px 0 0 0; color:var(--ink); max-width:84ch;}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Cycle-Consistency · Causal Grounding Audit</h1>
+  <div class="sub">Does the activation verbalizer read the injected state, or narrate a prior? A judge-free, decoy-controlled causal test.</div>
+  <nav class="topnav" id="nav"></nav>
+</header>
+<div id="app"><div class="empty">loading…</div></div>
+
+<script>
+const VERDICTS = ["grounded","entangled","seeded","confabulated","unresolved"];
+const VC = {grounded:"#4a7c59", entangled:"#b45309", seeded:"#3f6f8f", confabulated:"#a65d57", unresolved:"#9a8e7d"};
+const app = document.getElementById("app");
+const nav = document.getElementById("nav");
+let RUNS = [];          // cross-model summaries
+let VIEW = "overview";
+let CUR = null;         // selected model key for detail
+let CLAIMS = {};        // key -> claims cache
+let FILT = null;        // verdict filter in browser
+
+const __CCACHE={};
+async function __getJSON(f){
+  if(Object.prototype.hasOwnProperty.call(__CCACHE,f)){ if(__CCACHE[f]===null) throw new Error('404 '+f); return __CCACHE[f]; }
+  let r; try{ r=await fetch(f); }catch(e){ __CCACHE[f]=null; throw e; }
+  if(!r.ok){ __CCACHE[f]=null; throw new Error(r.status+' '+f); }
+  const j=await r.json(); __CCACHE[f]=j; return j;
+}
+// static snapshot: map the live cycle API onto pre-rendered files under data/cycle/
+async function api(p){
+  const q=p.split('?')[0]; let m;
+  if(q==='/api/cycle/runs') return __getJSON('data/cycle/runs.json');
+  if(m=q.match(/^\/api\/cycle\/claims\/(.+)$/)) return __getJSON('data/cycle/claims/'+m[1]+'.json');
+  if(m=q.match(/^\/api\/cycle\/claim\/([^/]+)\/([^/]+)\/([^/]+)$/)){
+    const all=await __getJSON('data/cycle/claim/'+m[1]+'.json');
+    const v=all[m[2]+'_'+m[3]];
+    if(v) return v; throw new Error('no claim');
+  }
+  throw new Error('not found: '+p);
+}
+const pct = (x,n)=> n? (100*x/n) : 0;
+const f2 = x => (x==null||!isFinite(x))? "–" : (+x).toFixed(2);
+const esc = s => (s==null?"":String(s)).replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+function stackedBar(vd, n){
+  const segs = VERDICTS.filter(v=>vd[v]).map(v=>
+    `<div class="v-${v}" style="width:${pct(vd[v],n)}%;background:${VC[v]}" title="${v}: ${vd[v]} (${pct(vd[v],n).toFixed(1)}%)"></div>`).join("");
+  return `<div class="sbar">${segs}</div>`;
+}
+function legend(){
+  return `<div class="legend">`+VERDICTS.map(v=>`<span><i style="background:${VC[v]}"></i>${v}</span>`).join("")+`</div>`;
+}
+
+function renderNav(){
+  const tabs = [["overview","Overview"],["how","How it works"]];
+  RUNS.forEach(r=>tabs.push(["m:"+r.key, r.label]));
+  nav.innerHTML = `<a href="index.html">← Studio</a>` + tabs.map(([id,lab])=>
+    `<button class="${(VIEW===id||(VIEW==='model'&&'m:'+CUR===id))?'on':''}" data-tab="${id}">${lab}</button>`).join("");
+  nav.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    const t=b.dataset.tab;
+    if(t.startsWith("m:")){ CUR=t.slice(2); VIEW="model"; } else { VIEW=t; }
+    render();
+  });
+}
+
+function overview(){
+  const rows = RUNS.map(r=>{
+    const vd=r.verdict_distribution||{}, n=r.n_claims||0;
+    const g=pct(vd.grounded||0,n), sd=pct(vd.seeded||0,n), cf=pct(vd.confabulated||0,n), un=pct(vd.unresolved||0,n);
+    const tf = r.kappa_oos_transfers;
+    return `<tr class="modelrow" style="cursor:pointer" data-k="${r.key}">
+      <td>${esc(r.label)}<div class="meta">L${r.layer} · d${r.d_model} · ${esc(r.family||"")}</div></td>
+      <td style="width:320px">${stackedBar(vd,n)}</td>
+      <td class="num">${n}</td>
+      <td class="num" style="color:${VC.grounded}">${g.toFixed(1)}%</td>
+      <td class="num" style="color:${VC.seeded}">${sd.toFixed(1)}%</td>
+      <td class="num" style="color:${VC.confabulated}">${cf.toFixed(1)}%</td>
+      <td class="num" style="color:${VC.unresolved}">${un.toFixed(1)}%</td>
+      <td class="num">${r.kappa_0_calibration ?? "–"}</td>
+    </tr>`;
+  }).join("");
+  app.innerHTML = `
+  <div class="panel">
+    <h2>Cross-model replication <span class="sub2">one row per NLA; verdicts are mechanical (no LLM ever sees a reading)</span></h2>
+    <p class="lead">Each activation-verbalizer (AV) claim is decoded from a real activation, then causally tested: we ablate the reconstruction direction of the claim's own span and of matched <em>decoy</em> claims (siblings the source text does not support), and read the teacher-forced log-prob change. A claim is <span class="chip v-grounded">grounded</span> only if removing its own direction moves its log-prob more than the calibrated decoy null and more than any other claim's direction. The four models below span two families and 7B–70B.</p>
+    ${legend()}
+    <table class="grid">
+      <thead><tr><th>Model</th><th>Verdict distribution</th><th>claims</th><th>grounded</th><th>seeded</th><th>confab</th><th>unresolved</th><th>κ₀</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="muted" style="font-size:0.82rem">Click a row for the per-model breakdown: atom→cycle verdict shift, gate flow, grounding estimate, and out-of-sample κ₀ validation.</p>
+  </div>`;
+  app.querySelectorAll(".modelrow").forEach(tr=>tr.onclick=()=>{ CUR=tr.dataset.k; VIEW="model"; render(); });
+}
+
+function shiftMatrix(shift){
+  if(!shift || !Object.keys(shift).length) return "";
+  const atomV = ["grounded","entangled","confabulated"].filter(a=>shift[a]);
+  const head = `<tr><th class="rl">atom ↓ / cycle →</th>`+VERDICTS.map(v=>`<th>${v.slice(0,5)}</th>`).join("")+`<th>Σ</th></tr>`;
+  const body = atomV.map(a=>{
+    const row=shift[a]; const tot=VERDICTS.reduce((s,v)=>s+(row[v]||0),0);
+    return `<tr><th class="rl"><span class="chip v-${a}">${a}</span></th>`+
+      VERDICTS.map(v=>{const val=row[v]||0; const cls=(v===a?"diag":"")+(val===0?" zero":""); return `<td class="${cls}">${val}</td>`;}).join("")+
+      `<td class="num">${tot}</td></tr>`;
+  }).join("");
+  return `<table class="shift">${head}${body}</table>`;
+}
+
+function detail(){
+  const r = RUNS.find(x=>x.key===CUR);
+  if(!r){ app.innerHTML=`<div class="empty">no model</div>`; return; }
+  const vd=r.verdict_distribution||{}, n=r.n_claims||0, gf=r.gate_flow||{}, ge=r.grounding_estimate||{};
+  const ur=r.unresolved_reasons||{};
+  const oosTf = r.kappa_oos_transfers;
+  const vcards = VERDICTS.map(v=>`<div class="card"><div class="lab"><span class="chip v-${v}">${v}</span></div>
+     <div class="big">${vd[v]||0}</div><div class="sm">${pct(vd[v]||0,n).toFixed(1)}%</div></div>`).join("");
+  app.innerHTML = `
+  <div class="panel">
+    <h2>${esc(r.label)} <span class="sub2">L${r.layer} · d${r.d_model} · ${esc(r.run)}</span></h2>
+    ${legend()}${stackedBar(vd,n)}
+    <div class="cards" style="margin-top:12px">${vcards}</div>
+
+    <h3>Atom → cycle verdict shift</h3>
+    <p class="muted" style="font-size:0.84rem">Rows are the simpler atom-ablation verdict; columns are the decoy-controlled cycle verdict. The cycle test is strictly more conservative: most atom-<span class="chip v-grounded">grounded</span> claims do not survive.</p>
+    ${shiftMatrix(r.atom_vs_cycle_shift)}
+
+    <h3>Gate flow <span class="muted" style="font-weight:400">(Step 7)</span></h3>
+    <div class="flow">
+      <div class="fnode"><div class="k">scored</div><div class="val">${gf.total??"–"}</div></div>
+      <div class="farrow">→</div>
+      <div class="fnode"><div class="k">pre-checks fail</div><div class="val">${gf.unresolved??"–"}</div><div class="note">→ unresolved</div></div>
+      <div class="farrow">→</div>
+      <div class="fnode"><div class="k">Gate 1 pass</div><div class="val">${gf.gate1_pass??"–"}</div><div class="note">M_BB &gt; Q95(D*)+κ₀ &amp; &gt;0</div></div>
+      <div class="farrow">→</div>
+      <div class="fnode"><div class="k">Gate 2</div><div class="val" style="color:${VC.grounded}">${gf.gate2_grounded??"–"}</div><div class="note">grounded / ${gf.gate2_entangled??0} entangled</div></div>
+      <div class="farrow">·</div>
+      <div class="fnode"><div class="k">Gate 3</div><div class="val" style="color:${VC.seeded}">${gf.gate3_seeded??"–"}</div><div class="note">seeded / ${gf.gate3_confabulated??0} confab</div></div>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="lab">grounding estimate</div><div class="big">${f2(ge.median)}<span class="sm"> nats</span></div><div class="sm">p10–p90 ${f2(ge.p10)}–${f2(ge.p90)} · n=${ge.n??0}</div></div>
+      <div class="card"><div class="lab">κ₀ calibration</div><div class="big">${r.kappa_0_calibration??"–"}</div><div class="sm">OOS refit ${r.kappa_0_oos_refit??"–"}</div></div>
+      <div class="card"><div class="lab">κ₀ out-of-sample</div><div class="big">${oosTf===false?'<span class="badge warn">marginal</span>':(oosTf===true?'<span class="badge ok">transfers</span>':'–')}</div><div class="sm">decoy FP ${ge2fp(r)}</div></div>
+      <div class="card"><div class="lab">unresolved reasons</div><div class="sm" style="margin-top:4px">${Object.entries(ur).map(([k,v])=>`${esc(k)}: <b>${v}</b>`).join("<br>")||"–"}</div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Claim browser <span class="sub2">click a claim for its readings, decoy panel and gate decision</span></h2>
+    <div class="filters" id="filters"></div>
+    <div class="clist" id="clist"><div class="empty">loading claims…</div></div>
+    <div id="drill"></div>
+  </div>`;
+  renderFilters(); loadClaims(CUR);
+}
+function ge2fp(r){ return r.kappa_oos_fp!=null ? (100*r.kappa_oos_fp).toFixed(2)+"%" : "–"; }
+
+function renderFilters(){
+  const box = document.getElementById("filters"); if(!box) return;
+  const opts = [["all","all"]].concat(VERDICTS.map(v=>[v,v]));
+  box.innerHTML = opts.map(([id,lab])=>`<button class="${(FILT||'all')===id?'on':''} v-${id}" data-f="${id}"
+      style="${(FILT||'all')===id&&id!=='all'?`background:${VC[id]};color:#fff;border-color:${VC[id]}`:''}">${lab}</button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ FILT=b.dataset.f==="all"?null:b.dataset.f; renderFilters(); renderClaimList(); });
+}
+
+async function loadClaims(key){
+  if(!CLAIMS[key]){ try{ CLAIMS[key]=(await api("/api/cycle/claims/"+key)).claims; }catch(e){ CLAIMS[key]=[]; } }
+  renderClaimList();
+}
+function renderClaimList(){
+  const box=document.getElementById("clist"); if(!box) return;
+  let rows=CLAIMS[CUR]||[];
+  if(FILT) rows=rows.filter(r=>r.verdict===FILT);
+  if(!rows.length){ box.innerHTML=`<div class="empty">no claims</div>`; return; }
+  box.innerHTML = rows.slice(0,400).map(r=>`
+    <div class="crow" data-i="${r.idx}" data-c="${r.ci}">
+      <span><span class="chip v-${r.verdict}">${(r.verdict||"").slice(0,5)}</span></span>
+      <span class="meta">${esc(r.claim_type||"")}</span>
+      <span class="txt" title="${esc(r.claim_text)}">${esc(r.claim_text)}</span>
+      <span class="meta">M_BB ${f2(r.m_bb)}</span>
+    </div>`).join("") + (rows.length>400?`<div class="empty">…${rows.length-400} more</div>`:"");
+  box.querySelectorAll(".crow").forEach(el=>el.onclick=()=>drill(el.dataset.i, el.dataset.c));
+}
+
+async function drill(idx, ci){
+  const box=document.getElementById("drill"); box.innerHTML=`<div class="drill"><div class="empty">loading…</div></div>`;
+  let c; try{ c=await api(`/api/cycle/claim/${CUR}/${idx}/${ci}`); }catch(e){ box.innerHTML=`<div class="drill empty">${e}</div>`; return; }
+  const cands=(c.candidates||[]).filter(x=>x.dstar!=null || x.supp_star!=null);
+  const drows = cands.slice(0,24).map(x=>`<tr>
+     <td title="${esc(x.text)}">${esc((x.text||"").slice(0,42))}</td>
+     <td>${f2(x.ov)}</td><td>${f2(x.supp_star)}</td><td>${f2(x.dstar)}</td><td>${f2(x.x_m)}</td><td>${x.natural??"–"}</td></tr>`).join("");
+  const v=c.verdict||"unresolved";
+  box.innerHTML = `<div class="drill v-${v}">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div><span class="chip v-${v}">${v}</span> <b>idx ${idx} · claim ${ci}</b> <span class="muted">(${esc(c.claim_type||"")}${c.taxo?" · "+esc(c.taxo):""})</span></div>
+      <div class="muted" style="font-size:0.82rem">atom verdict: <b>${esc(c.verdict_stored||"–")}</b></div>
+    </div>
+    <div style="margin:6px 0;color:var(--ink2)">"${esc(c.claim_text)}"</div>
+    ${c.reason?`<div class="muted" style="font-size:0.84rem">unresolved: ${esc(c.reason)}</div>`:""}
+    <div class="readbar">
+      <div class="read v-grounded"><div class="lab">M_BB · self-effect</div><div class="v">${f2(c.m_bb)}</div></div>
+      <div class="read v-confabulated"><div class="lab">max M_iB · other claims</div><div class="v">${f2(c.m_ib_max)}</div></div>
+      <div class="read v-seeded"><div class="lab">Gate-1 bar Q95(D*)+κ₀</div><div class="v">${f2(c.gate1_bar)}</div></div>
+      <div class="read"><div class="lab">M_BB (atom dlogp)</div><div class="v">${f2(c.m_bb_stored)}</div></div>
+    </div>
+    <table class="decoys"><thead><tr><th>surviving decoy (z*_m)</th><th>ov</th><th>supp*</th><th>D*</th><th>X_m</th><th>nat</th></tr></thead>
+      <tbody>${drows||`<tr><td colspan="6" class="muted">no surviving decoys</td></tr>`}</tbody></table>
+    <p class="muted" style="font-size:0.78rem">D* = log-prob drop when the decoy's own direction is ablated while scoring the decoy in a spliced z* (the matched null for M_BB). X_m = drop when the decoy direction is ablated while scoring the <em>real</em> claim (Gate-3 seeding signal).</p>
+  </div>`;
+}
+
+function how(){
+  app.innerHTML = `
+  <div class="panel">
+    <h2>How the cycle test works <span class="sub2">every number below is mechanical; LLMs only segment, type, and write/judge decoy text</span></h2>
+    <p class="lead">The activation verbalizer (AV) turns a hidden activation <code>h</code> into an English explanation. The risk: it may narrate a plausible prior instead of reading <code>h</code>. The cycle test asks, per atomic claim B in the explanation, whether B is <em>caused</em> by content in <code>h</code>, using the activation reconstructor (AR) to build the "direction" of B and teacher-forced log-probs to measure its causal weight, with decoy claims as a matched null.</p>
+
+    <h3>Pipeline</h3>
+    <table class="grid">
+      <tr><td><b>1 · Segment</b></td><td>the explanation is split into atomic, typed claims (theme / entity / detail). LLM, text-only.</td></tr>
+      <tr><td><b>2 · Decoys</b></td><td>for each claim B, an LLM writes <code>g</code> sibling claims of the same type that the source text does <em>not</em> support, then judges each for absence and naturalness. Text-only; the LLM never sees an activation or a score.</td></tr>
+      <tr><td><b>3 · Filters</b></td><td>a decoy survives only if it is (1) judged absent, (2) removes a matched amount of reconstruction mass <code>|ov*−ov_b|</code>, (3) leaves a matched prior <code>ℓ̄</code>, and (4) is natural (≥4) and in the FVE band. Mechanical thresholds, calibrated on a held-out split.</td></tr>
+      <tr><td><b>5b · Directions</b></td><td>every direction uses the same subtrahend: <span class="mono">Δ_B = norm(AR(z)) − norm(AR(z\\B))</span>, and <span class="mono">Δ*_m = norm(AR(z*_m)) − norm(AR(z\\B))</span>. <code>ov = h·Δ̂</code> is the unit overlap ("amount of B removed").</td></tr>
+    </table>
+
+    <h3>The three readings <span class="muted" style="font-weight:400">(Step 6, teacher-forced Δlog-prob)</span></h3>
+    <div class="formula">M_BB   ablate Δ̂_B  in z,   score B in z            → B's own causal weight
+X_m    ablate Δ̂_{B*_m} in z,   score B in z         → does a decoy's direction move B? (seeding)
+D*_m   ablate Δ̂_{B*_m} in z*_m, score B*_m in z*_m   → the decoy's own weight (matched null for M_BB)</div>
+
+    <h3>Gates &amp; verdicts <span class="muted" style="font-weight:400">(Step 7)</span></h3>
+    <table class="grid">
+      <tr><td><b>Pre-checks</b></td><td>a claim is <span class="chip v-unresolved">unresolved</span> unless it is powered (supp_b above the decoys' Q95) and valid (enough survivors, none encoded, D* outlier-free).</td></tr>
+      <tr><td><b>Gate 1</b></td><td><span class="mono">M_BB &gt; Q95(D*) + κ₀</span> and <span class="mono">M_BB &gt; 0</span>: B's effect clears the decoy null. Pass goes to Gate 2, fail to Gate 3.</td></tr>
+      <tr><td><b>Gate 2</b></td><td><span class="mono">M_BB &gt; 1.5 · max M_iB</span> → <span class="chip v-grounded">grounded</span> (B's own direction dominates), else <span class="chip v-entangled">entangled</span>.</td></tr>
+      <tr><td><b>Gate 3</b></td><td><span class="mono">M_BB ≤ 0</span> → <span class="chip v-confabulated">confabulated</span> outright (erasing B did not hurt B, so B is not read); otherwise median <span class="mono">X_m &gt; 0</span> → <span class="chip v-seeded">seeded</span>, else <span class="chip v-confabulated">confabulated</span>.</td></tr>
+    </table>
+    <dl class="gloss">
+      <dt>grounded</dt><dd>removing B's direction moves B's log-prob more than the decoy null and more than any other claim, so B is read from <code>h</code>.</dd>
+      <dt>entangled</dt><dd>B clears the null but another claim's direction moves B nearly as much: read, but not separable.</dd>
+      <dt>seeded</dt><dd>B has a POSITIVE own-effect that fails to clear the null, yet decoy directions still move B (median X_m&gt;0): a prior nudged into place, not read.</dd>
+      <dt>confabulated</dt><dd>B is not read: either its own-effect is non-positive (M_BB ≤ 0), or it fails the null and nothing moves it (median X_m ≤ 0).</dd>
+      <dt>unresolved</dt><dd>the decoy panel is too weak (underpowered or invalid) to rule either way: logged, never guessed.</dd>
+    </dl>
+    <h3>Glossary</h3>
+    <dl class="gloss">
+      <dt>supp_b</dt><dd>log-prob support for claim B under the true activation vs the corpus-mean activation h̄ (the injection baseline). Power reference.</dd>
+      <dt>ov, ov_b</dt><dd>unit overlap <code>h·Δ̂</code>: how much of B (or a decoy) the reconstruction places along <code>h</code>. Filter 2 matches decoys to B on this.</dd>
+      <dt>κ₀</dt><dd>Gate-1 margin above the decoy Q95, calibrated by leave-one-decoy-out on a held-out split so the decoy-vs-decoy false-positive rate ≈ 5%.</dd>
+      <dt>FVE</dt><dd>fraction of variance explained by the reconstruction; the band keeps decoys reconstruction-comparable to B.</dd>
+    </dl>
+  </div>`;
+}
+
+function render(){
+  renderNav();
+  if(VIEW==="overview") overview();
+  else if(VIEW==="how") how();
+  else if(VIEW==="model") detail();
+  else overview();
+}
+
+(async function(){
+  try{ RUNS = (await api("/api/cycle/runs")).runs || []; }
+  catch(e){ app.innerHTML=`<div class="panel empty">could not load cycle runs: ${e}</div>`; return; }
+  if(!RUNS.length){ app.innerHTML=`<div class="panel empty">no cycle runs found under cycle_runs/</div>`; renderNav(); return; }
+  render();
+})();
+</script>
+</body>
+</html>

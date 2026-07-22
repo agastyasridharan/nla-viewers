@@ -71,6 +71,10 @@
   .runcard{display:block; text-decoration:none; color:inherit; background:var(--panel);
     border:1px solid var(--line); border-radius:7px; padding:14px 15px; transition:all .15s;}
   .runcard:hover{border-color:var(--green); box-shadow:0 3px 10px rgba(44,36,22,.08);}
+  .runcard.oldtoggle{cursor:pointer; border-style:dashed; border-color:var(--line2); background:var(--panel2);}
+  .runcard.oldtoggle .title{color:var(--mut);}
+  .oldwrap{margin-top:16px; border-top:1px dashed var(--line2); padding-top:14px;}
+  .oldhead{font-weight:600; color:var(--ink2); margin:2px 2px 12px; font-size:1.02rem;}
   .runcard .h{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
   .runcard .title{font-weight:600; color:var(--ink2); font-size:1.02rem;}
   .runcard .id{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.7rem; color:var(--mut); word-break:break-all;}
@@ -284,6 +288,30 @@
   .wex .tx{flex:1;} .wex .tx b{color:var(--ink2);}
   .wex .num{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:0.82rem; color:var(--ink2);
     background:var(--panel2); padding:1px 5px; border-radius:3px;}
+  /* taxonomy lab */
+  .taxtable{width:100%; border-collapse:collapse; font-size:0.84rem; margin:8px 0;}
+  .taxtable th{text-align:left; font-weight:600; color:var(--ink2); border-bottom:2px solid var(--line);
+    padding:6px 8px; font-size:0.76rem; white-space:nowrap;}
+  .taxtable td{border-bottom:1px solid var(--line); padding:7px 8px; vertical-align:top;}
+  .taxtable tr:hover td{background:var(--panel2);}
+  .tchip{display:inline-block; padding:1px 8px; border-radius:9px; font-size:0.74rem; font-weight:600;
+    color:#fff; white-space:nowrap;}
+  .tchip.dim{background:var(--panel2); color:var(--ink2); border:1px solid var(--line); font-weight:500;}
+  .taxev{color:var(--ink2); font-size:0.72rem; margin-top:3px; max-width:240px; line-height:1.35;}
+  .ctxbox{background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:10px 12px;
+    font-size:0.86rem; white-space:pre-wrap; line-height:1.55; max-height:240px; overflow:auto;}
+  .ctxbox .rt{background:#f3c34c; color:#4a3200; padding:0 3px; border-radius:3px; font-weight:700;}
+  .ctxbox .cont{color:#8a8177;}
+  .idxchip{display:inline-block; min-width:34px; text-align:center; padding:3px 6px; margin:2px;
+    border:1px solid var(--line); border-radius:5px; font-size:0.78rem; color:var(--ink);
+    text-decoration:none; background:var(--panel);}
+  .idxchip.cached{background:#e7f0e7; border-color:#9dbb9d;}
+  .idxchip.cur{outline:2px solid var(--green); font-weight:700;}
+  .taxbtn{background:var(--green); color:#fff; border:none; border-radius:6px; padding:8px 14px;
+    font-size:0.88rem; font-weight:600; cursor:pointer;}
+  .taxbtn:disabled{opacity:0.55; cursor:default;}
+  .sb{display:flex; height:8px; border-radius:4px; overflow:hidden; background:#eceae6;}
+  .sb i{display:block; height:100%;}
 </style>
 </head>
 <body>
@@ -294,6 +322,8 @@
       <div class="sub">does the NLA actually <em>read</em> each claim from the activation? &middot; a judge-free, ground-truth-free faithfulness audit</div>
       <nav class="topnav">
         <a class="home" href="#/">⌂ Map</a>
+        <a href="#/taxonomy">Taxonomy</a>
+        <a href="cycle.html">Cycle-consistency</a>
         <a href="#/help">Help</a>
       </nav>
     </div>
@@ -382,6 +412,7 @@ function route(){
   const h = location.hash.replace(/^#\/?/, '');
   const parts = h.split('/').filter(Boolean);
   if(parts[0]==='help') return viewHelp(parts[1]);
+  if(parts[0]==='taxonomy') return viewTaxonomy(parts[1]||null, parts[2]!=null?+parts[2]:null);
   if(parts[0]==='run' && parts[1] && parts[2]==='act' && parts[3]!=null) return viewActivation(parts[1], parts[3]);
   if(parts[0]==='run' && parts[1]) return viewRun(parts[1]);
   return viewMap();
@@ -397,17 +428,30 @@ async function viewMap(){
   app().appendChild(mapIntro());
   const wrap = $(`<section class="panel"><h2><span class="num">▸</span> Runs <span class="sub2">each run audits one model's NLA over a corpus of activations</span></h2><div id="runs"><div class="empty">loading runs…</div></div></section>`);
   app().appendChild(wrap);
+  let oldOpen=false;   // the "Old runs" (block-mode) group starts collapsed
+  // Atom mode = claim-based (current); block mode = paragraph-based (old). Prefer the
+  // run.json claim_mode; fall back to the -atoms id suffix for any run missing the field.
+  const isAtomRun = r => (r.claim_mode==='atoms') || /-atoms$/.test(r.run_id||'');
   async function refresh(){
     try{
       const {runs, runs_dir} = await api('/api/runs');
       const host = wrap.querySelector('#runs');
       if(!runs.length){ host.innerHTML = `<div class="empty">No runs yet in <code>${esc(runs_dir)}</code>.<br>Create one: <code>python repl/run_claim_ablation.py qwen7b --mock --slow 0.6</code> (synthetic) or a real run on the GPU box.</div>`; return; }
+      const current = runs.filter(isAtomRun), old = runs.filter(r=>!isAtomRun(r));
+      const primary = current.length ? current : runs;   // if nothing is atom-mode, list everything normally
       host.innerHTML=''; const grid=$(`<div class="runs"></div>`);
-      runs.forEach(r=>grid.appendChild(runCard(r))); host.appendChild(grid);
+      primary.forEach(r=>grid.appendChild(runCard(r)));
+      if(current.length && old.length) grid.appendChild(oldRunsToggle(old.length, oldOpen, ()=>{ oldOpen=!oldOpen; refresh(); }));
+      host.appendChild(grid);
+      if(oldOpen && current.length && old.length){
+        const box=$(`<div class="oldwrap"><div class="oldhead">Old runs <span class="sub2" style="font-weight:400">paragraph-based (block-mode) ablation, superseded by the atomic typed method - see <a href="#/help/method">Help</a></span></div><div class="runs oldgrid"></div></div>`);
+        const sg=box.querySelector('.oldgrid'); old.forEach(r=>sg.appendChild(runCard(r)));
+        host.appendChild(box);
+      }
     }catch(e){ wrap.querySelector('#runs').innerHTML=`<div class="empty">error: ${esc(e.message)}</div>`; }
   }
   await refresh();
-  window.__t = null;  /* static snapshot: no live polling */   // experimental map auto-updates
+  window.__t = null /* static snapshot: no live polling */;   // experimental map auto-updates
   // cross-model comparison (computed once, client-side from saved nulls)
   const cmp = $(`<div id="cmp"></div>`); app().appendChild(cmp);
   try{ const {runs} = await api('/api/runs'); const panel = await comparePanel(runs); if(panel) cmp.appendChild(panel); }
@@ -471,6 +515,20 @@ function runCard(r){
   return c;
 }
 
+// One collapsible card that stands in for every paragraph-based (block-mode) run, so the
+// map foregrounds the current claim-based (atom) runs. Not an <a>: clicking toggles the group.
+function oldRunsToggle(count, open, onToggle){
+  const c = $(`<div class="runcard oldtoggle" role="button" tabindex="0" aria-expanded="${open?'true':'false'}">
+    <div class="h"><span class="title">Old runs</span><span class="pill">${count}</span></div>
+    <div class="id">paragraph-based (block-mode) ablation</div>
+    <div style="margin-top:10px; color:var(--mut); font-size:0.92rem; line-height:1.45">${open?'▾ hide':'▸ show'} the ${count} superseded run${count>1?'s':''}<br><small>the coarse blank-line paragraph split, before atomic typed claims</small></div>
+  </div>`);
+  const fire = ()=>onToggle();
+  c.addEventListener('click', fire);
+  c.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); fire(); }});
+  return c;
+}
+
 function mapIntro(){
   return $(`<section class="panel">
     <p class="lead" style="margin-top:0">An NLA explains an activation vector <code>h</code> with a few short claims. This studio asks, for each claim, a causal question: <b>was it actually read out of <code>h</code>, or would the verbalizer have said it anyway?</b></p>
@@ -501,7 +559,7 @@ async function viewRun(id){
     if(data.run.status!=='running'){ clearTimer(); }
   }
   await refresh();
-  /* static snapshot: no live polling */  // live updates while running
+  if(!window.__t) window.__t = null /* static snapshot: no live polling */;  // live updates while running
 }
 
 function renderRun(id, run, summary, recs){
@@ -1158,6 +1216,240 @@ const HELP_TABS = [
   ['glossary', 'Glossary',       glossaryDocs],
   ['method',   'Full method',    methodsDocs],
 ];
+// ─────────────────────────────────────────────────────────────────────────────
+//  VIEW 4 - taxonomy lab: visual inspection of the LLM reclassification.
+//  Phase 1 only: ONE API call per clicked activation, cached on disk. There is
+//  deliberately no batch trigger anywhere in this view or its endpoints.
+// ─────────────────────────────────────────────────────────────────────────────
+const TAXCOL = {
+  axis:    {gist:'#3B6FB0', quote:'#6d4c9f', position:'#b45309', prediction:'#0f766e', other:'#777'},
+  support: {stated:'#2e7d32', inferable:'#7cb342', beyond:'#b8860b', contradicted:'#c0392b'},
+};
+const taxoModel = () => localStorage.getItem('taxoModel') || 'sonnet';
+function tchip(txt, color){ return txt==null ? '<span class="tchip dim">–</span>'
+  : `<span class="tchip" style="background:${color||'#666'}">${esc(txt)}</span>`; }
+
+async function viewTaxonomy(rid, idx){
+  clearTimer(); app().innerHTML='<div class="empty">loading…</div>';
+  try{ if(!rid) await taxoRunList(); else await taxoActivation(rid, idx); }
+  catch(e){ app().innerHTML=`<div class="empty">error: ${esc(e.message)}</div>`; }
+}
+
+async function taxoRunList(){
+  setCrumbs('taxonomy lab');
+  app().innerHTML='';
+  app().appendChild($(`<section class="panel">
+    <h2><span class="num">▸</span> Taxonomy lab <span class="sub2">re-classify the same scored claims along new axes, one activation at a time</span></h2>
+    <p style="max-width:88ch">The mechanical verdicts (grounded / entangled / confabulated, from teacher-forced
+    Δlogp) are frozen on disk. This tab overlays <b>new claim labels</b> on top of them, so the same verdicts can
+    later be sliced by better categories: a fixed <b>taxo</b> subtype per Layer-1 type, an LLM-judged
+    <b>gist / quote / position / prediction</b> axis, and <b>support</b>: could an attentive reader of the visible
+    source assert this claim (stated / inferable) or not (beyond / contradicted)? Entity classes come free from the
+    stored Layer-2 overlay. The judge sees claim + source context only, never a verdict or a Δlogp, so label errors
+    can blur a contrast but cannot manufacture one.</p>
+    <p style="max-width:88ch" class="muted">Phase 1 = visual inspection: clicking <i>Classify</i> on an activation makes exactly
+    <b>one</b> API call (cached). No mass pass exists yet; that is gated on approving these labels visually.</p>
+    <div id="taxoruns"><div class="empty">loading…</div></div>
+  </section>`));
+  const host = document.getElementById('taxoruns');
+  async function refresh(){
+    try{
+      const {runs} = await api('/api/taxonomy/runs');
+      if(!runs.length){ host.innerHTML='<div class="empty">no atom-mode runs found</div>'; return; }
+      host.innerHTML=''; const grid=$(`<div class="runs"></div>`);
+      for(const r of runs){
+        const n = r.n_done||0, s = r.cached.sonnet||0;
+        grid.appendChild($(`<a class="runcard" href="#/taxonomy/${encodeURIComponent(r.run_id)}">
+          <div class="rc-top"><span class="rc-id">${esc(r.run_id)}</span></div>
+          <div class="muted">${esc(r.model_label||r.key||'')}</div>
+          <div style="margin-top:6px; font-size:0.82rem">classified: <b>${s}</b> sonnet ·
+            <b>${r.cached.haiku||0}</b> haiku <span class="muted">of ${n}</span></div>
+          <div class="sb" style="margin-top:5px"><i style="width:${n?Math.round(100*s/n):0}%;background:var(--green)"></i></div>
+        </a>`));
+      }
+      host.appendChild(grid);
+    }catch(e){ host.innerHTML=`<div class="empty">error: ${esc(e.message)}</div>`; }
+  }
+  await refresh();
+  window.__t = null /* static snapshot: no live polling */;       // fills in live during the mass pass
+}
+
+// ---- aggregate rendering (fills in progressively during the mass pass) ------
+function aggBar(b){ const L=b.located||0;
+  const w=v=>L?Math.round(100*v/L):0;
+  return `<div class="sb"><i style="width:${w(b.grounded)}%;background:${VCOLOR.grounded}"></i><i style="width:${w(b.entangled)}%;background:${VCOLOR.entangled}"></i><i style="width:${w(b.confabulated)}%;background:${VCOLOR.confabulated}"></i></div>`; }
+function aggRows(obj, order, colors, dim){ return order.filter(k=>obj&&obj[k]&&obj[k].n).map(k=>{ const b=obj[k];
+  const chip = dim||!colors ? `<span class="tchip dim">${esc(k)}</span>` : tchip(k, colors[k]);
+  return `<tr><td>${chip}</td><td class="muted" style="white-space:nowrap">${b.located}<span style="opacity:.6">/${b.n}</span></td>
+    <td style="white-space:nowrap"><b>${b.grounded_rate!=null?pct(b.grounded_rate):'–'}</b> <span class="muted" style="font-size:0.7rem">[${pct(b.lo,0)}–${pct(b.hi,0)}]</span></td>
+    <td style="min-width:110px">${aggBar(b)}</td></tr>`; }).join(''); }
+function aggCard(title, sub, rowsHtml){
+  return `<div class="card"><h4>${title}</h4><div class="muted" style="font-size:0.75rem; margin-bottom:4px">${sub}</div>
+    <table class="taxtable"><thead><tr><th>label</th><th>loc/n</th><th>grounded</th><th></th></tr></thead><tbody>${rowsHtml||'<tr><td colspan=4 class="muted">no labels yet</td></tr>'}</tbody></table></div>`; }
+function crossTable(cross){
+  const sups=['stated','inferable','beyond','contradicted'], verds=['grounded','entangled','confabulated'];
+  let h='<table class="taxtable" style="width:auto"><thead><tr><th>verdict \\ support</th>'+sups.map(s=>`<th>${tchip(s,TAXCOL.support[s])}</th>`).join('')+'</tr></thead><tbody>';
+  for(const v of verds){ h+=`<tr><td>${tchip(v, VCOLOR[v])}</td>`;
+    for(const s of sups){ const n=(cross&&cross[v]?cross[v][s]:0)||0;
+      const hot=(v==='grounded'&&s==='contradicted')?'box-shadow:inset 0 0 0 2px #c0392b;':
+                (v==='grounded'&&s==='beyond')?'box-shadow:inset 0 0 0 2px #6d4c9f;':
+                (v==='confabulated'&&s==='stated')?'box-shadow:inset 0 0 0 2px #b8860b;':'';
+      h+=`<td style="text-align:right;${hot}">${n}</td>`; }
+    h+='</tr>'; }
+  return h+'</tbody></table>';
+}
+
+async function taxoActivation(rid, idx){
+  const model = taxoModel();
+  if(idx==null){                    // run dashboard: live progress + aggregates + picker
+    setCrumbs(`<a href="#/taxonomy">taxonomy</a> &rsaquo; ${esc(rid)}`);
+    app().innerHTML='';
+    const sec=$(`<section class="panel"><h2><span class="num">▸</span> ${esc(rid)}
+      <span class="sub2">verdicts stay frozen; the new labels slice them · updates live during the mass pass</span></h2>
+      <div id="prog" class="muted" style="font-size:0.85rem; margin:4px 0 8px">loading…</div>
+      <div id="agg"></div></section>`);
+    const pick=$(`<section class="panel"><h2><span class="num">▸</span> Activations
+      <span class="sub2">green = classified (${esc(model)}) · click to inspect claim by claim</span></h2>
+      <div id="chips"></div></section>`);
+    app().appendChild(sec); app().appendChild(pick);
+    const prog=sec.querySelector('#prog'), agg=sec.querySelector('#agg'), chips=pick.querySelector('#chips');
+    let liveTimer=null;
+    async function refresh(){
+      try{
+        const [g, item] = await Promise.all([
+          api(`/api/taxonomy/agg/${encodeURIComponent(rid)}?model=${model}`),
+          api(`/api/taxonomy/item/${encodeURIComponent(rid)}?model=${model}`)]);
+        const done = g.n_classified>=g.n_records && g.n_records>0;
+        prog.innerHTML = `classified <b>${g.n_classified}</b> / ${g.n_records} activations
+          (${esc(model)}, prompt ${esc(g.prompt_version)}) · <b>${g.n_claims_labeled}</b> of ${g.n_claims_total} claims labeled
+          ${done?'· <b style="color:var(--green-d)">complete</b>':'· mass pass in progress…'}
+          <div class="sb" style="margin-top:5px; max-width:420px"><i style="width:${g.n_records?Math.round(100*g.n_classified/g.n_records):0}%;background:var(--green)"></i></div>`;
+        if(g.n_claims_labeled){
+          const ov=g.overall;
+          agg.innerHTML =
+            `<div class="muted" style="font-size:0.8rem; margin-bottom:6px">overall over labeled claims: <b>${pct(ov.grounded_rate)}</b> grounded of ${ov.located} located ${aggBar(ov)}</div>`+
+            `<div class="cards">`+
+            aggCard('Grounding by LLM axis','what kind of thing does the claim assert about the source?',
+              aggRows(g.by_axis, ['gist','quote','position','prediction','other'], TAXCOL.axis))+
+            aggCard('Same claims, keyword bucket', `the current rule, for comparison · label agreement with LLM axis: <b>${g.kw_axis_agreement.rate!=null?pct(g.kw_axis_agreement.rate):'–'}</b>`,
+              aggRows(g.by_kw, ['gist','quote','position','prediction','other'], TAXCOL.axis))+
+            aggCard('Support (inferability from visible text)','stated / inferable = a reader could assert it · beyond / contradicted = they could not',
+              aggRows(g.by_support, ['stated','inferable','beyond','contradicted'], TAXCOL.support)+
+              aggRows(g.by_support_binary, ['inferable-from-text','not-inferable'], null, true))+
+            aggCard('Theme subtypes (LLM taxo)','fixed enum over theme claims',
+              aggRows(g.by_taxo_theme, ['genre','topic','entity','structure','era','other'], null, true))+
+            aggCard('Detail subtypes (LLM taxo)','fixed enum over detail claims',
+              aggRows(g.by_taxo_detail, ['quote','date','number','value','other'], null, true))+
+            aggCard('Entity classes (Layer-2 overlay, no LLM)','claims containing an entity of each class',
+              aggRows(g.by_entity, ['person','place','org','title','ticker','other','none'], null, true))+
+            `</div>`+
+            `<div class="card" style="margin-top:10px"><h4>Verdict × support</h4>
+              <div class="muted" style="font-size:0.75rem; margin-bottom:4px">located labeled claims · outlined cells:
+              <span style="color:#c0392b"><b>grounded ∩ contradicted</b></span> = the ablation anchors a falsehood ·
+              <span style="color:#6d4c9f"><b>grounded ∩ beyond</b></span> = candidate beyond-text readout ·
+              <span style="color:#b8860b"><b>confabulated ∩ stated</b></span> = explicit surface content the NLA failed to read</div>
+              ${crossTable(g.cross)}</div>`;
+        } else agg.innerHTML='<div class="empty">no classifications yet - click an activation below or start the mass pass</div>';
+        const cs=new Set(item.cached||[]);
+        chips.innerHTML='';
+        for(const i of item.indices) chips.appendChild($(
+          `<a class="idxchip${cs.has(i)?' cached':''}" href="#/taxonomy/${encodeURIComponent(rid)}/${i}">${i}</a>`));
+        if(done && liveTimer){ clearInterval(liveTimer); liveTimer=null; window.__t=null; }
+      }catch(e){ prog.innerHTML=`error: ${esc(e.message)}`; }
+    }
+    await refresh();
+    liveTimer = null /* static snapshot: no live polling */; window.__t = liveTimer;
+    return;
+  }
+
+  const it = await api(`/api/taxonomy/item/${encodeURIComponent(rid)}/${idx}?model=${model}`);
+  setCrumbs(`<a href="#/taxonomy">taxonomy</a> &rsaquo; <a href="#/taxonomy/${encodeURIComponent(rid)}">${esc(rid)}</a> &rsaquo; #${esc(idx)}`);
+  app().innerHTML='';
+  const pos = it.indices.indexOf(it.idx);
+  const prev = pos>0 ? it.indices[pos-1] : null, next = pos<it.indices.length-1 ? it.indices[pos+1] : null;
+  const head=$(`<section class="panel">
+    <h2><span class="num">▸</span> activation #${esc(it.idx)} <span class="sub2">${esc(it.doc_id||'')} · read token <code>${esc(it.read_token||'')}</code> at position ${esc(it.position)}</span></h2>
+    <div class="navbtns" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:4px 0 10px">
+      ${prev!=null?`<a href="#/taxonomy/${encodeURIComponent(rid)}/${prev}">← #${prev}</a>`:'<span class="muted">←</span>'}
+      <span class="muted">${pos+1} / ${it.indices.length}</span>
+      ${next!=null?`<a href="#/taxonomy/${encodeURIComponent(rid)}/${next}">#${next} →</a>`:'<span class="muted">→</span>'}
+      <span style="flex:1"></span>
+      <label style="font-size:0.82rem"><input type="radio" name="taxmodel" value="sonnet" ${model==='sonnet'?'checked':''}> sonnet</label>
+      <label style="font-size:0.82rem"><input type="radio" name="taxmodel" value="haiku" ${model==='haiku'?'checked':''}> haiku</label>
+      <span class="muted" style="font-size:0.8rem">${(it.cached||[]).length} of ${it.indices.length} classified (${model})</span>
+    </div>
+    <div id="ctx"></div>
+  </section>`);
+  app().appendChild(head);
+  head.querySelectorAll('input[name=taxmodel]').forEach(r=>r.addEventListener('change', e=>{
+    localStorage.setItem('taxoModel', e.target.value); viewTaxonomy(rid, idx); }));
+
+  // source context: read token marked, actual continuation greyed
+  const left = it.context_left||'', tok = it.read_token||'', right = it.context_right||'';
+  const cut = (tok && left.endsWith(tok)) ? left.length-tok.length : left.length;
+  head.querySelector('#ctx').appendChild($(`<div>
+    <div class="muted" style="font-size:0.8rem; margin-bottom:4px">source window (what the model had read; ≤800 chars, earlier text hidden) · <span class="rt" style="padding:0 4px">read token</span> · <span class="cont">actual continuation (~120 chars)</span></div>
+    <div class="ctxbox">${esc(left.slice(0,cut))}<span class="rt">${esc(tok)}</span><span class="cont">${esc(right)}</span></div>
+  </div>`));
+
+  const expl=$(`<section class="panel"><h2><span class="num">▸</span> AV explanation <span class="sub2">the text that was split into the claims below</span></h2>
+    <div class="ctxbox" style="max-height:200px">${esc(it.explanation||'')}</div></section>`);
+  app().appendChild(expl);
+
+  const cls = it.classification;
+  const byI = {}; if(cls) for(const c of (cls.claims||[])) byI[c.i]=c;
+  const sec=$(`<section class="panel"><h2><span class="num">▸</span> Claims <span class="sub2">existing labels on the left · LLM re-classification on the right</span></h2>
+    <div id="act"></div><div id="tbl"></div>
+    <p class="muted" style="font-size:0.78rem; max-width:88ch">† shown for you only: the LLM judge never sees verdicts, Δlogp, or null thresholds.
+    kw bucket = the current keyword rule over the segmenter's free-form subtype. entities = Layer-2 overlay classes inside this claim's span (no API).
+    support: <b>stated</b> explicitly in the visible window · <b>inferable</b> an attentive reader would conclude it · <b>beyond</b> not determinable from the window · <b>contradicted</b> the window shows otherwise.</p>
+  </section>`);
+  app().appendChild(sec);
+
+  const act=sec.querySelector('#act');
+  if(!cls){
+    const btn=$(`<button class="taxbtn">Classify this activation (${it.claims.length} claims · 1 API call · ${esc(model)})</button>`);
+    const err=$(`<span class="muted" style="margin-left:10px"></span>`);
+    btn.onclick=async ()=>{
+      btn.disabled=true; btn.textContent='classifying…'; err.textContent='';
+      try{
+        const r=await fetch('/api/taxonomy/classify',{method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({run_id:rid, idx:it.idx, model})});
+        if(!r.ok) throw new Error((await r.json()).error||('HTTP '+r.status));
+        viewTaxonomy(rid, idx);
+      }catch(e){ btn.disabled=false;
+        btn.textContent=`Classify this activation (${it.claims.length} claims · 1 API call · ${model})`;
+        err.textContent='error: '+e.message; }
+    };
+    const wrap=$(`<div style="margin:4px 0 10px"></div>`); wrap.appendChild(btn); wrap.appendChild(err);
+    act.appendChild(wrap);
+  } else {
+    act.appendChild($(`<div class="muted" style="font-size:0.8rem; margin:2px 0 8px">classified by <code>${esc(cls.model_used||cls.model_id)}</code> · prompt ${esc(cls.prompt_version)} · ${cls.usage?`${cls.usage.input_tokens} in / ${cls.usage.output_tokens} out tokens`:''} · cached</div>`));
+  }
+
+  const rows = it.claims.map(c=>{
+    const L = byI[c.i]||null;
+    const ents = (c.entities&&c.entities.length)? c.entities.map(e=>`<span class="tchip dim">${esc(e)}</span>`).join(' ') : '<span class="muted">–</span>';
+    const v = c.verdict||'unlocated';
+    return `<tr>
+      <td class="muted">${c.i}</td>
+      <td style="max-width:340px">${esc(c.text||'')}</td>
+      <td><span class="tchip dim">${esc(c.type||'')}</span><div class="taxev">${esc(c.subtype||'')}</div></td>
+      <td><span class="tchip dim">${esc(c.kw_bucket||'')}</span></td>
+      <td><span class="tchip" style="background:${VCOLOR[v]||'#999'}">${esc(v)}</span></td>
+      <td>${ents}</td>
+      <td>${L?tchip(L.taxo,'#555'):tchip(null)}</td>
+      <td>${L?tchip(L.axis, TAXCOL.axis[L.axis]):tchip(null)}</td>
+      <td>${L?tchip(L.support, TAXCOL.support[L.support]) + (L.evidence?`<div class="taxev">${esc(L.evidence)}</div>`:'') : tchip(null)}</td>
+    </tr>`;
+  }).join('');
+  sec.querySelector('#tbl').innerHTML = `<div style="overflow-x:auto"><table class="taxtable">
+    <thead><tr><th>#</th><th>claim</th><th>type · seg subtype</th><th>kw bucket</th><th>verdict †</th><th>entities</th>
+    <th>LLM taxo</th><th>LLM axis</th><th>LLM support · evidence</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
 async function viewHelp(tab){
   if(!HELP_TABS.some(t=>t[0]===tab)) tab = 'overview';
   setCrumbs(`<a href="#/">map</a> &rsaquo; help &rsaquo; ${esc(HELP_TABS.find(t=>t[0]===tab)[1].toLowerCase())}`);
@@ -1277,39 +1569,66 @@ function methodsDocs(){
 
     <h3>The five steps, per activation</h3>
     <div class="steps">
-      <div class="step"><h4>Generate the explanation</h4><p>Inject <code>h</code> at the marked token and let the verbalizer (AV) free-run. Parse the <code>&lt;explanation&gt;</code> block and split it on blank lines into snippets - each snippet is one claim. Skip activations with fewer than two claims.</p></div>
+      <div class="step"><h4>Generate the explanation, then segment it into claims</h4><p>Inject <code>h</code> at the marked token and let the verbalizer (AV) free-run. Its explanation is then cut into claims: current runs (id ends <code>-atoms</code>) use the <b>atomic typed decomposition</b> spelled out in "How claims are segmented" below; a few older block-mode runs use a blank-line paragraph split. Either way, each claim is one assertion, tested on its own.</p></div>
       <div class="step"><h4>Define each claim's direction with the AR</h4><p>The reconstructor (AR) maps text back to a vector. For claim C, compute <code>Δ = AR(z) − AR(z without C)</code> (both AR outputs L2-normalized first, since the AR is direction-only). Δ is the direction in activation space that this claim corresponds to. This is the same difference trick the paper uses for steering, repurposed as measurement. "Ablating a claim from the AR" just means dropping that snippet from the AR's <em>input text</em> - nothing inside the AR is changed.</p></div>
       <div class="step"><h4>Ablate the direction from h</h4><p><code>h' = h − (h·Δ̂)Δ̂</code> removes that one direction (rank-1 projection). Everything else about <code>h</code> is preserved.</p></div>
       <div class="step"><h4>Re-read by teacher forcing</h4><p>Score the claim's exact tokens under <code>h</code>, then again under <code>h'</code>, with the explanation text held fixed. <code>Δlogp = logP(C|h) − logP(C|h')</code>, in nats. This needs no repetition and no LLM judge: rather than ask whether the verbalizer would <em>re-generate</em> the claim, we read the probability it assigns to the claim's already-written tokens, so the measure is defined even for a claim that appears once. The mechanics - exactly which tokens are scored and what each is conditioned on - are spelled out in <b>the next section</b>, since this is the step most worth being precise about.</p></div>
       <div class="step halt"><h4>Decide with two controls</h4><p>The <b>random-direction null</b> (R random rank-1 ablations of the same <code>h</code>) certifies the effect is real: a claim whose Δlogp stays within the null was not read from <code>h</code> at all, so it is <b>confabulated</b>. For claims that beat the null, <b>specificity</b> is judged by column dominance of the effect matrix: a claim is <b>grounded</b> only if ablating its own direction suppresses it more (by a margin) than ablating any other claim's direction does. If a sibling claim's ablation rivals it, the claim is <b>entangled</b> (it reads from <code>h</code>, but the two claims share a direction).</p></div>
     </div>
 
-    <h3>What counts as a "claim", and who decides</h3>
-    <p><b>No LLM, and no scoring rubric.</b> The split into claims is purely mechanical and comes entirely from the verbalizer's own formatting. The open-model verbalizer was trained to write its explanation as a short list of separate observations, one per paragraph, inside an <code>&lt;explanation&gt;…&lt;/explanation&gt;</code> block. We take the text inside that block and split it on blank lines; each non-empty paragraph that results <em>is</em> one claim. Nothing reads the claims for meaning, ranks them, or decides which ones "count" - a single regular expression does the entire segmentation.</p>
-    <div class="formula"> the verbalizer writes (one observation per paragraph):
+    <h3>How claims are segmented: the atomic typed decomposition</h3>
+    <p class="lead">Every run in this studio whose id ends <code>-atoms</code> is segmented by the method described here. It replaced an earlier coarse paragraph split, which is kept only for a few older <b>block-mode</b> runs and is described at the end of this section.</p>
 
-   &lt;explanation&gt;
-   News report format … detailing a Georgia shooting incident.
+    <p><b>Why a finer cut was needed.</b> The verbalizer writes its explanation as a few sentences. Splitting that on blank lines yields only about three coarse claims per activation, and each coarse claim bundles several distinct assertions. That granularity <em>hides</em> the interesting failure: a whole paragraph can score "grounded" while a specific date, name, or predicted next-token buried inside it was confabulated. To ask the scientific question, <b>which kinds of claim does the verbalizer actually read from the activation, and which does it fill in from its prior</b>, each atomic assertion has to be isolated and tested on its own. The atomic decomposition is what makes the "What kinds of claims get grounded" panel possible.</p>
 
-   The sentence "…permit to possess" is mid-clause, listing a felon's gun rights.
-
-   Final token "possess" ends mid-phrase, strongly expecting "firearms".
-   &lt;/explanation&gt;
-
-   split on blank lines  →  3 claims:  C0, C1, C2   (top-to-bottom = index 0, 1, 2)</div>
-    <p>Three consequences of letting the verbalizer's paragraph breaks define the claims:</p>
+    <p><b>The method: one LLM call returns two layers, then deterministic clean-up.</b> A single call to Claude (<code>claude-sonnet-4-6</code>, temperature 0, forced to answer through one tool) segments the verbalizer's text into:</p>
     <ul>
-      <li>The unit of analysis is a <b>paragraph-sized snippet</b>, not a single sentence and not a sub-clause. If one paragraph bundles two ideas, they are tested together as one claim. (Finer, sub-snippet splitting is a deliberately deferred extension.)</li>
-      <li>An activation whose explanation has <b>fewer than two</b> paragraphs is skipped: with a single claim there is no sibling to measure specificity against.</li>
-      <li>A claim is scored only if its exact text can be located in the teacher-forced sequence; otherwise it is marked <em>unlocated</em>. That, too, is a plain string match, not a judgment.</li>
+      <li><b>Layer 1, a partition.</b> The entire explanation is tiled into a flat, non-overlapping sequence of <code>theme</code>, <code>detail</code>, and <code>connective</code> spans. "Tiling" is exact: the spans' text, concatenated in order, reproduces the input character-for-character (every space, comma, quote, and newline), so nothing is dropped or double-counted. The unit is <b>one assertion</b>: a span must be expressible as a single "The source is / is about / reads as / contains / expects ___" sentence with no second clause. A <code>theme</code> is a descriptive assertion (genre, topic, structure, era, style, what the text is doing); a <code>detail</code> is a literal (a quoted string, date, number, or an expected next token, and every quote is its own claim); a <code>connective</code> is pure glue (whitespace, punctuation, a bare "and"/"or"/"from") and is never scored.</li>
+      <li><b>Layer 2, an entity overlay.</b> Separately, every specific named entity (person, place, org, title, ticker, other) is returned as a verbatim substring. This layer may overlap Layer 1 (an entity usually sits inside a theme claim, sometimes inside a quote) and does not have to tile.</li>
+      <li><b>A role per content claim.</b> Each theme/detail claim is tagged <em>describes</em> (a descriptive theme), <em>quotes</em> (a literal the source contains), or <em>predicts</em> (a token the source is expected to emit next, i.e. the verbalizer's guess). The role is assigned by a deterministic rule over the claim's own wording, not a second model call, and it is the axis the "PREDICTION" bucket is built on.</li>
     </ul>
-    <div class="note"><b>Why there is no judge here either.</b> The whole point of the metric is to avoid one. The moment an LLM decides what a "claim" is, or whether it is supported, the result inherits that model's opinions and is no longer ground-truth-free. Letting the verbalizer's own paragraph breaks define the claims, and teacher-forced log-probability decide whether each is grounded, keeps every stage judge-free, from segmentation through scoring.</div>
 
-    <h3>A finer cut: atomic typed claims (atom-mode runs)</h3>
-    <p>The blank-line split above is the original <b>block mode</b>. Other runs in this studio (their id ends <code>-atoms</code>, and their claims carry a type chip) use a finer <b>atom mode</b>: the same activation and the same verbalizer text, cut into many small typed claims instead of a few paragraphs. Everything downstream of "which characters are this claim" is identical to block mode, so a block record and an atom record stay directly comparable; only the granularity changes.</p>
-    <p>The cut is a <b>two-layer tiling</b> of the explanation, with full coverage and no gaps. Layer 1 labels every stretch as a <code>theme</code> claim (what the text is about), a <code>detail</code> claim (a specific quote, date, number, or name), or <code>connective</code> glue; Layer 2 overlays named entities. Each content claim also carries a role (<em>describes</em> / <em>quotes</em> / <em>predicts</em>), an optional hedge word, and a character-exact span. Only <code>theme</code> and <code>detail</code> claims are scored; connectives are shown but never scored, and entities are folded into the claim that contains them.</p>
-    <div class="note"><b>The segmenter is an LLM, and the test is still judge-free.</b> Unlike the blank-line regex, the atomic cut is made by a language model (temperature 0, forced to return character-exact spans). That model decides only <em>where one claim ends and the next begins</em>; it never sees the activation <code>h</code>, so it cannot know or judge whether a claim is faithful. Groundedness is still decided entirely by the teacher-forced log-probability test below, exactly as in block mode, so a segmentation opinion can never leak into a verdict.</div>
-    <p>Two mechanics differ. A tiling cannot be rebuilt by re-joining snippets, so a claim's direction is taken by <b>deleting its characters</b> from the explanation and re-encoding: <code>Δ = normalize(AR(full text)) − normalize(AR(text with the claim deleted))</code>. And with dozens of claims per activation, specificity needs a scale-stable denominator (a 90th-percentile-plus-1-nat-floor rule; see the research note), so atom-mode grounded rates are <em>not</em> comparable to the block 63.5% headline. What atom mode buys is the question block mode cannot ask: <b>which kinds of claim the verbalizer grounds</b>. Bucketed by what each claim is about, the recurring finding is that <b>GIST</b> (genre, topic, tone, style) is read from <code>h</code>, while <b>POSITION / STRUCTURE</b> and next-token <b>PREDICTION</b> are largely confabulated from the prior. The run page's "What kinds of claims get grounded" panel is exactly that breakdown.</p>
+    <p><b>The exact segmentation prompt.</b> This is the verbatim system prompt, sent alongside the <code>emit_layers</code> tool; nothing else steers the cut:</p>
+    <div class="formula" style="max-height:360px; overflow:auto">You are a claim segmenter for a mechanistic-interpretability experiment. The input is a
+short description written by a "verbalizer" model describing ONE internal neural activation. Produce
+TWO layers.
+
+LAYER 1 - PARTITION ("segments"): tile the ENTIRE input into a FLAT, NON-OVERLAPPING sequence of
+theme / detail / connective spans whose "text" concatenated in order reproduces the input
+character-for-character (every space, comma, quote, newline). Segments never overlap and never nest.
+  THE UNIT: one claim = ONE assertion about the source. Boundary test: a claim is expressible as a
+  SINGLE sentence "The source &lt;is / is about / reads as / contains / expects&gt; ___" making exactly ONE
+  assertion (no "and", no second independent clause). Split a span that packs two assertions; keep a
+  span that splitting would break.
+  - theme: a descriptive assertion about the source (genre / topic / structure / era / style /
+    implication / what it is doing). Named things (people, places, orgs, tickers, titles) STAY inside
+    the theme claim they belong to; do NOT pull them out here (they go in Layer 2).
+  - detail: a literal - a quoted string, date, number or value. EVERY quoted string is its OWN detail
+    claim (never group two quotes), but a quote plus the short phrase describing THAT one quote is one
+    claim. A quote the source CONTAINS and a token the source is EXPECTED to emit next are BOTH detail.
+  - connective: PURE glue only (whitespace, punctuation, bare "and" / "or" / "/" / "from" / "with" /
+    "," / ":"). A hedge word is NEVER connective (it belongs to the claim it modifies -> record it in
+    "hedged"). A phrase that makes an assertion is NEVER connective.
+  For every theme/detail claim return "assertion" (the single "The source ..." sentence) and "hedged"
+  (qualifier words inside it, e.g. likely / probably / expecting; empty if none).
+
+LAYER 2 - ENTITY OVERLAY ("entities"): SEPARATELY, list every specific NAMED ENTITY mentioned anywhere
+in the input - person / place / org / title / ticker / other. Return each as a verbatim substring; it
+MAY (and usually will) sit inside a Layer-1 segment, including inside a quoted string. This layer
+OVERLAPS Layer 1 and does not have to tile. Only specific named referents (e.g. "Georgia",
+"Glencore PLC", "NYSE: GKG", "the Indians") - never generic nouns.
+
+Layer-1 tiling is mandatory and exact. Respond via emit_layers only.</div>
+    <p>The tool it must answer through, <code>emit_layers</code>, carries two arrays: <code>segments</code> (each with <code>text</code>, <code>type</code>, <code>subtype</code>, the "The source ..." <code>assertion</code>, and any <code>hedged</code> qualifier words) and <code>entities</code> (each <code>text</code> plus <code>subtype</code>). After the call, three deterministic passes finish the job with no further model use: any characters the model skipped are <b>gap-filled as connective</b> so the partition tiles exactly; a bare hedge word left as its own connective (e.g. "likely") is <b>folded back into the claim it modifies</b> and recorded in <code>hedged</code>; and each entity is located by <b>word-boundary match</b> (so "STEF" is not matched inside "STEFANIE") and attached to its smallest containing claim. A stdlib regex independently flags dates/numbers so a <code>detail</code> can be marked <code>regex-confirmed</code>.</p>
+
+    <div class="note"><b>The segmenter is a language model, yet the test stays judge-free.</b> This is the one place an LLM enters the pipeline, and it is confined to deciding <em>where one claim ends and the next begins</em>. It runs at temperature 0, it only ever emits character-exact spans of the verbalizer's own words, and crucially <b>it never sees the activation <code>h</code></b>, so it cannot know, and cannot encode an opinion about, whether any claim is faithful. Groundedness is still decided entirely by the teacher-forced log-probability test above. A segmentation choice can move where a boundary falls; it can never leak into a verdict.</div>
+
+    <p><b>What changes downstream, and what does not.</b> Only two mechanics differ from block mode; injection, teacher forcing, and the random-direction null are identical, so atom and block records stay comparable. First, a tiling cannot be rebuilt by re-joining snippets, so a claim's direction is taken by <b>deleting its characters</b> and re-encoding: <code>Δ = normalize(AR(full text)) − normalize(AR(text with the claim deleted))</code>. Second, with dozens of claims per activation the specificity test needs a scale-stable denominator (a 90th-percentile rule with a 1-nat floor; see the research note), which is why atom-mode grounded rates are <em>not</em> comparable to the block 63.5% headline. Only <code>theme</code> and <code>detail</code> claims are scored; connectives are shown but excluded, and entities are folded into the claim that contains them.</p>
+
+    <p><b>The payoff.</b> Because every claim now carries a type, a role, and a subtype, the run page can bucket verdicts by <em>what each claim is about</em>. The recurring, cross-model finding is that <b>GIST</b> (genre, topic, tone, style) is read from <code>h</code>, while <b>POSITION / STRUCTURE</b> and next-token <b>PREDICTION</b> are largely confabulated from the prior. That breakdown is the "What kinds of claims get grounded" panel, and it is the question the coarse block split could not even pose.</p>
+
+    <h4 class="docsub">The original coarse method (block mode)</h4>
+    <p>A few older runs (their claims carry no type chip) use the first, simpler segmentation, with <b>no model at all</b>: the verbalizer was trained to write one observation per paragraph inside an <code>&lt;explanation&gt;…&lt;/explanation&gt;</code> block, so the text is split on blank lines and each non-empty paragraph <em>is</em> one claim, by a single regular expression. It is fully judge-free but coarse (about three claims per activation, each bundling several assertions), and an activation with fewer than two paragraphs is skipped for want of a sibling to measure specificity against. Block mode is preserved so its published 63.5%-grounded baseline stays reproducible; the atomic method above supersedes it for every new run.</p>
 
     <h3>The log-probability measurement, taught from scratch</h3>
     <p class="lead">This is the engine of the whole test, so here it is built up one idea at a time, with a single running example carried all the way through. If you already know how a language model assigns probabilities to tokens, skim the first two pieces.</p>
