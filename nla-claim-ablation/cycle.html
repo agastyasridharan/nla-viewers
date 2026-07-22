@@ -146,6 +146,28 @@ function legend(){
   return `<div class="legend">`+VERDICTS.map(v=>`<span><i style="background:${VC[v]}"></i>${v}</span>`).join("")+`</div>`;
 }
 
+function baBar(vd,n,label,uPct){
+  return `<div style="display:flex;align-items:center;gap:10px;margin:4px 0">
+    <span class="muted" style="width:52px;font-size:0.8rem">${label}</span>
+    <div style="flex:1;max-width:520px">${stackedBar(vd,n)}</div>
+    <span class="num" style="color:${VC.unresolved};font-size:0.84rem;width:118px;text-align:right">unresolved ${uPct.toFixed(1)}%</span>
+  </div>`;
+}
+function tier1Panel(r){
+  const t=r.tier1; if(!t||!t.applied) return "";
+  const n=t.n_claims||r.n_claims||0;
+  const pre=t.pre_distribution||{}, post=t.post_distribution||{}, tr=t.transitions||{};
+  const chips=Object.entries(tr).map(([k,v])=>{const dst=k.split("->")[1];
+    return `<span class="chip v-${dst}" title="${esc(k)}">${dst} +${v}</span>`;}).join(" ");
+  const fp=t.decoy_fp_rate_unchanged!=null?(100*t.decoy_fp_rate_unchanged).toFixed(2)+"%":"–";
+  return `
+    <h3>Tier-1 unresolved recovery <span class="badge ok" title="the decoy-vs-decoy false-positive budget is untouched by Tier-1 - it operates on surviving D* directly, independent of the validity-pass decision">FP unchanged ${fp}</span></h3>
+    <p class="muted" style="font-size:0.84rem;max-width:90ch">Two judge-free recoveries of <span class="chip v-unresolved">unresolved</span> claims (2026-07-22). <b>(a) Validity decouple:</b> a flagged decoy (its own direction encoded, or a D* outlier) is trimmed from the clean-placebo <em>count</em> but kept in the Gate-1 null, so a family passes on its ≥&nbsp;min_k clean placebos without ever lowering the grounding bar (monotone-null lock). <b>(b) Power-fail with a valid decoy family and M_BB&nbsp;≤&nbsp;0</b> resolves to <span class="chip v-confabulated">confabulated</span>: the family can detect an effect this size and the own-effect is non-positive. Churn-locked — no already-resolved claim is re-judged, so the false-positive budget is unchanged.</p>
+    ${baBar(pre,n,"before",pct(pre.unresolved||0,n))}
+    ${baBar(post,n,"after",pct(post.unresolved||0,n))}
+    <p class="muted" style="font-size:0.84rem;margin-top:6px">recovered <b>${t.recovered}</b> claims: ${chips||"–"}</p>`;
+}
+
 function renderNav(){
   const tabs = [["overview","Overview"],["how","How it works"]];
   RUNS.forEach(r=>tabs.push(["m:"+r.key, r.label]));
@@ -183,7 +205,7 @@ function overview(){
       <thead><tr><th>Model</th><th>Verdict distribution</th><th>claims</th><th>grounded</th><th>seeded</th><th>confab</th><th>unresolved</th><th>κ₀</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="muted" style="font-size:0.82rem">Click a row for the per-model breakdown: atom→cycle verdict shift, gate flow, grounding estimate, and out-of-sample κ₀ validation.</p>
+    <p class="muted" style="font-size:0.82rem">Click a row for the per-model breakdown: the Tier-1 before/after unresolved recovery, atom→cycle verdict shift, gate flow, grounding estimate, and out-of-sample κ₀ validation. Distributions shown are post Tier-1 (2026-07-22), which recovers unresolved claims without touching the ~5% decoy false-positive budget.</p>
   </div>`;
   app.querySelectorAll(".modelrow").forEach(tr=>tr.onclick=()=>{ CUR=tr.dataset.k; VIEW="model"; render(); });
 }
@@ -214,6 +236,8 @@ function detail(){
     <h2>${esc(r.label)} <span class="sub2">L${r.layer} · d${r.d_model} · ${esc(r.run)}</span></h2>
     ${legend()}${stackedBar(vd,n)}
     <div class="cards" style="margin-top:12px">${vcards}</div>
+
+    ${tier1Panel(r)}
 
     <h3>Atom → cycle verdict shift</h3>
     <p class="muted" style="font-size:0.84rem">Rows are the simpler atom-ablation verdict; columns are the decoy-controlled cycle verdict. The cycle test is strictly more conservative: most atom-<span class="chip v-grounded">grounded</span> claims do not survive.</p>
@@ -324,7 +348,7 @@ D*_m   ablate Δ̂_{B*_m} in z*_m, score B*_m in z*_m   → the decoy's own weig
 
     <h3>Gates &amp; verdicts <span class="muted" style="font-weight:400">(Step 7)</span></h3>
     <table class="grid">
-      <tr><td><b>Pre-checks</b></td><td>a claim is <span class="chip v-unresolved">unresolved</span> unless it is powered (supp_b above the decoys' Q95) and valid (enough survivors, none encoded, D* outlier-free).</td></tr>
+      <tr><td><b>Pre-checks</b></td><td>a claim is <span class="chip v-unresolved">unresolved</span> unless it is powered (supp_b above the decoys' Q95) and valid. <b>Validity (Tier-1 decouple):</b> flagged decoys (own-direction encoded, or a D* outlier) are trimmed from the clean-placebo <em>count</em> but kept in the Gate-1 null; the family is valid iff ≥ min_k clean placebos remain, and trimming can never lower the grounding bar (monotone-null lock). <b>Exception:</b> a power-fail with a <em>valid</em> decoy family and <span class="mono">M_BB ≤ 0</span> is resolved to <span class="chip v-confabulated">confabulated</span> rather than left unresolved (the family is the minimum-detectable-effect floor).</td></tr>
       <tr><td><b>Gate 1</b></td><td><span class="mono">M_BB &gt; Q95(D*) + κ₀</span> and <span class="mono">M_BB &gt; 0</span>: B's effect clears the decoy null. Pass goes to Gate 2, fail to Gate 3.</td></tr>
       <tr><td><b>Gate 2</b></td><td><span class="mono">M_BB &gt; 1.5 · max M_iB</span> → <span class="chip v-grounded">grounded</span> (B's own direction dominates), else <span class="chip v-entangled">entangled</span>.</td></tr>
       <tr><td><b>Gate 3</b></td><td><span class="mono">M_BB ≤ 0</span> → <span class="chip v-confabulated">confabulated</span> outright (erasing B did not hurt B, so B is not read); otherwise median <span class="mono">X_m &gt; 0</span> → <span class="chip v-seeded">seeded</span>, else <span class="chip v-confabulated">confabulated</span>.</td></tr>
