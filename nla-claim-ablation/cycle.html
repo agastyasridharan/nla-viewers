@@ -167,6 +167,25 @@ function tier1Panel(r){
     ${baBar(post,n,"after",pct(post.unresolved||0,n))}
     <p class="muted" style="font-size:0.84rem;margin-top:6px">recovered <b>${t.recovered}</b> claims: ${chips||"–"}</p>`;
 }
+function tier0Panel(r){
+  const t=r.tier0; if(!t||!t.applied) return "";
+  const held = t.kappa_0_pre===t.kappa_0_post;
+  const fp=x=>x==null?"–":(100*x).toFixed(2)+"%";
+  const tr=t.transitions||{};
+  const chips=Object.entries(tr).map(([k,v])=>{const dst=k.split("->")[1];
+    return `<span class="chip v-${dst}" title="${esc(k)}">${dst} +${v}</span>`;}).join(" ");
+  const badge = t.transfers_post
+    ? `<span class="badge ok" title="decoy-vs-decoy false-positive rate is now &lt;= 5% out-of-sample">FP transfers OOS (${fp(t.fp_oos_post)})</span>`
+    : `<span class="badge warn">OOS FP ${fp(t.fp_oos_post)}</span>`;
+  return `
+    <h3>Tier-0 κ₀ recalibration <span class="muted" style="font-weight:400">(2026-07-23)</span> ${badge}</h3>
+    <p class="muted" style="font-size:0.84rem;max-width:90ch">The applied Gate-1 margin κ₀ was fit in-sample; on the run's own (and the out-of-sample) decoy families the leave-one-decoy-out false-positive rate exceeded 5% in 3 of 4 models. Tier-0 raises κ₀ to the smallest value holding the LODO FP ≤ 5% on both the full and OOS families (κ₀* = max of the calibration value and the full/OOS refits). Raising κ₀ only <em>tightens</em> Gate 1 (M_BB &gt; Q95(D*)+κ₀), so it can never manufacture grounding and never touches a pre-check: the unresolved set is invariant and the recalibration is one-directional.</p>
+    <div class="cards" style="margin-top:4px">
+      <div class="card"><div class="lab">κ₀ margin</div><div class="big">${t.kappa_0_pre} → ${t.kappa_0_post}</div><div class="sm">${held?"already held OOS":"raised to restore budget"}</div></div>
+      <div class="card"><div class="lab">decoy FP (OOS)</div><div class="big">${fp(t.fp_oos_pre)} → ${fp(t.fp_oos_post)}</div><div class="sm">target ≤ 5%</div></div>
+      <div class="card"><div class="lab">demoted g/e → s/c</div><div class="big">${t.demoted}</div><div class="sm">${chips||"none"}</div></div>
+    </div>`;
+}
 
 function renderNav(){
   const tabs = [["overview","Overview"],["how","How it works"]];
@@ -238,6 +257,7 @@ function detail(){
     <div class="cards" style="margin-top:12px">${vcards}</div>
 
     ${tier1Panel(r)}
+    ${tier0Panel(r)}
 
     <h3>Atom → cycle verdict shift</h3>
     <p class="muted" style="font-size:0.84rem">Rows are the simpler atom-ablation verdict; columns are the decoy-controlled cycle verdict. The cycle test is strictly more conservative: most atom-<span class="chip v-grounded">grounded</span> claims do not survive.</p>
@@ -364,7 +384,7 @@ D*_m   ablate Δ̂_{B*_m} in z*_m, score B*_m in z*_m   → the decoy's own weig
     <dl class="gloss">
       <dt>supp_b</dt><dd>log-prob support for claim B under the true activation vs the corpus-mean activation h̄ (the injection baseline). Power reference.</dd>
       <dt>ov, ov_b</dt><dd>unit overlap <code>h·Δ̂</code>: how much of B (or a decoy) the reconstruction places along <code>h</code>. Filter 2 matches decoys to B on this.</dd>
-      <dt>κ₀</dt><dd>Gate-1 margin above the decoy Q95, calibrated by leave-one-decoy-out on a held-out split so the decoy-vs-decoy false-positive rate ≈ 5%.</dd>
+      <dt>κ₀</dt><dd>Gate-1 margin above the decoy Q95, calibrated by leave-one-decoy-out so the decoy-vs-decoy false-positive rate ≈ 5%. Recalibrated in Tier-0 (2026-07-23) to the smallest value holding that rate ≤ 5% on both the full and the out-of-sample survivor families; raising it only tightens Gate 1.</dd>
       <dt>FVE</dt><dd>fraction of variance explained by the reconstruction; the band keeps decoys reconstruction-comparable to B.</dd>
     </dl>
   </div>`;
