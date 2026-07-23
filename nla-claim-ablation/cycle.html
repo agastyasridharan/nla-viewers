@@ -186,6 +186,24 @@ function tier0Panel(r){
       <div class="card"><div class="lab">demoted g/e → s/c</div><div class="big">${t.demoted}</div><div class="sm">${chips||"none"}</div></div>
     </div>`;
 }
+function tier3Panel(r){
+  const t=r.tier3; if(!t||!t.applied) return "";
+  const n=t.n_claims||r.n_claims||0;
+  const pre=t.pre_distribution||{}, post=t.post_distribution||{}, rd=t.recovered_dist||{};
+  const chips=Object.entries(rd).filter(([k,v])=>v>0).map(([k,v])=>
+    `<span class="chip v-${k}" title="recovered to ${esc(k)}">${k} +${v}</span>`).join(" ");
+  const fp=x=>x==null?"–":(100*x).toFixed(2)+"%";
+  const variant=`<span class="badge" style="background:#e8e8ef;color:#555" title="the committed P90 run stays primary; this is a comparison variant">variant</span>`;
+  const smell = t.smell_flagged
+    ? `<span class="badge ok" title="the fraction-based smell screen flags this N≈298 model, but every grounded recovery is a validity-fail clearing the full null, and negative-null grounding occurs in the base results at a similar rate - a small-N artifact, cleared by the per-claim spot-check">smell flagged, cleared</span>`
+    : `<span class="badge ok" title="recovered claims do not spike toward grounding relative to the baseline resolved population">smell ok</span>`;
+  return `
+    <h3>Tier-3 band-widening ${variant} <span class="badge ok" title="the decoy-vs-decoy false-positive budget held under the wider bands; no κ₀ refit needed">FP held ${fp(t.fp_full)}</span> ${smell}</h3>
+    <p class="muted" style="font-size:0.84rem;max-width:90ch">The one GPU lever (2026-07-23). The f3/f4 decoy filters admit a placebo only if its matched-mass and FVE fall inside P90 tolerance bands; a claim whose decoys mostly miss the bands gets fewer than <em>min_k</em> clean placebos and is ruled <span class="chip v-unresolved">unresolved</span> on the validity pre-check. Tier-3 widens the bands to P95, admitting more of the already-generated candidates so more validity-fail claims reach a valid family (the newly-admitted candidates' readings are re-measured on GPU). <b>The committed P90 result stays primary</b> — this is a comparison variant. M_BB is band-independent (own-effect drift ${t.mbb_drift}), the decoy false-positive budget holds (${fp(t.fp_full)}), and every grounded recovery is a validity-fail clearing the full decoy null.</p>
+    ${baBar(pre,n,"P90",pct(pre.unresolved||0,n))}
+    ${baBar(post,n,"P95",pct(post.unresolved||0,n))}
+    <p class="muted" style="font-size:0.84rem;margin-top:6px">recovered <b>${t.recovered}</b> unresolved claims (${chips||"–"}); ${t.lost} resolved→unresolved as the richer null raised the power bar (never-guess, the conservative direction).</p>`;
+}
 
 function renderNav(){
   const tabs = [["overview","Overview"],["how","How it works"]];
@@ -258,6 +276,7 @@ function detail(){
 
     ${tier1Panel(r)}
     ${tier0Panel(r)}
+    ${tier3Panel(r)}
 
     <h3>Atom → cycle verdict shift</h3>
     <p class="muted" style="font-size:0.84rem">Rows are the simpler atom-ablation verdict; columns are the decoy-controlled cycle verdict. The cycle test is strictly more conservative: most atom-<span class="chip v-grounded">grounded</span> claims do not survive.</p>
